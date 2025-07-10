@@ -235,71 +235,48 @@ export const NetworkIndicator = () => Widget.Stack({
 const HyprlandXkbKeyboardLayout = async ({ useFlag } = {}) => {
     try {
         const Hyprland = (await import('resource:///com/github/Aylur/ags/service/hyprland.js')).default;
-        var languageStackArray = [];
-
+        let languageStackArray = [];
         const updateCurrentKeyboards = () => {
-            var initLangs = [];
+            let initLangs = [];
             JSON.parse(Utils.exec('hyprctl -j devices')).keyboards
                 .forEach(keyboard => {
                     initLangs.push(...keyboard.layout.split(',').map(lang => lang.trim()));
                 });
             initLangs = [...new Set(initLangs)];
-            languageStackArray = Array.from({ length: initLangs.length }, (_, i) => {
-                const lang = languages.find(lang => lang.layout == initLangs[i]);
-                // if (!lang) return [
-                //     initLangs[i],
-                //     Widget.Label({ label: initLangs[i] })
-                // ];
-                // return [
-                //     lang.layout,
-                //     Widget.Label({ label: (useFlag ? lang.flag : lang.layout) })
-                // ];
-                // Object
-                if (!lang) return {
-                    [initLangs[i]]: Widget.Label({ label: initLangs[i] })
-                };
+            languageStackArray = initLangs.map(l => {
+                const lang = languages.find(lang => lang.layout === l);
                 return {
-                    [lang.layout]: Widget.Label({ label: (useFlag ? lang.flag : lang.layout) })
+                    [l]: Widget.Label({ label: useFlag && lang ? lang.flag : l })
                 };
             });
         };
         updateCurrentKeyboards();
-        const widgetRevealer = Widget.Revealer({
-            transition: 'slide_left',
-            transitionDuration: userOptions.animations.durationSmall,
-            revealChild: languageStackArray.length > 1,
+        const widgetKids = Object.assign({}, ...languageStackArray, {
+            'undef': Widget.Label({ label: '?' })
         });
-        const widgetKids = {
-            ...languageStackArray.reduce((obj, lang) => {
-                return { ...obj, ...lang };
-            }, {}),
-            'undef': Widget.Label({ label: '?' }),
-        }
         const widgetContent = Widget.Stack({
             transition: 'slide_up_down',
             transitionDuration: userOptions.animations.durationSmall,
             children: widgetKids,
             setup: (self) => self.hook(Hyprland, (stack, kbName, layoutName) => {
-                if (!kbName) {
-                    return;
-                }
-                var lang = languages.find(lang => layoutName.includes(lang.name));
-                if (lang) {
-                    widgetContent.shown = lang.layout;
-                }
-                else { // Attempt to support langs not listed
-                    lang = languageStackArray.find(lang => isLanguageMatch(lang[0], layoutName));
-                    if (!lang) stack.shown = 'undef';
-                    else stack.shown = lang[0];
-                }
+                if (!kbName) return;
+                let matchedKey = Object.keys(widgetKids).find(
+                    key => layoutName.includes(key)
+                );
+                stack.shown = matchedKey || 'undef';
             }, 'keyboard-layout'),
         });
-        widgetRevealer.child = widgetContent;
+        const widgetRevealer = Widget.Revealer({
+            transition: 'slide_left',
+            transitionDuration: userOptions.animations.durationSmall,
+            revealChild: Object.keys(widgetKids).length > 2,
+            child: widgetContent,
+        });
         return widgetRevealer;
     } catch {
         return null;
     }
-}
+};
 
 const OptionalKeyboardLayout = async () => {
     try {
