@@ -32,9 +32,18 @@ export const MicMuteIndicator = () => Widget.Revealer({
     setup: (self) => self.hook(Audio, (self) => {
         self.revealChild = Audio.microphone?.stream?.isMuted;
     }),
-    child: MaterialIcon('mic_off', 'norm'),
+    child: Widget.Button({
+        onClicked: () => {
+            // Only mute if not already muted
+            if (!Audio.microphone?.stream?.isMuted) {
+                Audio.microphone?.stream?.mute();
+            }
+            // Do nothing if already muted
+        },
+        child: MaterialIcon('mic_off', 'norm'),
+        tooltip: 'Mute microphone',
+    }),
 });
-
 
 export const NotificationIndicator = (notifCenterName = 'dashboard') => {
     const widget = Widget.Revealer({
