@@ -37,10 +37,7 @@ Singleton {
         const seconds = UPower.displayDevice.timeToFull;
         return (seconds > 0 && isFinite(seconds)) ? Math.floor(seconds / 60) : 0;
     }
-    readonly property int timeToEmpty: {
-        const seconds = UPower.displayDevice.timeToEmpty;
-        return (seconds > 0 && isFinite(seconds)) ? Math.floor(seconds / 60) : 0;
-    }
+    readonly property int timeToEmpty: UPower.displayDevice.timeToEmpty
 
     property bool _wasLow: false
     property bool _wasCritical: false
