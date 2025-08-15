@@ -1,6 +1,6 @@
 pkgname=sleex-widgets
 pkgver=2.0
-pkgrel=2
+pkgrel=3
 pkgdesc='Sleex Widget Dependencies'
 arch=(any)
 license=(None)
@@ -17,4 +17,5 @@ depends=(
 	'translate-shell'
 	'wlogout'
 	'inotify-tools'
+	'fprintd'
 )
