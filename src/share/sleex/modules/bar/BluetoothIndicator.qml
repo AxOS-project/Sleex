@@ -57,6 +57,5 @@ Item {
             text: `${Math.round(device?.battery * 100 ?? 0)}%`
             visible: device?.batteryAvailable ?? false
         }
-
     }
 }
