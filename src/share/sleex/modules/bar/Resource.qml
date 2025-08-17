@@ -51,7 +51,8 @@ Item {
                     { icon: "speed", label: "Load:", value: ResourceUsage.cpuUsage > 0.8 ?
                         "High" :
                         ResourceUsage.cpuUsage > 0.5 ? "Medium" : "Low"
-                    }
+                    },
+                    { icon: "thermostat", label: "Temperature:", value: `${ResourceUsage.cpuTemperature} °C` }
                 ]
             default:
                 return [

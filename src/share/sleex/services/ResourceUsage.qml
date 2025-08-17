@@ -20,6 +20,7 @@ Singleton {
     property double swapUsedPercentage: swapTotal > 0 ? (swapUsed / swapTotal) : 0
     property double cpuUsage: 0
     property var previousCpuStats
+    property int cpuTemperature: 0
 
 	Timer {
 		interval: 1
@@ -29,6 +30,7 @@ Singleton {
             // Reload files
             fileMeminfo.reload()
             fileStat.reload()
+            sensorsProc.running = true
 
             // Parse memory and swap usage
             const textMeminfo = fileMeminfo.text()
@@ -59,4 +61,19 @@ Singleton {
 
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }
+
+    Process {
+        id: sensorsProc
+        running: true
+        command: [
+            "bash",
+            "-c",
+            "sensors | awk '/^Package id 0:/ {gsub(/\\+|°C/, \"\", $4); print $4; found=1} END {if (!found) {while ((\"LANG=C sensors\" | getline l) > 0) if (l ~ /^Tctl:/) {match(l, /\\+([0-9.]+)/, a); print a[1]; break}}}'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                cpuTemperature = Math.round(text)
+            }
+        }
+    }
 }
