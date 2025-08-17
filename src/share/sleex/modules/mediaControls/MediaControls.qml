@@ -99,9 +99,13 @@ Item {
         }
         
 
-        PlayerControl {
-            player: root.meaningfulPlayers[0]
-            visualizerPoints: root.visualizerPoints
+        Loader {
+            active: root.meaningfulPlayers.length > 0
+            visible: active
+            sourceComponent: PlayerControl {
+                player: root.meaningfulPlayers[0]
+                visualizerPoints: root.visualizerPoints;
+            }
         }
     }
 }
