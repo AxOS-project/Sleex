@@ -35,7 +35,7 @@ ContentPage {
 
     ContentSection {
         title: "Bluetooth settings"
-        visible: Bluetooth.adapters.length > 0
+        visible: Bluetooth.adapters.values.length > 0
 
         RowLayout {
             spacing: 10
@@ -82,7 +82,7 @@ ContentPage {
         RippleButton {
             id: discoverBtn
 
-            visible: Bluetooth.adapters.length > 0
+            visible: Bluetooth.adapters.values.length > 0
 
             contentItem: Rectangle {
                 id: discoverBtnBody
@@ -122,7 +122,7 @@ ContentPage {
             color: Appearance.colors.colOnLayer1
             font.pixelSize: 30
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            visible: !Bluetooth.adapters.length > 0
+            visible: !Bluetooth.adapters.values.length > 0
         }
 
         Repeater {
