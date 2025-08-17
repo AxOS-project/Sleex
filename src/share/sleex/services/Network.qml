@@ -104,7 +104,7 @@ Process {
         command: ["nmcli", "-t", "-f", "TYPE,DEVICE", "con", "show", "--active"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const isEthernet = outputText.split("\n").some(line =>
+                const isEthernet = text.split("\n").some(line =>
                     line.startsWith("ethernet:") || line.startsWith("ethernet:")
                 )
 
