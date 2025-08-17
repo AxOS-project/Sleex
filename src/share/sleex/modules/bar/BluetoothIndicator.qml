@@ -12,7 +12,7 @@ Item {
 
     property bool bluetoothEnabled: Bluetooth.defaultAdapter?.enabled ?? false
     property bool bluetoothConnected: Bluetooth.devices.values.filter(d => d.state !== BluetoothDeviceState.Disconnected).length > 0
-    property BluetoothDevice device: Bluetooth.devices.values.find(d => d.connected)
+    property BluetoothDevice device: Bluetooth.devices.values.find(d => d.connected) ?? null
 
     property string deviceType: {
         const icon = device?.icon ?? "";
