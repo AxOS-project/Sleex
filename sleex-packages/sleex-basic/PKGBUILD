@@ -4,4 +4,4 @@ pkgrel=3
 pkgdesc='Sleex Basic Dependencies'
 arch=(any)
 license=(None)
-depends=("axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot")
+depends=("axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon")
