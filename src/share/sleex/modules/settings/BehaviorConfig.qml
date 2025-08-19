@@ -178,9 +178,9 @@ ContentPage {
             currentValue: PowerProfiles.profile
             configOptionName: PowerProfiles.profile
             options: [
-                {value: "Balanced", displayName: "Balanced"},
-                {value: "Performance", displayName: "Performance"},
-                {value: "PowerSaver", displayName: "Power Saver"}
+                {value: PowerProfile.Balanced, displayName: "Balanced"},
+                {value: PowerProfile.Performance, displayName: "Performance"},
+                {value: PowerProfile.PowerSaver, displayName: "Power Saver"}
             ]
             onSelected: (newValue) => {
                 PowerProfiles.profile = newValue;
