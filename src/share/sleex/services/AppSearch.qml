@@ -9,8 +9,12 @@ import Quickshell.Io
  * - Eases fuzzy searching for applications by name
  * - Guesses icon name for window class name
  */
+
 Singleton {
     id: root
+
+    signal reload()
+
     property bool sloppySearch: Config.options?.search.sloppy ?? false
     property real scoreThreshold: 0.2
     property var substitutions: ({
@@ -71,7 +75,7 @@ Singleton {
 
     function iconExists(iconName) {
         if (!iconName || iconName.length == 0) return false;
-        return (Quickshell.iconPath(iconName, true).length > 0) 
+        return (Quickshell.iconPath(iconName, true).length > 0)
             && !iconName.includes("image-missing");
     }
 
@@ -113,4 +117,22 @@ Singleton {
         // Give up
         return str;
     }
+
+    // Process {
+    //     id: inotify
+    //     running: true
+    //     command: [
+    //         "inotifywait", "-m",
+    //         "-e", "create", "-e", "delete", "-e", "move",
+    //         "/usr/share/applications"
+    //         //Qt.resolvedUrl("~/.local/share/applications")
+    //     ]
+
+    //     stdout: SplitParser {
+    //         onRead: (data) => {
+    //             console.log("inotify event:", data);
+    //             root.reload()
+    //         }
+    //     }
+    // }
 }
