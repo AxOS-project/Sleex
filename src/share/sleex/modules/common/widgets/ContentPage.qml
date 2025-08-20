@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import qs.modules.common
 import qs.modules.common.widgets
 
-Flickable {
+StyledFlickable {
     id: root
     property real baseWidth: 500
     property bool forceWidth: false

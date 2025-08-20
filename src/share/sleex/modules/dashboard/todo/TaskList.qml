@@ -22,7 +22,7 @@ Item {
         color: Appearance.colors.colLayer1
         radius: Appearance.rounding.normal
 
-        Flickable {
+        StyledFlickable {
             id: flickable
             anchors.fill: parent
             anchors.margins: 10

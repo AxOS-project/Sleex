@@ -33,7 +33,7 @@ Item {
         "Return": "Enter",
     })
 
-    Flickable {
+    StyledFlickable {
         id: flick
         anchors.fill: parent
         contentWidth: root.width

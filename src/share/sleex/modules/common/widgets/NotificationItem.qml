@@ -225,7 +225,7 @@ Item { // Notification item area
                     PointingHandLinkHover {}
                 }
 
-                Flickable { // Notification actions
+                StyledFlickable { // Notification actions
                     id: actionsFlickable
                     Layout.fillWidth: true
                     implicitHeight: actionRowLayout.implicitHeight

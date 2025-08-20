@@ -43,7 +43,7 @@ Item {
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Flickable {
+                StyledFlickable {
                     id: flickable
                     anchors.fill: parent
                     contentHeight: volumeMixerColumnLayout.height
@@ -203,7 +203,7 @@ Item {
                     Layout.rightMargin: dialogMargins
                 }
 
-                Flickable {
+                StyledFlickable {
                     id: dialogFlickable
                     Layout.fillWidth: true
                     clip: true

@@ -95,7 +95,7 @@ Scope {
                             color: Appearance.colors.colLayer1
                             radius: Appearance.rounding.small
                         }
-                        Flickable {
+                        StyledFlickable {
                             id: wallpaperFlickable
                             anchors.fill: flickableBg
                             anchors.margins: wppselectorPadding
