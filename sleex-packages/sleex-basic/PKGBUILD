@@ -1,7 +1,7 @@
 pkgname=sleex-basic
 pkgver=2.0
-pkgrel=3
+pkgrel=4
 pkgdesc='Sleex Basic Dependencies'
 arch=(any)
 license=(None)
-depends=("axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon")
+depends=("axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center")
