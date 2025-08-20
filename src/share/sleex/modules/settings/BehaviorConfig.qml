@@ -107,48 +107,10 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Audio"
+        title: "Power"
 
-        ConfigSwitch {
-            text: "Earbang protection"
-            checked: Config.options.audio.protection.enable
-            onClicked: checked = !checked;
-            onCheckedChanged: {
-                Config.options.audio.protection.enable = checked;
-            }
-            StyledToolTip {
-                content: "Prevents abrupt increments and restricts volume limit"
-            }
-        }
-        ConfigSpinBox {
-            text: "Earbang limit"
-            value: Config.options.audio.protection.maxAllowed
-            from: 0
-            to: 100
-            stepSize: 1
-            onValueChanged: {
-                Config.options.audio.protection.maxAllowed = value;
-            }
-            StyledToolTip {
-                content: "Maximum volume level allowed by earbang protection"
-            }
-        }
-    }
-
-    ContentSection {
-        title: "Battery"
-
-        visible: UPower.displayDevice.isLaptopBattery
-
-        ConfigSwitch {
-            text: "Enable battery notification sounds"
-            checked: Config.options.battery.sound
-            onClicked: checked = !checked;
-            onCheckedChanged: {
-                Config.options.battery.sound = checked;
-            }
-        }
         ConfigRow {
+            visible: UPower.displayDevice.isLaptopBattery
             uniform: true
             ConfigSpinBox {
                 text: "Low warning"
@@ -161,6 +123,7 @@ ContentPage {
                 }
             }
             ConfigSpinBox {
+                visible: UPower.displayDevice.isLaptopBattery
                 text: "Critical warning"
                 value: Config.options.battery.critical
                 from: 0

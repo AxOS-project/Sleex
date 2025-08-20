@@ -141,6 +141,14 @@ Singleton {
                     "pcmanfm-qt", "foot",
                 ]
             }
+            property JsonObject interactions: JsonObject {
+                property JsonObject scrolling: JsonObject {
+                    property bool fasterTouchpadScroll: false // Enable faster scrolling with touchpad
+                    property int mouseScrollDeltaThreshold: 120 // delta >= this then it gets detected as mouse scroll rather than touchpad
+                    property int mouseScrollFactor: 120
+                    property int touchpadScrollFactor: 450
+                }
+            }
 
             property JsonObject networking: JsonObject {
                 property string userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"

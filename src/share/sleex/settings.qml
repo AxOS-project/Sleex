@@ -42,11 +42,11 @@ ApplicationWindow {
             icon: "settings",
             component: "modules/settings/BehaviorConfig.qml"
         },
-        // {
-        //     name: "Sound",
-        //     icon: "brand_awareness",
-        //     component: "modules/settings/Sound.qml"
-        // },
+        {
+            name: "Sound",
+            icon: "brand_awareness",
+            component: "modules/settings/Sound.qml"
+        },
         {
             name: "Bluetooth",
             icon: "bluetooth",
@@ -143,7 +143,7 @@ ApplicationWindow {
                     }
                     spacing: 10
                     expanded: root.width > 800
-                    
+
                     NavigationRailExpandButton {}
 
                     FloatingActionButton {
@@ -155,7 +155,7 @@ ApplicationWindow {
                             Qt.openUrlExternally(`${Directories.config}/illogical-impulse/config.json`);
                         }
 
-                        StyledToolTip { 
+                        StyledToolTip {
                             extraVisibleCondition: !navRail.expanded
                             content: "Edit shell config file"
                         }
