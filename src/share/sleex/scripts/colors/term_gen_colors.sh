@@ -75,6 +75,7 @@ for terminal in "${TERMINAL[@]}"; do
             done
         ;;
     esac
+    echo "Theme for ${terminal} has been created: ${OUTPUT_FILE[${terminal}}]}"
 done
 
 # ============================== #
@@ -106,7 +107,7 @@ done < <(
         printf("COL[%s]=#%s\n", key, gensub(/^#?([0-9A-Fa-f]{6}).*/, "\\1", "g", val))
       }
     }
-  ' "$SCSS"
+  ' "${SCSS_FILE}"
 )
 
 send_to_tty() { printf "%b" "$2" > "$1" 2>/dev/null || true; }
@@ -129,4 +130,3 @@ done
 
 if [ -t 1 ]; then for s in "${seqs[@]}"; do printf "%b" "$s"; done; fi
 
-echo "Theme für ${TERMINAL} wurde erstellt: ${OUTPUT_FILE[${TERMINAL}]}"

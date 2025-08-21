@@ -49,13 +49,3 @@ blue = "{term12}"
 magenta = "{term13}"
 cyan = "{term14}"
 white = "{term15}"
-
-[colors.dim]
-black = "{term15}"
-red = "{term9}"
-green = "{term13}"
-yellow = "{term11}"
-blue = "{term12}"
-magenta = "{term10}"
-cyan = "{term14}"
-white = "{term8}"
