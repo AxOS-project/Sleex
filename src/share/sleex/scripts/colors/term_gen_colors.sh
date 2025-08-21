@@ -84,7 +84,6 @@ done
 #  +--------------------------+  #
 # ============================== #
 
-
 declare -A TERM COL
 
 while IFS= read -r line; do
