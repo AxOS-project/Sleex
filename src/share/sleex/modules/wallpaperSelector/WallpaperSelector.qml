@@ -27,7 +27,7 @@ Scope {
         }
 
         exclusiveZone: 0
-        implicitWidth: 1200
+        implicitWidth: 1920
         implicitHeight: 200
         WlrLayershell.namespace: "quickshell:wppselector"
         // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
@@ -44,7 +44,7 @@ Scope {
         }
 
         anchors {
-            bottom: true
+            top: true
         }
 
         Loader {
@@ -85,61 +85,65 @@ Scope {
                     color: Appearance.colors.colLayer0
                     radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
 
-                    ColumnLayout {
+                    Rectangle {
+                        id: flickableBg
+                        anchors.margins: 20
                         anchors.fill: parent
+                        color: Appearance.colors.colLayer1
+                        radius: Appearance.rounding.small
+                    }
 
-                        Rectangle {
-                            id: flickableBg
-                            anchors.margins: 20
-                            anchors.fill: parent
-                            color: Appearance.colors.colLayer1
-                            radius: Appearance.rounding.small
-                        }
-                        StyledFlickable {
-                            id: wallpaperFlickable
-                            anchors.fill: flickableBg
-                            anchors.margins: wppselectorPadding
-                            boundsBehavior: Flickable.StopAtBounds
-                            interactive: true
-                            clip: true
-                            contentWidth: wallpaperRow.implicitWidth
-                            contentHeight: height
-                            flickableDirection: Flickable.HorizontalFlick
+                    StyledFlickable {
+                        id: wallpaperFlickable
+                        anchors.fill: flickableBg
+                        anchors.margins: wppselectorPadding
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: true
+                        clip: true
+                        contentWidth: wallpaperRow.implicitWidth
+                        contentHeight: height
+                        flickableDirection: Flickable.HorizontalFlick
 
 
-                            Row {
-                                id: wallpaperRow
-                                spacing: 20
-                                anchors.verticalCenter: parent.verticalCenter
+                        Row {
+                            id: wallpaperRow
+                            spacing: 20
+                            anchors.verticalCenter: parent.verticalCenter
 
+                            Repeater {
+                                model: Wallpapers.wallpaperList
+                                delegate: Item {
+                                    width: 250
+                                    height: wppselectorRoot.implicitHeight - wppselectorPadding
 
-                                Repeater {
-                                    model: Wallpapers.wallpaperList
-                                    delegate: Item {
-                                        width: 250
-                                        height: wppselectorRoot.implicitHeight - wppselectorPadding
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: Appearance.rounding.small
+                                        color: Appearance.colors.colLayer2
 
-                                        Rectangle {
+                                        StyledBusyIndicator {
+                                            anchors.centerIn: parent
+                                            visible: wallpaperImage.status === Image.Loading
+                                            running: true
+                                            width: 45
+                                            height: 45
+                                        }                   
+                                        
+                                        
+                                        CachingImage {
+                                            id: wallpaperImage
                                             anchors.fill: parent
-                                            radius: Appearance.rounding.small
-                                            color: Appearance.colors.colLayer2
-                                            Layout.fillHeight: true
-                                            
-                                            Image {
-                                                anchors.fill: parent
-                                                fillMode: Image.PreserveAspectCrop
-                                                source: Directories.wallpaperPath + "/thumbnails/" + modelData
-                                                asynchronous: true
-                                                cache: true
+                                            fillMode: Image.PreserveAspectCrop
+                                            source: Directories.wallpaperPath + "/" + modelData
+                                            asynchronous: true
+                                            cache: true
+                                            sourceSize: Qt.size(250, 250)
 
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    onClicked: {
-                                                        const fullResPath = Directories.wallpaperPath + "/" + modelData
-                                                        console.log("Setting wallpaper:", fullResPath)
-                                                        GlobalStates.wppselectorOpen = false
-                                                        Quickshell.execDetached(["bash", `/usr/share/sleex/scripts/colors/switchwall.sh`, fullResPath, "&"])
-                                                    }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: {
+                                                    GlobalStates.wppselectorOpen = false
+                                                    Quickshell.execDetached(["bash", Quickshell.shellPath("scripts/colors/switchwall.sh"), Directories.wallpaperPath + "/" + modelData, "&"])
                                                 }
                                             }
                                         }
@@ -148,6 +152,7 @@ Scope {
                             }
                         }
                     }
+                    
                 }
             }
         }

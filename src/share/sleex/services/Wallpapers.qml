@@ -8,7 +8,6 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
     property var wallpaperList: []
-    property var thumbnailsList: []
 
     Process {
         id: listWallpapers
@@ -23,20 +22,5 @@ Singleton {
             }
         }
     }
-
-    Process {
-        id: listThumbnails
-        running: true
-        command: [
-            "bash", "-c",
-            "find " + `${Directories.wallpaperPath}/thumbnails` + " -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%f\\n'"
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.thumbnailsList = text.split('\n').filter(function(item) { return item.length > 0; });
-            }
-        }
-    }
-
 
 }

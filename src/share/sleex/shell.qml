@@ -44,7 +44,7 @@ ShellRoot {
     property bool enableSession: true
     property bool enableSidebarLeft: true
     property bool enableDashboard: true
-    property bool enableWallSelector: false
+    property bool enableWallSelector: true
     property bool enableBackground: true
 
     // Force initialization of some singletons
