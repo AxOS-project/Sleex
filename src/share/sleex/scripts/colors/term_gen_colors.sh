@@ -41,18 +41,12 @@ for terminal in "${TERMINAL[@]}"; do
     # output file location
     OUTPUT_DIR="${XDG_CONFIG_HOME}/${terminal}"
 
-    # You could also just simply define OUTPUT_FILE=${OUTPUT_DIR}/py-matyou-wal-${terminal}.conf (or just use whichever filetype ending you like).
-    # I thought this would be a rather "unclean" approach, since people would want to have there file type ending aligned to their other themes I suppose.
-    # Change it if you like, it would make this script universally usable for even more terminal emulators.
-    # Different file type endings work simply for the reason, these terminal emulators
-    # don't watch the file type endings but rather on the given content.
-    # This means, the theme config file can have any file type ending (e.g. "conf")
-    # as long as the content of this file remains correctly and correspondingly formatted!
+    # Declaring output theme files
     declare -A OUTPUT_FILE=(
         [wezterm]="${OUTPUT_DIR}/colors/py-matyou-wal-${terminal}.toml"
         [foot]="${OUTPUT_DIR}/py-matyou-wal-${terminal}.ini"
         [kitty]="${OUTPUT_DIR}/themes/py-matyou-wal-${terminal}.conf"
-        [alacritty]="${OUTPUT_DIR}/py-matyou-wal-${terminal}.yml"
+        [alacritty]="${OUTPUT_DIR}/py-matyou-wal-${terminal}.toml"
         [ghostty]="${OUTPUT_DIR}/themes/py-matyou-wal-${terminal}"
         [zellij]="${OUTPUT_DIR}/themes/py-matyou-wal-${terminal}.kdl"
     )
@@ -63,7 +57,7 @@ for terminal in "${TERMINAL[@]}"; do
     cp "${TEMPLATE_FILE}" "${OUTPUT_FILE[${terminal}]}"
 
     case $terminal in
-        # need to do an extra statement for foot because foot does not support 
+        # need to do an extra statement for foot because foot does not support
         foot)
             for key in "${!COLORS[@]}"; do
                 sed -i "s/{${key}}/${COLORS[$key]#\#}/g" "${OUTPUT_FILE[${terminal}]}"
