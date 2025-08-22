@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
-CONFIG_DIR="/usr/share/sleex"
-CACHE_DIR="$XDG_CACHE_HOME/sleex"
-STATE_DIR="$XDG_STATE_HOME/sleex"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:=$HOME/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}"
+export CONFIG_DIR="/usr/share/sleex"
+export CACHE_DIR="$XDG_CACHE_HOME/sleex"
+export STATE_DIR="$XDG_STATE_HOME/sleex"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export SCRIPT_DIR # declared and assigned seperately to avoid masking return values (shellcheck: SC2155)
 
 term_alpha=100 #Set this to < 100 make all your terminals transparent
 # sleep 0 # idk i wanted some delay or colors dont get applied properly
@@ -20,8 +21,8 @@ colorstrings=''
 colorlist=()
 colorvalues=()
 
-colornames=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f1)
-colorstrings=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f2 | cut -d ' ' -f2 | cut -d ";" -f1)
+colornames=$(cat "$STATE_DIR/user/generated/material_colors.scss" | cut -d: -f1)
+colorstrings=$(cat "$STATE_DIR/user/generated/material_colors.scss" | cut -d: -f2 | cut -d ' ' -f2 | cut -d ";" -f1)
 IFS=$'\n'
 colorlist=($colornames)     # Array of color names
 colorvalues=($colorstrings) # Array of color values
@@ -51,6 +52,36 @@ apply_term() {
   done
 }
 
+apply_other_term() {
+  theme_generator="/usr/share/sleex/scripts/colors/term_gen_colors.sh"
+  case "$TERMINAL" in
+      foot*)
+          ${theme_generator} foot
+          ;;
+      wezterm*)
+          ${theme_generator} wezterm
+          ;;
+      kitty*)
+          ${theme_generator} kitty
+          ;;
+      alacritty*)
+          ${theme_generator} alacritty
+          ;;
+      ghostty*)
+          ${theme_generator} ghostty
+          ;;
+      zellij*)
+          ${theme_generator} zellij
+          ;;
+      *)
+          echo "Unsupported Terminal: $TERMINAL"
+          echo "Currently supported options: foot*, wezterm*, kitty*, alacritty*, ghostty*, zellij* "
+          echo "Arguments inside of \"TERMINAL\" (e.g. \"wezterm start --always-new-process\") are allowed, because the script just matches the command names for specified terminals. This is done, so the user can still use this Variable for different purposes and does not need to worry about colorgen not working anymore."
+          return 1
+          ;;
+  esac
+}
+
 apply_qt() {
   sh "$CONFIG_DIR/scripts/kvantum/materialQT.sh"          # generate kvantum theme
   python "$CONFIG_DIR/scripts/kvantum/changeAdwColors.py" # apply config colors
@@ -58,3 +89,4 @@ apply_qt() {
 
 apply_qt &
 apply_term &
+apply_other_term &
