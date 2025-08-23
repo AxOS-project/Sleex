@@ -79,12 +79,12 @@ Singleton {
             }
 
             property JsonObject apps: JsonObject {
-                property string bluetooth: "kcmshell6 kcm_bluetooth"
+                property string bluetooth: "qs -p /usr/share/sleex/settings.qml"
                 property string imageViewer: "loupe"
-                property string network: "plasmawindowed org.kde.plasma.networkmanagement"
-                property string networkEthernet: "kcmshell6 kcm_networkmanagement"
-                property string settings: "systemsettings"
-                property string taskManager: "plasma-systemmonitor --page-name Processes"
+                property string network: "qs -p /usr/share/sleex/settings.qml"
+                property string networkEthernet: "qs -p /usr/share/sleex/settings.qml"
+                property string settings: "qs -p /usr/share/sleex/settings.qml"
+                property string taskManager: "missioncenter"
                 property string terminal: "foot"
             }
 
@@ -121,7 +121,7 @@ Singleton {
                 property real clockY: 0
                 property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
                 property bool showWatermark: true // Whether to show the watermark
-                property string wallpaperPath: "/usr/share/sleex/wallpapers/skyline.jpg"
+                property string wallpaperPath: "/usr/share/sleex/wallpapers/SleexOne.png"
                 property string clockFontFamily: "Rubik"
             }
 
@@ -138,7 +138,7 @@ Singleton {
                 property bool pinnedOnStartup: false
                 property bool hoverToReveal: false // When false, only reveals on empty workspace
                 property list<string> pinnedApps: [ // IDs of pinned entries
-                    "pcmanfm-qt", "foot",
+                    "pcmanfm-qt", "foot", "firefox"
                 ]
             }
             property JsonObject interactions: JsonObject {

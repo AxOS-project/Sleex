@@ -11,7 +11,7 @@ Singleton {
     property string firstRunFilePath: `${Directories.state}/sleex/user/first_run.txt`
     property string firstRunScriptPath: `/usr/share/sleex/scripts/firstRun.sh`
     property string firstRunFileContent: "This file is just here to confirm you've been greeted :>"
-    property string defaultWallpaperPath: FileUtils.trimFileProtocol(`/usr/share/sleex/wallpapers/skyline.jpg`)
+    property string defaultWallpaperPath: FileUtils.trimFileProtocol(`/usr/share/sleex/wallpapers/SleexOne.png`)
     property string welcomeNotifTitle: "Welcome to Sleex!"
     property string welcomeNotifBody: "First run? 👀 For a list of keybinds, hit Super + F1"
 
@@ -30,7 +30,7 @@ Singleton {
         Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} ${root.defaultWallpaperPath} --mode dark`])
         Quickshell.execDetached(["sh", `${root.firstRunScriptPath}`])
         Quickshell.execDetached(['bash', '-c', `sleep 0.5; notify-send '${root.welcomeNotifTitle}' '${root.welcomeNotifBody}' -a 'Sleex' &`])
-        Quickshell.reload(true)
+        //Quickshell.reload(true)
     }
 
 
