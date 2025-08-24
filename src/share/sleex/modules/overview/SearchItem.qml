@@ -66,7 +66,7 @@ RippleButton {
             ?.filter(url => !url.includes("…")) // Elided = invalid
         return matches ? matches : [];
     }
-    
+
     visible: root.entryShown
     property int horizontalMargin: 10
     property int buttonHorizontalPadding: 10
@@ -76,8 +76,8 @@ RippleButton {
     implicitHeight: rowLayout.implicitHeight + root.buttonVerticalPadding * 2
     implicitWidth: rowLayout.implicitWidth + root.buttonHorizontalPadding * 2
     buttonRadius: Appearance.rounding.normal
-    colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colLayer1Active : 
-        ((root.hovered || root.focus) ? Appearance.colors.colLayer1Hover : 
+    colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colLayer1Active :
+        ((root.hovered || root.focus) ? Appearance.colors.colLayer1Hover :
         ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHigh, 1))
     colBackgroundHover: Appearance.colors.colLayer1Hover
     colRipple: Appearance.colors.colLayer1Active
@@ -91,7 +91,7 @@ RippleButton {
     PointingHandInteraction {}
     onClicked: {
         root.itemExecute()
-        Hyprland.dispatch("global quickshell:overviewClose")
+        GlobalStates.overviewOpen = false
     }
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
@@ -120,7 +120,7 @@ RippleButton {
             active: true
             sourceComponent: root.materialSymbol !== "" ? materialSymbolComponent :
                 root.bigText ? bigTextComponent :
-                root.itemIcon !== "" ? iconImageComponent : 
+                root.itemIcon !== "" ? iconImageComponent :
                 null
         }
 

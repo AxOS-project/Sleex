@@ -133,14 +133,14 @@ ColumnLayout {
 
         onLinkActivated: (link) => {
             Qt.openUrlExternally(link)
-            Hyprland.dispatch("global quickshell:sidebarLeftClose")
+            GlobalStates.sidebarLeftOpen = false
         }
 
         MouseArea { // Pointing hand for links
             anchors.fill: parent
             acceptedButtons: Qt.NoButton // Only for hover
             hoverEnabled: true
-            cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : 
+            cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor :
                 (enableMouseSelection || editing) ? Qt.IBeamCursor : Qt.ArrowCursor
         }
     }

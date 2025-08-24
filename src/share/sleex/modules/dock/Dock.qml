@@ -23,10 +23,10 @@ Scope { // Scope
             required property var modelData
             id: dockRoot
             screen: modelData
-            
-            property bool reveal: root.pinned 
-                || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse) 
-                || dockApps.requestDockShow 
+
+            property bool reveal: root.pinned
+                || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse)
+                || dockApps.requestDockShow
                 || (!ToplevelManager.activeToplevel?.activated)
 
             anchors {
@@ -35,8 +35,8 @@ Scope { // Scope
                 right: true
             }
 
-            exclusiveZone: root.pinned ? implicitHeight 
-                - (Appearance.sizes.hyprlandGapsOut) 
+            exclusiveZone: root.pinned ? implicitHeight
+                - (Appearance.sizes.hyprlandGapsOut)
                 - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
 
             implicitWidth: dockBackground.implicitWidth
@@ -54,7 +54,7 @@ Scope { // Scope
                 height: parent.height
                 anchors {
                     top: parent.top
-                    topMargin: dockRoot.reveal ? 0 : 
+                    topMargin: dockRoot.reveal ? 0 :
                         Config.options?.dock.hoverToReveal ? (dockRoot.implicitHeight - Config.options.dock.hoverRegionHeight) :
                         (dockRoot.implicitHeight + 1)
                     horizontalCenter: parent.horizontalCenter
@@ -128,7 +128,7 @@ Scope { // Scope
                             DockSeparator {}
                             DockButton {
                                 Layout.fillHeight: true
-                                onClicked: Hyprland.dispatch("global quickshell:overviewToggle")
+                                onClicked: GlobalStates.overviewOpen = !GlobalStates.overviewOpen
                                 contentItem: MaterialSymbol {
                                     anchors.fill: parent
                                     horizontalAlignment: Text.AlignHCenter
@@ -138,7 +138,7 @@ Scope { // Scope
                                 }
                             }
                         }
-                    }    
+                    }
                 }
 
             }

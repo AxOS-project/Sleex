@@ -57,7 +57,7 @@ Rectangle {
 
     Process {
         id: decodeImageProcess
-        command: ["bash", "-c", 
+        command: ["bash", "-c",
             `[ -f ${imageDecodeFilePath} ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | cliphist decode > '${imageDecodeFilePath}'`
         ]
         onExited: (exitCode, exitStatus) => {
@@ -71,7 +71,7 @@ Rectangle {
     }
 
     Component.onDestruction: {
-        Hyprland.dispatch(`exec bash -c "[ -f '${imageDecodeFilePath}' ] && rm -f '${imageDecodeFilePath}'"`)
+        Quickshell.execDetached(["bash", "-c", `[ -f ${imageDecodeFilePath} ]`, "&&", "rm", "-f", `${imageDecodeFilePath}`])
     }
 
     Image {
@@ -98,4 +98,3 @@ Rectangle {
         }
     }
 }
-

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts 
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
@@ -98,7 +98,7 @@ ContentPage {
                 const selectedValue = valueMap[model[currentIndex]]
                 if (Config.options.appearance.palette.type !== selectedValue) {
                     Config.options.appearance.palette.type = selectedValue
-                    Hyprland.dispatch(`exec ${Directories.wallpaperSwitchScriptPath} --noswitch --type ${selectedValue}`)
+                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--type", `${selectedValue}`])
                 }
             }
         }
@@ -115,7 +115,7 @@ ContentPage {
                 StyledToolTip { content: "Pick wallpaper image on your system" }
 
                 onClicked: {
-                    Hyprland.dispatch(`exec ${Directories.wallpaperSwitchScriptPath}`)
+                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`])
                 }
 
                 mainContentComponent: Component {

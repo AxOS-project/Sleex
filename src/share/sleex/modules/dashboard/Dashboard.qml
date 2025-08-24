@@ -139,8 +139,8 @@ Scope {
                                     toggled: false
                                     buttonIcon: "settings"
                                     onClicked: {
-                                        Hyprland.dispatch(`exec qs -p /usr/share/sleex/settings.qml`)
-                                        Hyprland.dispatch(`global quickshell:dashboardClose`)
+                                        Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
+                                        GlobalStates.dashboardOpen = false
                                     }
                                     StyledToolTip {
                                         content: qsTr("Settings")

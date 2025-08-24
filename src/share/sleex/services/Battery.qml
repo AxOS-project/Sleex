@@ -102,7 +102,7 @@ Singleton {
     }
 
     function sendNotification(title, body) {
-        Hyprland.dispatch(`exec notify-send "${title}" "${body}" -u critical -a "System"`);
+        Quickshell.execDetached(["notify-send", `${title}`, `${body}`, "-u", "critical", "-a", "System"]);
     }
 
     Process {

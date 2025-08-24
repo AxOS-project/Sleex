@@ -9,7 +9,6 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 
@@ -46,9 +45,9 @@ Scope {
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
-            readonly property int centerSideModuleWidth: 
+            readonly property int centerSideModuleWidth:
                 (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened :
-                (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : 
+                (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened :
                     Appearance.sizes.barCenterSideModuleWidth
 
             WlrLayershell.namespace: "quickshell:bar"
@@ -77,7 +76,7 @@ Scope {
                 }
                 color: barBackground ? Appearance.colors.colLayer2 : "transparent"
                 height: barHeight
-                
+
                 MouseArea { // Left side | scroll to change brightness
                     id: barLeftSideMouseArea
                     anchors.left: parent.left
@@ -99,7 +98,7 @@ Scope {
                     }
                     onPressed: (event) => {
                         if (event.button === Qt.LeftButton) {
-                            Hyprland.dispatch('global quickshell:sidebarLeftOpen')
+                            GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen
                         }
                     }
 
@@ -117,22 +116,12 @@ Scope {
                         }
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     }
-                    onPositionChanged: (mouse) => {
-                        if (barLeftSideMouseArea.trackingScroll) {
-                            const dx = mouse.x - barLeftSideMouseArea.lastScrollX;
-                            const dy = mouse.y - barLeftSideMouseArea.lastScrollY;
-                            if (Math.sqrt(dx*dx + dy*dy) > osdHideMouseMoveThreshold) {
-                                Hyprland.dispatch('global quickshell:osdBrightnessHide')
-                                barLeftSideMouseArea.trackingScroll = false;
-                            }
-                        }
-                    }
-                    
+
                     Item {  // Left section
                         anchors.fill: parent
                         implicitHeight: leftSectionRowLayout.implicitHeight
                         implicitWidth: leftSectionRowLayout.implicitWidth
-                        
+
 
                         ScrollHint {
                             reveal: barLeftSideMouseArea.hovered
@@ -141,15 +130,15 @@ Scope {
                             side: "left"
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            
+
                         }
-                        
+
                         RowLayout { // Content
                             id: leftSectionRowLayout
                             anchors.fill: parent
                             spacing: 10
                             visible: Config.options.bar.showTitle
-                            
+
                             ActiveWindow {
                                 visible: barRoot.useShortenedForm === 0
                                 Layout.leftMargin: Appearance.rounding.screenRounding
@@ -161,7 +150,7 @@ Scope {
                         }
                     }
                 }
-                
+
                 // Background Rectangle - completely outside the RowLayout
                 Rectangle {
                     id: middleBg
@@ -246,7 +235,7 @@ Scope {
                         padding: workspacesWidget.widgetPadding
                         Layout.fillHeight: true
                         visible: Config.options.bar.showWorkspaces
-                    
+
                         RoundCorner {
                             Layout.alignment: Qt.AlignTop | Qt.AlignRight
                             size: Appearance.rounding.screenRounding
@@ -262,16 +251,16 @@ Scope {
                             MouseArea { // Right-click to toggle overview
                                 anchors.fill: parent
                                 acceptedButtons: Qt.RightButton
-                                
+
                                 onPressed: (event) => {
                                     if (event.button === Qt.RightButton) {
-                                        Hyprland.dispatch('global quickshell:overviewToggle')
+                                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen
                                     }
                                 }
                             }
 
                             Canvas {
-                                anchors.fill: parent 
+                                anchors.fill: parent
                                 z: -1
 
                                 onPaint: {
@@ -376,7 +365,7 @@ Scope {
                     property real lastScrollX: 0
                     property real lastScrollY: 0
                     property bool trackingScroll: false
-                    
+
                     acceptedButtons: Qt.LeftButton
                     hoverEnabled: true
                     propagateComposedEvents: true
@@ -389,7 +378,7 @@ Scope {
                     }
                     onPressed: (event) => {
                         if (event.button === Qt.LeftButton) {
-                            Hyprland.dispatch('global quickshell:dashboardOpen')
+                            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen
                         }
                         else if (event.button === Qt.RightButton) {
                             MprisController.activePlayer.next()
@@ -411,22 +400,12 @@ Scope {
                         }
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     }
-                    onPositionChanged: (mouse) => {
-                        if (barRightSideMouseArea.trackingScroll) {
-                            const dx = mouse.x - barRightSideMouseArea.lastScrollX;
-                            const dy = mouse.y - barRightSideMouseArea.lastScrollY;
-                            if (Math.sqrt(dx*dx + dy*dy) > osdHideMouseMoveThreshold) {
-                                Hyprland.dispatch('global quickshell:osdVolumeHide')
-                                barRightSideMouseArea.trackingScroll = false;
-                            }
-                        }
-                    }
 
                     Item {
                         anchors.fill: parent
                         implicitHeight: rightSectionRowLayout.implicitHeight
                         implicitWidth: rightSectionRowLayout.implicitWidth
-                        
+
                         ScrollHint {
                             reveal: barRightSideMouseArea.hovered
                             icon: "volume_up"
@@ -442,8 +421,8 @@ Scope {
                             spacing: 5
                             layoutDirection: Qt.RightToLeft
                             visible: Config.options.bar.showTrayAndIcons
-                            
-                    
+
+
                             RippleButton { // Right sidebar button
                                 id: rightSidebarButton
                                 Layout.margins: 4
@@ -465,7 +444,7 @@ Scope {
                                 }
 
                                 onPressed: {
-                                    Hyprland.dispatch('global quickshell:dashboardToggle')
+                                    GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen
                                 }
 
                                 RowLayout {
@@ -489,7 +468,7 @@ Scope {
                                             width: indicatorsRowLayout.realSpacing * 2
                                         }
                                     }
-                                    
+
                                     Revealer {
                                         reveal: Audio.sink?.audio?.muted ?? false
                                         Layout.fillHeight: true

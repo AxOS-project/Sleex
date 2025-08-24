@@ -23,7 +23,7 @@ Scope {
             id: sessionRoot
             visible: sessionLoader.active
             property string subtitle
-            
+
             function hide() {
                 sessionLoader.active = false
             }
@@ -92,7 +92,7 @@ Scope {
                         focus: sessionRoot.visible
                         buttonIcon: "lock"
                         buttonText: qsTr("Lock")
-                        onClicked:  GlobalStates.screenLocked = true; 
+                        onClicked:  GlobalStates.screenLocked = true;
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.right: sessionSleep
                         KeyNavigation.down: sessionHibernate
@@ -101,7 +101,7 @@ Scope {
                         id: sessionSleep
                         buttonIcon: "dark_mode"
                         buttonText: qsTr("Sleep")
-                        onClicked:  { Hyprland.dispatch("exec systemctl suspend || loginctl suspend"); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["systemctl", "suspend", "||", "loginctl", "suspend"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionLock
                         KeyNavigation.right: sessionLogout
@@ -111,7 +111,7 @@ Scope {
                         id: sessionLogout
                         buttonIcon: "logout"
                         buttonText: qsTr("Logout")
-                        onClicked: { Hyprland.dispatch("exec pkill Hyprland"); sessionRoot.hide() }
+                        onClicked: { Quickshell.execDetached(["pkill", "Hyprland"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionSleep
                         KeyNavigation.right: sessionTaskManager
@@ -121,7 +121,7 @@ Scope {
                         id: sessionTaskManager
                         buttonIcon: "browse_activity"
                         buttonText: qsTr("Task Manager")
-                        onClicked:  { Hyprland.dispatch(`exec ${Config.options.apps.taskManager}`); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["bash", "-c", `${Config.options.apps.taskManager}`]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionLogout
                         KeyNavigation.down: sessionFirmwareReboot
@@ -131,7 +131,7 @@ Scope {
                         id: sessionHibernate
                         buttonIcon: "downloading"
                         buttonText: qsTr("Hibernate")
-                        onClicked:  { Hyprland.dispatch("exec systemctl hibernate || loginctl hibernate"); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["systemctl", "hibernate", "||", "loginctl", "hibernate"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.up: sessionLock
                         KeyNavigation.right: sessionShutdown
@@ -140,7 +140,7 @@ Scope {
                         id: sessionShutdown
                         buttonIcon: "power_settings_new"
                         buttonText: qsTr("Shutdown")
-                        onClicked:  { Hyprland.dispatch("exec systemctl poweroff || loginctl poweroff"); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["systemctl", "poweroff", "||", "loginctl", "poweroff"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionHibernate
                         KeyNavigation.right: sessionReboot
@@ -150,7 +150,7 @@ Scope {
                         id: sessionReboot
                         buttonIcon: "restart_alt"
                         buttonText: qsTr("Reboot")
-                        onClicked:  { Hyprland.dispatch("exec reboot || loginctl reboot"); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["reboot", "||", "loginctl", "reboot"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionShutdown
                         KeyNavigation.right: sessionFirmwareReboot
@@ -160,7 +160,7 @@ Scope {
                         id: sessionFirmwareReboot
                         buttonIcon: "settings_applications"
                         buttonText: qsTr("Reboot to firmware settings")
-                        onClicked:  { Hyprland.dispatch("exec systemctl reboot --firmware-setup || loginctl reboot --firmware-setup"); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup", "||", "loginctl", "reboot", "--firmware-setup"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.up: sessionTaskManager
                         KeyNavigation.left: sessionReboot

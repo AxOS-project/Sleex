@@ -73,7 +73,7 @@ ColumnLayout {
                     buttonIcon: activated ? "inventory" : "content_copy"
 
                     onClicked: {
-                        Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(segmentContent)}'`)
+                        Quickshell.execDetached(["wl-copy", `${StringUtils.shellSingleQuoteEscape(segmentContent)}`])
                         copyCodeButton.activated = true
                         copyIconTimer.restart()
                     }
@@ -96,8 +96,8 @@ ColumnLayout {
 
                     onClicked: {
                         const downloadPath = FileUtils.trimFileProtocol(Directories.downloads)
-                        Hyprland.dispatch(`exec echo '${StringUtils.shellSingleQuoteEscape(segmentContent)}' > '${downloadPath}/code.${segmentLang || "txt"}'`)
-                        Hyprland.dispatch(`exec notify-send 'Code saved to file' '${downloadPath}/code.${segmentLang || "txt"}' -a Shell`)
+                        Quickshell.execDetached(["echo", `${StringUtils.shellSingleQuoteEscape(segmentContent)}`, ">", `${downloadPath}/code.${segmentLang || "txt"}`])
+                        Quickshell.execDetached(["notify-send", 'Code saved to file', `${downloadPath}/code.${segmentLang || "txt"}`, "-a", "Sleex"])
                         saveCodeButton.activated = true
                         saveIconTimer.restart()
                     }
@@ -138,7 +138,7 @@ ColumnLayout {
                 anchors.rightMargin: 5
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 0
-                
+
                 Repeater {
                     model: codeTextArea.text.split("\n").length
                     Text {
@@ -174,7 +174,7 @@ ColumnLayout {
                 // contentHeight: codeTextArea.contentHeight
                 clip: true
                 ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-                
+
                 ScrollBar.horizontal: ScrollBar {
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
@@ -191,7 +191,7 @@ ColumnLayout {
                             easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                         }
                     }
-                    
+
                     contentItem: Rectangle {
                         implicitHeight: 6
                         radius: Appearance.rounding.small

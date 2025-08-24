@@ -15,7 +15,7 @@ Singleton {
     readonly property string pictures: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
     readonly property string downloads: StandardPaths.standardLocations(StandardPaths.DownloadLocation)[0]
     readonly property string home: StandardPaths.standardLocations(StandardPaths.HomeLocation)[0]
-    
+
     // Other dirs used by the shell, without "file://"
     property string favicons: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/favicons`)
     property string coverArt: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/coverart`)
@@ -33,10 +33,10 @@ Singleton {
 
     // Cleanup on init
     Component.onCompleted: {
-        Hyprland.dispatch(`exec mkdir -p '${shellConfig}'`)
-        Hyprland.dispatch(`exec mkdir -p '${favicons}'`)
-        Hyprland.dispatch(`exec rm -rf '${coverArt}'; mkdir -p '${coverArt}'`)
-        Hyprland.dispatch(`exec rm -rf '${latexOutput}'; mkdir -p '${latexOutput}'`)
-        Hyprland.dispatch(`exec rm -rf '${cliphistDecode}'; mkdir -p '${cliphistDecode}'`)
+        Quickshell.execDetached(['mkdir', '-p', `${shellConfig}`])
+        Quickshell.execDetached(["mkdir", "-p", `${favicons}`])
+        Quickshell.execDetached(["rm", "-rf", `${coverArt}`, ";", "mkdir", "-p", `${coverArt}`])
+        Quickshell.execDetached(["rm", "-rf", `${latexOutput}`, ";", "mkdir", "-p", `${latexOutput}`])
+        Quickshell.execDetached(["rm", "-rf", `${cliphistDecode}`, ";", "mkdir", "-p", `${cliphistDecode}`])
     }
 }

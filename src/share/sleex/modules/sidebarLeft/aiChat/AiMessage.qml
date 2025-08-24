@@ -62,9 +62,9 @@ Rectangle {
 
     Keys.onPressed: (event) => {
         if ( // Prevent de-select
-            event.key === Qt.Key_Control || 
-            event.key == Qt.Key_Shift || 
-            event.key == Qt.Key_Alt || 
+            event.key === Qt.Key_Control ||
+            event.key == Qt.Key_Shift ||
+            event.key == Qt.Key_Alt ||
             event.key == Qt.Key_Meta
         ) {
             event.accepted = true
@@ -84,7 +84,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.margins: messagePadding
         spacing: root.contentSpacing
-        
+
         RowLayout { // Header
             spacing: 15
             Layout.fillWidth: true
@@ -135,9 +135,9 @@ Rectangle {
                             visible: !modelIcon.visible
                             iconSize: Appearance.font.pixelSize.larger
                             color: Appearance.m3colors.m3onSecondaryContainer
-                            text: messageData?.role == 'user' ? 'person' : 
-                                messageData?.role == 'interface' ? 'settings' : 
-                                messageData?.role == 'assistant' ? 'neurology' : 
+                            text: messageData?.role == 'user' ? 'person' :
+                                messageData?.role == 'interface' ? 'settings' :
+                                messageData?.role == 'assistant' ? 'neurology' :
                                 'computer'
                         }
                     }
@@ -185,7 +185,7 @@ Rectangle {
                     buttonIcon: activated ? "inventory" : "content_copy"
 
                     onClicked: {
-                        Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(root.messageData?.content)}'`)
+                        Quickshell.execDetached(["wl-copy", `${StringUtils.shellSingleQuoteEscape(root.messageData?.content)}`])
                         copyButton.activated = true
                         copyIconTimer.restart()
                     }
@@ -198,7 +198,7 @@ Rectangle {
                             copyButton.activated = false
                         }
                     }
-                    
+
                     StyledToolTip {
                         content: qsTr("Copy")
                     }
@@ -262,8 +262,8 @@ Rectangle {
                     property bool thinking: root.messageData?.thinking ?? true
                     property bool done: root.messageData?.done ?? false
                     property bool completed: thisBlock.completed ?? false
-                    
-                    source: thisBlock.type === "code" ? "MessageCodeBlock.qml" : 
+
+                    source: thisBlock.type === "code" ? "MessageCodeBlock.qml" :
                         thisBlock.type === "think" ? "MessageThinkBlock.qml" :
                         "MessageTextBlock.qml"
 
@@ -293,4 +293,3 @@ Rectangle {
 
     }
 }
-

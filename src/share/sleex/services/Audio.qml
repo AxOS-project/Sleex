@@ -35,7 +35,7 @@ Singleton {
                 return;
             }
             const newVolume = sink.audio.volume;
-            const maxAllowedIncrease = Config.options.audio.protection.maxAllowedIncrease / 100; 
+            const maxAllowedIncrease = Config.options.audio.protection.maxAllowedIncrease / 100;
             const maxAllowed = Config.options.audio.protection.maxAllowed / 100;
 
             if (newVolume - lastVolume > maxAllowedIncrease) {
@@ -53,7 +53,7 @@ Singleton {
     function playSound(relativeSoundPath) {
         const fullPath = "/usr/share/sleex/" + relativeSoundPath;
         // Use the absolute path to paplay to be safe.
-        const command = `exec /usr/bin/paplay ${fullPath}`;
-        Hyprland.dispatch(command);
+        const command = ["/usr/bin/paplay", `${fullPath}`];
+        Quickshell.execDetached([command]);
     }
 }

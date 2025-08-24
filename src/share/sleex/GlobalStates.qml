@@ -20,14 +20,14 @@ Singleton {
 
     property real screenZoom: 1
     onScreenZoomChanged: {
-        Hyprland.dispatch(`exec hyprctl keyword cursor:zoom_factor ${root.screenZoom.toString()}`);
+        Quickshell.execDetached(["hyprctl", "keyword", "cursor:zoom_factor", `${root.screenZoom.toString()}`]);
     }
     Behavior on screenZoom {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
     }
 
     // When user is not reluctant while pressing super, they probably don't need to see workspace numbers
-    onSuperReleaseMightTriggerChanged: { 
+    onSuperReleaseMightTriggerChanged: {
         workspaceShowNumbersTimer.stop()
     }
 
@@ -63,7 +63,7 @@ Singleton {
 
         function zoomOut() {
             screenZoom = Math.max(screenZoom - 0.4, 1)
-        } 
+        }
 	}
 
 

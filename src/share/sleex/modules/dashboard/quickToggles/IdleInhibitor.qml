@@ -12,10 +12,10 @@ QuickToggleButton {
     onClicked: {
         if (toggled) {
             root.toggled = false
-            Hyprland.dispatch("exec pkill wayland-idle")
+            Quickshell.execDetached(["exec", "pkill", "wayland-idle"])
         } else {
             root.toggled = true
-            Hyprland.dispatch('exec python /usr/share/sleex/scripts/wayland-idle-inhibitor.py')
+            Quickshell.execDetached(["python", "/usr/share/sleex/scripts/wayland-idle-inhibitor.py"])
         }
     }
     Process {

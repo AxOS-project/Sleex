@@ -61,7 +61,7 @@ ApplicationWindow {
     component LightDarkPrefButton: GroupButton {
         id: lightDarkButtonRoot
         required property bool dark
-        property color previewBg: dark ? ColorUtils.colorWithHueOf("#3f3838", Appearance.m3colors.m3primary) : 
+        property color previewBg: dark ? ColorUtils.colorWithHueOf("#3f3838", Appearance.m3colors.m3primary) :
             ColorUtils.colorWithHueOf("#f8f8f8", Appearance.m3colors.m3primary)
         property color previewFg: dark ? Qt.lighter(previewBg, 2.2) : ColorUtils.mix(previewBg, "#292929", 0.85)
         padding: 5
@@ -69,7 +69,7 @@ ApplicationWindow {
         colBackground: Appearance.colors.colLayer2
         toggled: Appearance.m3colors.darkmode === dark
         onClicked: {
-            Hyprland.dispatch(`exec ${Directories.wallpaperSwitchScriptPath} --mode ${dark ? "dark" : "light"} --noswitch`)
+            Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath} --mode ${dark ? "dark" : "light"} --noswitch`])
         }
         contentItem: Item {
             anchors.centerIn: parent
@@ -204,10 +204,10 @@ ApplicationWindow {
                     Layout.alignment: Qt.AlignVCenter
                     onCheckedChanged: {
                         if (checked) {
-                            Hyprland.dispatch(`exec rm '${StringUtils.shellSingleQuoteEscape(root.firstRunFilePath)}'`)
+                            Quickshell.execDetached(["bash", "-c", `rm '${StringUtils.shellSingleQuoteEscape(root.firstRunFilePath)}'`])
                         } else {
                             console.log(`exec echo '${StringUtils.shellSingleQuoteEscape(root.firstRunFileContent)}' > '${StringUtils.shellSingleQuoteEscape(root.firstRunFilePath)}'`)
-                            Hyprland.dispatch(`exec echo '${StringUtils.shellSingleQuoteEscape(root.firstRunFileContent)}' > '${StringUtils.shellSingleQuoteEscape(root.firstRunFilePath)}'`)
+                            Quickshell.execDetached(["bash", "-c", `echo '${StringUtils.shellSingleQuoteEscape(root.firstRunFileContent)}' > '${StringUtils.shellSingleQuoteEscape(root.firstRunFilePath)}'`])
                         }
                     }
                 }
