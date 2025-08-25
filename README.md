@@ -4,6 +4,10 @@
 
 Sleex is the third desktop environement of AxOS. It is based on Hyprland with Quickshell.
 
+> [!IMPORTANT]
+> This is a WIP branch that gives Sleex support for FHT compositor
+
+
 ## Features
 - Fast and lightweight
 - AI chat integration with external providers (Gemini, OpenAI...)
