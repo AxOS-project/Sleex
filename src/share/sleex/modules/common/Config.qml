@@ -122,6 +122,7 @@ Singleton {
                 property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
                 property bool showWatermark: true // Whether to show the watermark
                 property string wallpaperPath: "/usr/share/sleex/wallpapers/SleexOne.png"
+                property string wallpaperSelectorPath: "/usr/share/sleex/wallpapers/"
                 property string clockFontFamily: "Rubik"
             }
 

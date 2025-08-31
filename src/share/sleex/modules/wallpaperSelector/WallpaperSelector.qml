@@ -130,20 +130,19 @@ Scope {
                                         }                   
                                         
                                         
-                                        CachingImage {
+                                        Image {
                                             id: wallpaperImage
                                             anchors.fill: parent
                                             fillMode: Image.PreserveAspectCrop
-                                            source: Directories.wallpaperPath + "/" + modelData
+                                            source: Config.options.background.wallpaperSelectorPath + "/" + modelData
                                             asynchronous: true
-                                            cache: true
                                             sourceSize: Qt.size(250, 250)
 
                                             MouseArea {
                                                 anchors.fill: parent
                                                 onClicked: {
                                                     GlobalStates.wppselectorOpen = false
-                                                    Quickshell.execDetached(["bash", Quickshell.shellPath("scripts/colors/switchwall.sh"), Directories.wallpaperPath + "/" + modelData, "&"])
+                                                    Quickshell.execDetached(["bash", Quickshell.shellPath("scripts/colors/switchwall.sh"), Config.options.background.wallpaperSelectorPath + "/" + modelData, "&"])
                                                 }
                                             }
                                         }
