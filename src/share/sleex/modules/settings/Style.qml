@@ -139,11 +139,15 @@ ContentPage {
             }
         }
 
-        StyledText {
-            Layout.alignment: Qt.AlignHCenter
-            text: "Change any time later with /dark, /light, /img in the launcher"
-            font.pixelSize: Appearance.font.pixelSize.smaller
-            color: Appearance.colors.colSubtext
+        MaterialTextField {
+            id: ghUsername
+            Layout.fillWidth: true
+            placeholderText: "Wallpaper path"
+            text: Config.options.background.wallpaperSelectorPath
+            wrapMode: TextEdit.Wrap
+            onTextChanged: {
+                Config.options.background.wallpaperSelectorPath = text;
+            }
         }
     }
 

@@ -8,13 +8,15 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
     property var wallpaperList: []
+    
+    property string wallpaperPath: Config.options.background.wallpaperSelectorPath.lenght != 0 ? Config.options.background.wallpaperSelectorPath : Directories.wallpaperPath
 
     Process {
         id: listWallpapers
         running: true
         command: [
             "bash", "-c",
-            "find " + Directories.wallpaperPath + " -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%f\\n'"
+            "find " + root.wallpaperPath + " -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%P\\n'"
         ]
         stdout: StdioCollector {
             onStreamFinished: {
