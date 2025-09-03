@@ -3,34 +3,43 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import qs.services
 import qs.modules.common
+import qs.modules.common.widgets
 
 Item {
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
 
+    // Track pending changes
+    property var pendingChanges: ({})
+    property bool hasChanges: Object.keys(pendingChanges).length > 0
+
     Rectangle {
         id: workspace
         anchors.fill: parent
+        anchors.bottomMargin: 80 // Make room for buttons
         color: "transparent"
 
         // Dynamically create monitor items based on detected monitors
         Repeater {
-            model: Monitors.monitors
+            model: Monitors.monitors || []
             
             MonitorItem {
-                monitorName: modelData.name
+                monitorName: modelData && modelData.name ? modelData.name : ""
                 // Scale down positions for display (divide by scale factor)
-                x: modelData.x / 16
-                y: modelData.y / 16
+                x: modelData && modelData.x !== undefined ? modelData.x / 16 : 0
+                y: modelData && modelData.y !== undefined ? modelData.y / 16 : 0
                 workspace: workspace
                 
                 // Find other monitors for snapping
-                property var otherMonitors: Monitors.monitors.filter(m => m.name !== monitorName)
+                property var otherMonitors: {
+                    if (!Monitors.monitors || !modelData || !modelData.name) return [];
+                    return Monitors.monitors.filter(m => m && m.name && m.name !== monitorName);
+                }
             }
         }
 
-        // Snap guide overlay (same as before)
+        // Snap guide overlay
         Rectangle {
             id: snapGuide
             objectName: "snapGuide"
@@ -46,23 +55,82 @@ Item {
         }
     }
 
-    function applySettings() {
-        // Settings are applied automatically when dragging
-        console.log("Monitor positions applied to Hyprland");
+    // Apply all pending changes
+    function applyChanges() {
+        for (const monitorName in pendingChanges) {
+            const change = pendingChanges[monitorName];
+            Monitors.setMonitorPosition(monitorName, change.x, change.y);
+        }
+        pendingChanges = {};
     }
 
-    // Quick preset functions
+    // Cancel all pending changes
+    function cancelChanges() {
+        // Reset monitor positions to their original values
+        for (const monitorName in pendingChanges) {
+            const monitor = findMonitorItem(monitorName);
+            if (monitor) {
+                const originalMonitor = Monitors.monitors.find(m => m.name === monitorName);
+                if (originalMonitor) {
+                    monitor.x = originalMonitor.x / 16;
+                    monitor.y = originalMonitor.y / 16;
+                }
+            }
+        }
+        pendingChanges = {};
+    }
+
+    // Find monitor item by name
+    function findMonitorItem(name) {
+        for (let i = 0; i < workspace.children.length; i++) {
+            const child = workspace.children[i];
+            if (child.monitorName === name) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    // Quick preset functions - now add to pending changes instead of applying immediately
     function presetDualHorizontal() {
         const monitors = Monitors.monitors;
         if (monitors.length >= 2) {
-            Monitors.snapMonitors(monitors[0].name, monitors[1].name, "right");
+            const primary = monitors[0];
+            const secondary = monitors[1];
+            
+            // Set positions in pending changes
+            pendingChanges[secondary.name] = {
+                x: primary.x + primary.width,
+                y: primary.y
+            };
+            
+            // Update display positions
+            const secondaryItem = findMonitorItem(secondary.name);
+            if (secondaryItem) {
+                secondaryItem.x = (primary.x + primary.width) / 16;
+                secondaryItem.y = primary.y / 16;
+            }
         }
     }
 
     function presetDualVertical() {
         const monitors = Monitors.monitors;
         if (monitors.length >= 2) {
-            Monitors.snapMonitors(monitors[0].name, monitors[1].name, "bottom");
+            const primary = monitors[0];
+            const secondary = monitors[1];
+            
+            // Set positions in pending changes
+            pendingChanges[secondary.name] = {
+                x: primary.x,
+                y: primary.y + primary.height
+            };
+            
+            // Update display positions
+            const secondaryItem = findMonitorItem(secondary.name);
+            if (secondaryItem) {
+                secondaryItem.x = primary.x / 16;
+                secondaryItem.y = (primary.y + primary.height) / 16;
+            }
         }
     }
 
@@ -70,9 +138,13 @@ Item {
         id: monitor
         width: 120
         height: 80
-        color: "#000000"
+        color: hasChanges && (monitorName in root.pendingChanges) ? "#1a1a1a" : "#000000"
         radius: Appearance.rounding.unsharpenmore
-        border.color: dragHandler.active ? Appearance.m3colors.m3primary : "#666666"
+        border.color: {
+            if (dragHandler.active) return Appearance.m3colors.m3primary;
+            if (hasChanges && (monitorName in root.pendingChanges)) return Appearance.m3colors.m3secondary;
+            return "#666666";
+        }
         border.width: 2
 
         property string monitorName: ""
@@ -84,7 +156,7 @@ Item {
 
         // Monitor label
         Text {
-            text: parent.monitorName
+            text: parent.monitorName + (hasChanges && (monitorName in root.pendingChanges) ? " *" : "")
             color: "white"
             font.pixelSize: 12
             font.bold: true
@@ -106,10 +178,11 @@ Item {
                     startY = monitor.y
                 } else {
                     monitor.performSnap()
-                    // Apply to Hyprland when drag ends
+                    // Add to pending changes instead of applying immediately
                     const actualX = Math.round(monitor.x * 16);
                     const actualY = Math.round(monitor.y * 16);
-                    Monitors.setMonitorPosition(monitor.monitorName, actualX, actualY);
+                    root.pendingChanges[monitor.monitorName] = { x: actualX, y: actualY };
+                    root.pendingChangesChanged(); // Trigger property binding update
                 }
             }
 
@@ -241,25 +314,60 @@ Item {
     }
 
     // Control buttons
-    Row {
+    Column {
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: 20
         spacing: 10
 
-        Button {
-            text: "Side by Side"
-            onClicked: root.presetDualHorizontal()
+        // Preset buttons
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+
+            Button {
+                text: "Side by Side"
+                onClicked: root.presetDualHorizontal()
+            }
+
+            Button {
+                text: "Stacked"  
+                onClicked: root.presetDualVertical()
+            }
+
+            Button {
+                text: "Refresh"
+                onClicked: Monitors.refreshMonitors()
+            }
         }
 
-        Button {
-            text: "Stacked"  
-            onClicked: root.presetDualVertical()
+        // Apply/Cancel buttons
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+            visible: root.hasChanges
+
+            Button {
+                text: "Apply Changes"
+                highlighted: true
+                onClicked: root.applyChanges()
+            }
+
+            Button {
+                text: "Cancel"
+                onClicked: root.cancelChanges()
+            }
         }
 
-        Button {
-            text: "Refresh"
-            onClicked: Monitors.refreshMonitors()
+        // Status text
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: root.hasChanges ? 
+                `${Object.keys(root.pendingChanges).length} monitor(s) have pending changes` : 
+                "No pending changes"
+            color: root.hasChanges ? Appearance.m3colors.m3secondary : "#666666"
+            font.pixelSize: 11
+            visible: true
         }
     }
 }
