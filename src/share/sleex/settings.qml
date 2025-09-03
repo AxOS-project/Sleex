@@ -58,6 +58,11 @@ ApplicationWindow {
             component: "modules/settings/Wifi.qml"
         },
         {
+            name: "Display",
+            icon: "display_settings",
+            component: "modules/settings/Display.qml"
+        },
+        {
             name: "About",
             icon: "info",
             component: "modules/settings/About.qml"

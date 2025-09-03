@@ -40,6 +40,13 @@ Singleton {
             monitor.setBrightness(monitor.brightness - 0.05);
     }
 
+    function setMonitorBrightness(b): void {
+        const focusedName = Hyprland.focusedMonitor.name;
+        const monitor = monitors.find(m => focusedName === m.screen.name);
+        if (monitor)
+            monitor.setBrightness(b);
+    }
+
     reloadableId: "brightness"
 
     onMonitorsChanged: {
