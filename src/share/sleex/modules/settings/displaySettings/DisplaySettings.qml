@@ -190,9 +190,12 @@ Item {
                 let newX = startX + translation.x
                 let newY = startY + translation.y
 
-                // clamp inside workspace (with fallbacks if workspace is null)
-                let maxX = workspace ? (workspace.width - monitor.width) : 1000
-                let maxY = workspace ? (workspace.height - monitor.height) : 1000
+                // clamp inside workspace (use parent dimensions as fallback)
+                let workspaceWidth = workspace ? workspace.width : (monitor.parent ? monitor.parent.width : 800)
+                let workspaceHeight = workspace ? workspace.height : (monitor.parent ? monitor.parent.height : 600)
+                
+                let maxX = workspaceWidth - monitor.width
+                let maxY = workspaceHeight - monitor.height
 
                 newX = Math.max(0, Math.min(maxX, newX))
                 newY = Math.max(0, Math.min(maxY, newY))
