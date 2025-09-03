@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
+import qs.services
 import qs.modules.common
 
 Item {
@@ -12,27 +14,23 @@ Item {
         anchors.fill: parent
         color: "transparent"
 
-        // Primary Monitor
-        MonitorItem {
-            id: primaryMonitor
-            x: 100
-            y: 150
-            monitorName: "HDMI1-A"
-            workspace: workspace
-            otherMonitor: secondaryMonitor
+        // Dynamically create monitor items based on detected monitors
+        Repeater {
+            model: Monitors.monitors
+            
+            MonitorItem {
+                monitorName: modelData.name
+                // Scale down positions for display (divide by scale factor)
+                x: modelData.x / 16
+                y: modelData.y / 16
+                workspace: workspace
+                
+                // Find other monitors for snapping
+                property var otherMonitors: Monitors.monitors.filter(m => m.name !== monitorName)
+            }
         }
 
-        // Secondary Monitor  
-        MonitorItem {
-            id: secondaryMonitor
-            x: 350
-            y: 150
-            monitorName: "eDP-1"
-            workspace: workspace
-            otherMonitor: primaryMonitor
-        }
-
-        // Snap guide overlay
+        // Snap guide overlay (same as before)
         Rectangle {
             id: snapGuide
             objectName: "snapGuide"
@@ -49,8 +47,23 @@ Item {
     }
 
     function applySettings() {
-        console.log("Primary monitor position:", primaryMonitor.x, primaryMonitor.y)
-        console.log("Secondary monitor position:", secondaryMonitor.x, secondaryMonitor.y)
+        // Settings are applied automatically when dragging
+        console.log("Monitor positions applied to Hyprland");
+    }
+
+    // Quick preset functions
+    function presetDualHorizontal() {
+        const monitors = Monitors.monitors;
+        if (monitors.length >= 2) {
+            Monitors.snapMonitors(monitors[0].name, monitors[1].name, "right");
+        }
+    }
+
+    function presetDualVertical() {
+        const monitors = Monitors.monitors;
+        if (monitors.length >= 2) {
+            Monitors.snapMonitors(monitors[0].name, monitors[1].name, "bottom");
+        }
     }
 
     component MonitorItem: Rectangle {
@@ -64,9 +77,9 @@ Item {
 
         property string monitorName: ""
         property var workspace: null
-        property var otherMonitor: null
+        property var otherMonitors: []
         property bool isSnapping: false
-        property int snapThreshold: 20
+        property int snapThreshold: Monitors.snapThreshold
         property point snapPosition: Qt.point(0, 0)
 
         // Monitor label
@@ -93,6 +106,10 @@ Item {
                     startY = monitor.y
                 } else {
                     monitor.performSnap()
+                    // Apply to Hyprland when drag ends
+                    const actualX = Math.round(monitor.x * 16);
+                    const actualY = Math.round(monitor.y * 16);
+                    Monitors.setMonitorPosition(monitor.monitorName, actualX, actualY);
                 }
             }
 
@@ -114,8 +131,54 @@ Item {
             }
         }
 
+        // Simplified snapping logic
+        function checkSnapping() {
+            if (!otherMonitors.length || !workspace) return;
+            
+            var snapGuide = findSnapGuide();
+            var bestSnap = null;
+            var minDistance = snapThreshold + 1;
 
-        // Helper function to find snap guide
+            // Check snap positions against all other monitors
+            for (var i = 0; i < otherMonitors.length; i++) {
+                var otherMonitor = otherMonitors[i];
+                var snapPositions = getSnapPositions(otherMonitor);
+                
+                for (var j = 0; j < snapPositions.length; j++) {
+                    var pos = snapPositions[j];
+                    var distance = Math.sqrt(Math.pow(monitor.x - pos.x, 2) + Math.pow(monitor.y - pos.y, 2));
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        bestSnap = pos;
+                    }
+                }
+            }
+
+            if (bestSnap && minDistance <= snapThreshold) {
+                showSnapGuide(bestSnap.x, bestSnap.y);
+                monitor.isSnapping = true;
+                monitor.snapPosition = Qt.point(bestSnap.x, bestSnap.y);
+            } else {
+                if (snapGuide) snapGuide.visible = false;
+                monitor.isSnapping = false;
+            }
+        }
+
+        // Get snap positions for another monitor (scaled down for display)
+        function getSnapPositions(otherMonitor) {
+            const otherX = otherMonitor.x / 16;
+            const otherY = otherMonitor.y / 16;
+            const otherW = 120; // Display width
+            const otherH = 80;  // Display height
+            
+            return [
+                { x: otherX + otherW, y: otherY },      // Right
+                { x: otherX - monitor.width, y: otherY }, // Left
+                { x: otherX, y: otherY - monitor.height }, // Top
+                { x: otherX, y: otherY + otherH }       // Bottom
+            ];
+        }
+
         function findSnapGuide() {
             if (!workspace) return null
             for (var i = 0; i < workspace.children.length; i++) {
@@ -127,60 +190,6 @@ Item {
             return null
         }
 
-        // Drag constraints
-        function constrainToBounds() {
-            if (!workspace) return
-            if (monitor.x < 0) monitor.x = 0
-            if (monitor.y < 0) monitor.y = 0
-            if (monitor.x + monitor.width > workspace.width)
-                monitor.x = workspace.width - monitor.width
-            if (monitor.y + monitor.height > workspace.height)
-                monitor.y = workspace.height - monitor.height
-        }
-
-        // Snap detection
-        function checkSnapping() {
-            if (!otherMonitor || !workspace) return
-            var snapGuide = findSnapGuide()
-            var snapPositions = getSnapPositions()
-            var bestSnap = null
-            var minDistance = snapThreshold + 1
-
-            for (var i = 0; i < snapPositions.length; i++) {
-                var pos = snapPositions[i]
-                var distance = Math.sqrt(Math.pow(monitor.x - pos.x, 2) + Math.pow(monitor.y - pos.y, 2))
-                if (distance < minDistance) {
-                    minDistance = distance
-                    bestSnap = pos
-                }
-            }
-
-            if (bestSnap && minDistance <= snapThreshold) {
-                showSnapGuide(bestSnap.x, bestSnap.y)
-                monitor.isSnapping = true
-                monitor.snapPosition = Qt.point(bestSnap.x, bestSnap.y)
-            } else {
-                if (snapGuide) snapGuide.visible = false
-                monitor.isSnapping = false
-            }
-        }
-
-        // Get possible snap positions
-        function getSnapPositions() {
-            if (!otherMonitor) return []
-            return [
-                { x: otherMonitor.x + otherMonitor.width, y: otherMonitor.y },
-                { x: otherMonitor.x - monitor.width, y: otherMonitor.y },
-                { x: otherMonitor.x, y: otherMonitor.y - monitor.height },
-                { x: otherMonitor.x, y: otherMonitor.y + otherMonitor.height },
-                { x: otherMonitor.x + otherMonitor.width, y: otherMonitor.y - monitor.height },
-                { x: otherMonitor.x + otherMonitor.width, y: otherMonitor.y + otherMonitor.height },
-                { x: otherMonitor.x - monitor.width, y: otherMonitor.y - monitor.height },
-                { x: otherMonitor.x - monitor.width, y: otherMonitor.y + otherMonitor.height }
-            ]
-        }
-
-        // Show snap guide
         function showSnapGuide(snapX, snapY) {
             var snapGuide = findSnapGuide()
             if (!snapGuide) return
@@ -191,7 +200,6 @@ Item {
             snapGuide.visible = true
         }
 
-        // Perform final snap
         function performSnap() {
             if (monitor.isSnapping) {
                 snapAnimation.to = monitor.snapPosition
@@ -200,14 +208,6 @@ Item {
         }
 
         // Animations
-        NumberAnimation {
-            id: scaleAnimation
-            target: monitor
-            property: "scale"
-            duration: 150
-            easing.type: Easing.OutCubic
-        }
-
         ParallelAnimation {
             id: snapAnimation
             property point to: Qt.point(0, 0)
@@ -237,6 +237,29 @@ Item {
 
         transitions: Transition {
             NumberAnimation { property: "scale"; duration: 100 }
+        }
+    }
+
+    // Control buttons
+    Row {
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.margins: 20
+        spacing: 10
+
+        Button {
+            text: "Side by Side"
+            onClicked: root.presetDualHorizontal()
+        }
+
+        Button {
+            text: "Stacked"  
+            onClicked: root.presetDualVertical()
+        }
+
+        Button {
+            text: "Refresh"
+            onClicked: Monitors.refreshMonitors()
         }
     }
 }
