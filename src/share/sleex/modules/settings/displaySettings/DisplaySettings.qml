@@ -244,8 +244,11 @@ Item {
         function getSnapPositions(otherMonitor) {
             const otherX = otherMonitor.x / 16;
             const otherY = otherMonitor.y / 16;
-            const otherW = 120; // Display width
-            const otherH = 80;  // Display height
+            
+            // Find the actual MonitorItem for the other monitor to get its display size
+            const otherItem = root.findMonitorItem(otherMonitor.name);
+            const otherW = otherItem ? otherItem.width : 120;
+            const otherH = otherItem ? otherItem.height : 80;
             
             return [
                 { x: otherX + otherW, y: otherY },      // Right
