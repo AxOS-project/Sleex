@@ -216,10 +216,15 @@ ContentPage {
                                         networkItem.expanded = false
                                     }
                                 }
+                                MouseArea {
+                                    id: toggleSwitchArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                }
                                 StyledToolTip {
                                     content: "Unlock first. Expand to enter password."
                                     visible: !networkItem.modelData.isKnown
-                                    extraVisibleCondition: toggleSwitch.containsMouse
+                                    extraVisibleCondition: toggleSwitchArea.containsMouse
                                 }
                             }
                         }
@@ -253,10 +258,9 @@ ContentPage {
                                         colBackgroundHover: "transparent"
                                         
                                         contentItem: Rectangle {
-                                            id: discoverBtnBody
+                                            id: forgetBtnBody
                                             radius: Appearance.rounding.full
                                             color: Appearance.colors.colLayer0
-                                            implicitWidth: height
                                             height: 5
 
                                             MaterialSymbol {
@@ -270,13 +274,13 @@ ContentPage {
                                         }
 
                                         MouseArea {
-                                            id: discoverArea
+                                            id: forgetArea
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: Network.forgetNetwork(networkItem.modelData.ssid);
 
                                             StyledToolTip {
-                                                extraVisibleCondition: discoverArea.containsMouse
+                                                extraVisibleCondition: forgetArea.containsMouse
                                                 content: "Forget network"
                                             }
                                         }
