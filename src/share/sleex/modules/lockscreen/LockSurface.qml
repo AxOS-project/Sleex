@@ -120,9 +120,15 @@ MouseArea {
         }
     }
 
-    Keys.onPressed: (event) => { // Esc to clear
+    Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Escape) {
             root.context.currentText = ""
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            // Handle Enter key even when password box is hidden
+            if (!unlocking) {
+                root.context.tryUnlock();
+            }
+            event.accepted = true;
         }
         forceFieldFocus();
     }
