@@ -34,8 +34,6 @@ Scope {
     }
 
     function tryUnlock() {
-        if (currentText === "") return;
-
         root.unlockInProgress = true;
         pam.start();
     }
