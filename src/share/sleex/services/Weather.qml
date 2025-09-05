@@ -15,20 +15,44 @@ Singleton {
     property string condition
     property string raw
     property string weatherCode
+    property bool useCustomLocation: false
 
-        Timer {
+    Timer {
         id: weatherTimer
         interval: 3600000 // 1 hour
         running: true
         repeat: true
-        onTriggered: {
-            getIp.running = true
+        onTriggered: updateWeather()
+    }
+
+    // Check if custom location file exists
+    Process {
+        id: checkLocationFile
+        command: ["bash", "-c", "if [ -f /usr/share/sleex/services/Weather.txt ]; then cat /usr/share/sleex/services/Weather.txt; else echo 'FILE_NOT_FOUND'; fi"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() !== "FILE_NOT_FOUND") {
+                    // File exists, use the first line as location
+                    var lines = text.split('\n');
+                    if (lines.length > 0) {
+                        root.loc = lines[0].trim();
+                        root.useCustomLocation = true;
+                        getWeather.running = true;
+                    } else {
+                        // File is empty, fall back to IP
+                        getIp.running = true;
+                    }
+                } else {
+                    // File doesn't exist, use IP-based location
+                    getIp.running = true;
+                }
+            }
         }
     }
 
     Process {
         id: getIp
-        running: true
         command: ["curl", "ipinfo.io"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -43,13 +67,30 @@ Singleton {
         command: ["curl", `https://wttr.in/${root.loc}?format=j1`]
         stdout: StdioCollector {
             onStreamFinished: {
-                const json = JSON.parse(text).current_condition[0];
-                root.raw = text;
-                root.condition = json.weatherDesc[0].value;
-                root.temperature = json.temp_C + "°C";
-                root.weatherCode = json.weatherCode;
+                try {
+                    const json = JSON.parse(text).current_condition[0];
+                    root.raw = text;
+                    root.condition = json.weatherDesc[0].value;
+                    root.temperature = json.temp_C + "°C";
+                    root.weatherCode = json.weatherCode;
+                } catch (e) {
+                    console.error("Error parsing weather data:", e);
+                    // If using custom location failed, try IP-based as fallback
+                    if (root.useCustomLocation) {
+                        root.useCustomLocation = false;
+                        getIp.running = true;
+                    }
+                }
             }
         }
     }
 
+    function updateWeather() {
+        checkLocationFile.running = true;
+    }
+
+    Component.onCompleted: {
+        // Initial weather update
+        updateWeather();
+    }
 }
