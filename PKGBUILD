@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.10"
-pkgrel="2"
+pkgrel="3"
 pkgdesc="Third desktop environment for AxOS"
 arch=("x86_64")
 depends=(
