@@ -54,7 +54,8 @@ Singleton {
         JsonAdapter {
             id: configOptionsJsonAdapter
             property JsonObject policies: JsonObject {
-                property int ai: 1 // 0: No | 1: Yes | 2: Local
+                property int ai: 2 // 0: No | 1: Yes | 2: Local
+
             }
 
             property JsonObject ai: JsonObject {
@@ -130,6 +131,7 @@ Singleton {
                 property string ghUsername: "levraiardox"
                 property string avatarPath: "file:///usr/share/sleex/assets/logo/1024px/white.png"
                 property string userDesc: "Today is a good day to have a good day!"
+                property bool enableWeather: false
             }
 
             property JsonObject dock: JsonObject {

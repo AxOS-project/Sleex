@@ -63,6 +63,11 @@ ApplicationWindow {
             component: "modules/settings/Display.qml"
         },
         {
+            name: "Privacy",
+            icon: "lock",
+            component: "modules/settings/Privacy.qml"
+        },
+        {
             name: "About",
             icon: "info",
             component: "modules/settings/About.qml"

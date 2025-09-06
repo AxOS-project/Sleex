@@ -195,10 +195,24 @@ Rectangle {
                 //     }
                 // }
 
-                Weather {
-                    id: weatherWidget
+                Loader {
+                    active: !Config.options.dashboard.enableWeather
                     anchors.fill: parent
+                    sourceComponent: WeatherOff {
+                        id: weatherWidgetOff
+                        anchors.fill: parent
+                    }
                 }
+
+                Loader {
+                    active: Config.options.dashboard.enableWeather
+                    anchors.fill: parent
+                    sourceComponent: Weather {
+                        id: weatherWidget
+                        anchors.fill: parent
+                    }
+                }
+                
 
             }
 
