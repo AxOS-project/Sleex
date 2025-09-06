@@ -1,6 +1,10 @@
 import qs.modules.common.widgets
+import qs.modules.common
 import qs.services
 import Quickshell
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell.Hyprland
 import "displaySettings" as DS
 
@@ -10,6 +14,37 @@ ContentPage {
     property var brightnessMonitor: Brightness.getMonitorForScreen(focusedScreen)
 
     forceWidth: true
+
+    Rectangle {
+        Layout.fillWidth: true
+        height: warnChildren.height + 40
+        color: "#40FF9800"
+        radius: 6
+
+        RowLayout {
+            id: warnChildren
+            anchors.fill: parent
+            anchors.margins: 10
+
+            Label {
+                text: "🚧"
+                font.pixelSize: 16 // Slightly smaller icon
+                Layout.alignment: Qt.AlignVCenter
+                rightPadding: 6
+            }
+
+            Label {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                text: "<b>WORK IN PROGRESS:</b> This module is incomplete. Use at your own risk.</code>"
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+                textFormat: Text.RichText
+                color: "white"
+            }
+        }
+    }
+
 
     ContentSection {
         title: "Monitors placement"
@@ -39,42 +74,50 @@ ContentPage {
 
     ContentSection {
         title: "Night light"
-
-        ContentSubsectionLabel {
-            text: "This is not finished yet."
-        }
         
         ConfigRow {
 
             ConfigSwitch {
                 text: "Enable"
-                checked: false
+                checked: Config.options.display.nightLightEnabled
                 onClicked: checked = !checked;
-                onCheckedChanged: checked = checked;
+                onCheckedChanged: {
+                    if (checked) {
+                        Quickshell.execDetached(["gammastep", "-O", Math.round(nlSlider.value)])
+                    } else {
+                        Quickshell.execDetached(["gammastep", "-x"])
+                    }
+                    Config.options.display.nightLightEnabled = checked
+                }
             }
             ConfigSwitch {
+                id: autoSwitch
                 text: "Automatic toggle"
-                checked: false
-                onClicked: checked = !checked
-                onCheckedChanged: checked = checked;
+                checked: Config.options.display.nightLightAuto
+                onClicked: checked = !checked;
+
+                onCheckedChanged: {
+                    if (checked) {
+                        Quickshell.execDetached(["gammastep", "-l", "geoclue2"])
+                    } else {
+                        Quickshell.execDetached(["pkill", "gammastep"])
+                    }
+                    Config.options.display.nightLightAuto = checked
+                }
             }
-        }
-
-        
-
-        ContentSubsectionLabel {
-            text: "Night light temperature"
         }
 
         StyledSlider {
             id: nlSlider
             from: 6500
             to: 1000
-            value: 5500
+            value: Config.options.display.nightLightManualColor
             tooltipContent: Math.round(value) + "K"
+
             onValueChanged: {
+                Quickshell.execDetached(["gammastep", "-O", value])
+                Config.options.display.nightLightManualColor = value
             }
         }
     }
-
 }
