@@ -197,6 +197,14 @@ Singleton {
             property JsonObject hacks: JsonObject {
                 property int arbitraryRaceConditionDelay: 20 // milliseconds
             }
+
+            property JsonObject display: JsonObject {
+                property bool nightLightEnabled: true
+                property bool nightLightAuto: true
+                property string nightLightFrom: "19:00"
+                property string nightLightTo: "06:30"
+                property int nightLightTemperature: 5000
+            }
         }
     }
 

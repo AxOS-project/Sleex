@@ -1,7 +1,7 @@
 pkgname=sleex-backlight
 pkgver=2.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Sleex Backlight Dependencies'
 arch=(any)
 license=(None)
-depends=('gammastep' 'geoclue' 'brightnessctl' 'ddcutil')
+depends=('hyprsunset' 'geoclue' 'brightnessctl' 'ddcutil')

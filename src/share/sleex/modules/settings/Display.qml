@@ -79,15 +79,10 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enable"
-                checked: Config.options.display.nightLightEnabled
+                checked: NightLight.active
                 onClicked: checked = !checked;
                 onCheckedChanged: {
-                    if (checked) {
-                        Quickshell.execDetached(["gammastep", "-O", Math.round(nlSlider.value)])
-                    } else {
-                        Quickshell.execDetached(["gammastep", "-x"])
-                    }
-                    Config.options.display.nightLightEnabled = checked
+                    NightLight.toggle()
                 }
             }
             ConfigSwitch {
@@ -97,11 +92,6 @@ ContentPage {
                 onClicked: checked = !checked;
 
                 onCheckedChanged: {
-                    if (checked) {
-                        Quickshell.execDetached(["gammastep", "-l", "geoclue2"])
-                    } else {
-                        Quickshell.execDetached(["pkill", "gammastep"])
-                    }
                     Config.options.display.nightLightAuto = checked
                 }
             }
@@ -111,12 +101,11 @@ ContentPage {
             id: nlSlider
             from: 6500
             to: 1000
-            value: Config.options.display.nightLightManualColor
+            value: Config.options.display.nightLightTemperature
             tooltipContent: Math.round(value) + "K"
 
             onValueChanged: {
-                Quickshell.execDetached(["gammastep", "-O", value])
-                Config.options.display.nightLightManualColor = value
+                Config.options.display.nightLightTemperature = value
             }
         }
     }
