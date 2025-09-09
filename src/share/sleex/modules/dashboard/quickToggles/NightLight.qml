@@ -1,42 +1,28 @@
+import QtQuick
 import qs.modules.common
 import qs.modules.common.widgets
-import "../"
+import qs
+import qs.services
 import Quickshell.Io
-import Quickshell
 
 QuickToggleButton {
     id: nightLightButton
-    property bool enabled: false
+    property bool enabled: NightLight.active
     toggled: enabled
-    buttonIcon: "nightlight"
+    buttonIcon: Config.options.display.nightLightAuto ? "night_sight_auto" : "bedtime"
     onClicked: {
-        nightLightButton.enabled = !nightLightButton.enabled
-        if (enabled) {
-            nightLightOn.startDetached()
-        } 
-        else {
-            nightLightOff.startDetached()
-        }
+        NightLight.toggle()
     }
-    Process {
-        id: nightLightOn
-        command: ["gammastep"]
+
+    altAction: () => {
+        Config.options.display.nightLightAuto = !Config.options.display.nightLightAuto
     }
-    Process {
-        id: nightLightOff
-        command: ["pkill", "gammastep"]
+
+    Component.onCompleted: {
+        NightLight.fetchState()
     }
-    Process {
-        id: updateNightLightState
-        running: true
-        command: ["pidof", "gammastep"]
-        stdout: SplitParser {
-            onRead: (data) => { // if not empty then set toggled to true
-                nightLightButton.enabled = data.length > 0
-            }
-        }
-    }
+    
     StyledToolTip {
-        content: qsTr("Night Light")
+        content: "Night Light | Right-click to toggle Auto mode"
     }
 }
