@@ -25,29 +25,16 @@ Singleton {
         onTriggered: updateWeather()
     }
 
-    // Check if custom location file exists
-    Process {
-        id: checkLocationFile
-        command: ["bash", "-c", "if [ -f /usr/share/sleex/services/Weather.txt ]; then cat /usr/share/sleex/services/Weather.txt; else echo 'FILE_NOT_FOUND'; fi"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text.trim() !== "FILE_NOT_FOUND") {
-                    // File exists, use the first line as location
-                    var lines = text.split('\n');
-                    if (lines.length > 0) {
-                        root.loc = lines[0].trim();
-                        root.useCustomLocation = true;
-                        getWeather.running = true;
-                    } else {
-                        // File is empty, fall back to IP
-                        getIp.running = true;
-                    }
-                } else {
-                    // File doesn't exist, use IP-based location
-                    getIp.running = true;
-                }
-            }
+    // Check if custom location is set in config
+    function checkCustomLocation() {
+        if (Config.options.dashboard.weatherLocation && Config.options.dashboard.weatherLocation.trim() !== "") {
+            // Use the custom location from config
+            root.loc = Config.options.dashboard.weatherLocation.trim();
+            root.useCustomLocation = true;
+            getWeather.running = true;
+        } else {
+            // No custom location set, use IP-based location
+            getIp.running = true;
         }
     }
 
@@ -56,8 +43,18 @@ Singleton {
         command: ["curl", "ipinfo.io"]
         stdout: StdioCollector {
             onStreamFinished: {
-                root.loc = JSON.parse(text)["loc"]
-                getWeather.running = true
+                try {
+                    const data = JSON.parse(text);
+                    root.loc = data.loc;
+                    root.useCustomLocation = false;
+                    getWeather.running = true;
+                } catch (e) {
+                    console.error("Error parsing IP data:", e);
+                    // Fallback to a default location if IP lookup fails
+                    root.loc = "London";
+                    root.useCustomLocation = false;
+                    getWeather.running = true;
+                }
             }
         }
     }
@@ -86,7 +83,7 @@ Singleton {
     }
 
     function updateWeather() {
-        checkLocationFile.running = true;
+        checkCustomLocation();
     }
 
     Component.onCompleted: {
