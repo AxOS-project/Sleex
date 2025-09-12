@@ -135,25 +135,13 @@ Rectangle {
                     }
 
                     GhCalendar {}
-
+                    
                     Text {
                         text: `@${Github.author}`
                         color: Appearance.colors.colOnLayer1
                         font.pixelSize: 16
                         anchors.horizontalCenter: parent.horizontalCenter
-
-                        MouseArea {
-                            id: githubLink
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-
-                            onClicked: {
-                                // Open GitHub URL in the default web browser
-                                Qt.openUrlExternally(`https://github.com/${Github.author}`)
-                            }
-                        }
                     }
-
                 }
                 
             }
@@ -207,10 +195,24 @@ Rectangle {
                 //     }
                 // }
 
-                Weather {
-                    id: weatherWidget
+                Loader {
+                    active: !Config.options.dashboard.enableWeather
                     anchors.fill: parent
+                    sourceComponent: WeatherOff {
+                        id: weatherWidgetOff
+                        anchors.fill: parent
+                    }
                 }
+
+                Loader {
+                    active: Config.options.dashboard.enableWeather
+                    anchors.fill: parent
+                    sourceComponent: Weather {
+                        id: weatherWidget
+                        anchors.fill: parent
+                    }
+                }
+                
 
             }
 
