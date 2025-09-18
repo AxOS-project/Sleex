@@ -35,6 +35,7 @@ ContentPage {
                 id: weatherSwitch
                 text: "Enabled"
                 checked: Config.options.dashboard.enableWeather
+                onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.enableWeather = checked
 
                 StyledToolTip {
