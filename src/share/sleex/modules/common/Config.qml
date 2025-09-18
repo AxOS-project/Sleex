@@ -132,8 +132,8 @@ Singleton {
                 property string avatarPath: "file:///usr/share/sleex/assets/logo/1024px/white.png"
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
-                property string weatherLocation: "" // :)
-                property string customDNS: "" // :)
+                property string weatherLocation: ""
+                property string customDNS: ""
             }
 
             property JsonObject dock: JsonObject {
