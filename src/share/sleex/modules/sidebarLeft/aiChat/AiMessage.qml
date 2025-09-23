@@ -2,18 +2,12 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import "../"
 import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Io
 import Quickshell
-import Quickshell.Widgets
-import Quickshell.Wayland
-import Quickshell.Hyprland
-import Qt5Compat.GraphicalEffects
-import org.kde.syntaxhighlighting
 
 Rectangle {
     id: root
@@ -62,9 +56,9 @@ Rectangle {
 
     Keys.onPressed: (event) => {
         if ( // Prevent de-select
-            event.key === Qt.Key_Control ||
-            event.key == Qt.Key_Shift ||
-            event.key == Qt.Key_Alt ||
+            event.key === Qt.Key_Control || 
+            event.key == Qt.Key_Shift || 
+            event.key == Qt.Key_Alt || 
             event.key == Qt.Key_Meta
         ) {
             event.accepted = true
@@ -84,7 +78,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.margins: messagePadding
         spacing: root.contentSpacing
-
+        
         RowLayout { // Header
             spacing: 15
             Layout.fillWidth: true
@@ -121,11 +115,8 @@ Rectangle {
                             height: Appearance.font.pixelSize.large
                             source: messageData?.role == 'assistant' ? Ai.models[messageData?.model].icon :
                                 messageData?.role == 'user' ? 'linux-symbolic' : 'desktop-symbolic'
-                        }
-                        ColorOverlay {
-                            visible: modelIcon.visible
-                            anchors.fill: modelIcon
-                            source: modelIcon
+
+                            colorize: true
                             color: Appearance.m3colors.m3onSecondaryContainer
                         }
 
@@ -135,9 +126,9 @@ Rectangle {
                             visible: !modelIcon.visible
                             iconSize: Appearance.font.pixelSize.larger
                             color: Appearance.m3colors.m3onSecondaryContainer
-                            text: messageData?.role == 'user' ? 'person' :
-                                messageData?.role == 'interface' ? 'settings' :
-                                messageData?.role == 'assistant' ? 'neurology' :
+                            text: messageData?.role == 'user' ? 'person' : 
+                                messageData?.role == 'interface' ? 'settings' : 
+                                messageData?.role == 'assistant' ? 'neurology' : 
                                 'computer'
                         }
                     }
@@ -151,7 +142,7 @@ Rectangle {
                         color: Appearance.m3colors.m3onSecondaryContainer
                         text: messageData?.role == 'assistant' ? Ai.models[messageData?.model].name :
                             (messageData?.role == 'user' && SystemInfo.username) ? SystemInfo.username :
-                            qsTr("Interface")
+                            "Interface"
                     }
                 }
             }
@@ -173,7 +164,7 @@ Rectangle {
                     text: "visibility_off"
                 }
                 StyledToolTip {
-                    content: qsTr("Not visible to model")
+                    text: "Not visible to model"
                 }
             }
 
@@ -185,7 +176,7 @@ Rectangle {
                     buttonIcon: activated ? "inventory" : "content_copy"
 
                     onClicked: {
-                        Quickshell.execDetached(["wl-copy", `${StringUtils.shellSingleQuoteEscape(root.messageData?.content)}`])
+                        Quickshell.clipboardText = root.messageData?.content
                         copyButton.activated = true
                         copyIconTimer.restart()
                     }
@@ -198,9 +189,9 @@ Rectangle {
                             copyButton.activated = false
                         }
                     }
-
+                    
                     StyledToolTip {
-                        content: qsTr("Copy")
+                        text: "Copy"
                     }
                 }
                 AiMessageControlButton {
@@ -215,7 +206,7 @@ Rectangle {
                         }
                     }
                     StyledToolTip {
-                        content: root.editing ? qsTr("Save") : qsTr("Edit")
+                        text: root.editing ? "Save" : "Edit"
                     }
                 }
                 AiMessageControlButton {
@@ -226,7 +217,7 @@ Rectangle {
                         root.renderMarkdown = !root.renderMarkdown
                     }
                     StyledToolTip {
-                        content: qsTr("View Markdown source")
+                        text: "View Markdown source"
                     }
                 }
                 AiMessageControlButton {
@@ -236,9 +227,18 @@ Rectangle {
                         Ai.removeMessage(root.messageIndex)
                     }
                     StyledToolTip {
-                        content: qsTr("Delete")
+                        text: "Delete"
                     }
                 }
+            }
+        }
+
+        Loader {
+            Layout.fillWidth: true
+            active: root.messageData?.localFilePath && root.messageData?.localFilePath.length > 0
+            sourceComponent: AttachedFileIndicator {
+                filePath: root.messageData?.localFilePath
+                canRemove: false
             }
         }
 
@@ -262,8 +262,8 @@ Rectangle {
                     property bool thinking: root.messageData?.thinking ?? true
                     property bool done: root.messageData?.done ?? false
                     property bool completed: thisBlock.completed ?? false
-
-                    source: thisBlock.type === "code" ? "MessageCodeBlock.qml" :
+                    
+                    source: thisBlock.type === "code" ? "MessageCodeBlock.qml" : 
                         thisBlock.type === "think" ? "MessageThinkBlock.qml" :
                         "MessageTextBlock.qml"
 
@@ -272,7 +272,6 @@ Rectangle {
         }
 
         Flow { // Annotations
-            id: annotationFlowLayout
             visible: root.messageData?.annotationSources?.length > 0
             spacing: 5
             Layout.fillWidth: true
@@ -283,13 +282,30 @@ Rectangle {
                     values: root.messageData?.annotationSources || []
                 }
                 delegate: AnnotationSourceButton {
-                    id: annotationButton
+                    required property var modelData
                     displayText: modelData.text
                     url: modelData.url
                 }
             }
+        }
 
+        Flow { // Search queries
+            visible: root.messageData?.searchQueries?.length > 0
+            spacing: 5
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignLeft
+
+            Repeater {
+                model: ScriptModel {
+                    values: root.messageData?.searchQueries || []
+                }
+                delegate: SearchQueryButton {
+                    required property var modelData
+                    query: modelData
+                }
+            }
         }
 
     }
 }
+
