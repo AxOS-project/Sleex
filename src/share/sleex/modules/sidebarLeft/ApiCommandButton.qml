@@ -1,10 +1,6 @@
 import qs.modules.common
 import qs.modules.common.widgets
-import qs.services
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import Quickshell
 
 GroupButton {
     id: button
@@ -16,7 +12,7 @@ GroupButton {
     baseWidth: contentItem.implicitWidth + horizontalPadding * 2
     clickedWidth: baseWidth + 20
     baseHeight: contentItem.implicitHeight + verticalPadding * 2
-    buttonRadius: down ? Appearance.rounding.small : baseHeight / 2
+    buttonRadius: down ? Appearance.rounding.verysmall : Appearance.rounding.small
 
     colBackground: Appearance.colors.colLayer2
     colBackgroundHover: Appearance.colors.colLayer2Hover

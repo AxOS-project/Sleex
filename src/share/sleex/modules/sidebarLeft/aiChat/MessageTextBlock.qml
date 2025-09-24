@@ -4,16 +4,11 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import "../"
 import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell.Io
-import Quickshell
-import Quickshell.Widgets
 import Quickshell.Hyprland
-import Qt5Compat.GraphicalEffects
 
 ColumnLayout {
     id: root
@@ -124,7 +119,7 @@ ColumnLayout {
         wrapMode: TextEdit.Wrap
         color: messageData.thinking ? Appearance.colors.colSubtext : Appearance.colors.colOnLayer1
         textFormat: renderMarkdown ? TextEdit.MarkdownText : TextEdit.PlainText
-        text: qsTr("Waiting for response...")
+        text: "Waiting for response..."
 
         onTextChanged: {
             if (!root.editing) return
@@ -140,7 +135,7 @@ ColumnLayout {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton // Only for hover
             hoverEnabled: true
-            cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor :
+            cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : 
                 (enableMouseSelection || editing) ? Qt.IBeamCursor : Qt.ArrowCursor
         }
     }

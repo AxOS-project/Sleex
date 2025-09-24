@@ -4,16 +4,9 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import "../"
-import qs.modules.common.functions
 import qs.modules.common.functions
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell.Io
-import Quickshell
-import Quickshell.Widgets
-import Quickshell.Hyprland
 import Qt5Compat.GraphicalEffects
 
 Item {
@@ -99,7 +92,7 @@ Item {
                     id: thinkBlockLanguage
                     Layout.fillWidth: false
                     Layout.alignment: Qt.AlignLeft
-                    text: root.completed ? qsTr("Chain of Thought") : (qsTr("Thinking") + ".".repeat(Math.random() * 4))
+                    text: root.completed ? "Thought" : "Thinking" + ".".repeat(Math.random() * 4)
                 }
                 Item { Layout.fillWidth: true }
                 RippleButton { // Expand button
@@ -147,7 +140,7 @@ Item {
                 enabled: root.completed ?? false
                 NumberAnimation {
                     duration: collapseAnimation.duration
-                    easing.type: collapseAnimation.easing
+                    easing.type: collapseAnimation.type
                     easing.bezierCurve: collapseAnimation.bezierCurve
                 }
             }
