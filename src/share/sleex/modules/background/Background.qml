@@ -41,6 +41,7 @@ Scope {
             screen: modelData
             WlrLayershell.layer: WlrLayer.Bottom
             WlrLayershell.namespace: "quickshell:background"
+            exclusionMode: ExclusionMode.Ignore
 
             anchors {
                 top: true
@@ -50,17 +51,17 @@ Scope {
             }
             color: "transparent"
 
-            //// Disabled because it has exclusivity issues
-            // AnimatedImage {
-            //     z: 0
-            //     anchors.fill: parent
-            //     source: bgRoot.wallpaperPath
-            //     fillMode: Image.PreserveAspectCrop
-            //     sourceSize {
-            //         width: bgRoot.screen.width
-            //         height: bgRoot.screen.height
-            //     }
-            // }
+            // The actual wallpaper
+            AnimatedImage {
+                z: 0
+                anchors.fill: parent
+                source: bgRoot.wallpaperPath
+                fillMode: Image.PreserveAspectCrop
+                sourceSize {
+                    width: bgRoot.screen.width
+                    height: bgRoot.screen.height
+                }
+            }
 
             Clock {
                 id: clock
