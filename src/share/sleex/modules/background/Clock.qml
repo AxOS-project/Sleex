@@ -15,6 +15,7 @@ Item {
     required property real screenHeight
     required property real clockX
     required property real clockY
+    required property real clockSizeMultiplier
     required property bool fixedClockPosition
     required property color textColor
     required property int textHorizontalAlignment
@@ -38,7 +39,7 @@ Item {
     implicitHeight: clockColumn.implicitHeight
 
     DragHandler {
-        enabled: !fixedClockPosition
+        enabled: !clockWidget.fixedClockPosition
         id: dragHandler
         cursorShape: active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
@@ -79,7 +80,7 @@ Item {
     }
 
     Rectangle {
-        visible: !fixedClockPosition
+        visible: !clockWidget.fixedClockPosition
         anchors.centerIn: parent
         width: clockColumn.width
         height: clockColumn.height
@@ -97,9 +98,9 @@ Item {
 
         StyledText {
             Layout.fillWidth: true
-            horizontalAlignment: textHorizontalAlignment
+            horizontalAlignment: clockWidget.textHorizontalAlignment
             font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
-            font.pixelSize: 95
+            font.pixelSize: 95 * Config.options.background.clockSizeMultiplier
             color: Config.options.background.textColor ?? textColor
             style: Text.Raised
             styleColor: Appearance.colors.colShadow
@@ -108,9 +109,9 @@ Item {
 
         StyledText {
             Layout.fillWidth: true
-            horizontalAlignment: textHorizontalAlignment
+            horizontalAlignment: clockWidget.textHorizontalAlignment
             font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
-            font.pixelSize: 25
+            font.pixelSize: 25 * Config.options.background.clockSizeMultiplier
             color: Config.options.background.textColor ?? textColor
             style: Text.Raised
             styleColor: Appearance.colors.colShadow
@@ -118,4 +119,14 @@ Item {
         }
     }
 
+    WheelHandler {
+        enabled: !clockWidget.fixedClockPosition
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: (event) => {
+            if (event.angleDelta.y < 0) 
+                Config.options.background.clockSizeMultiplier = Math.max(0.3, Config.options.background.clockSizeMultiplier - 0.1)
+            else if (event.angleDelta.y > 0) 
+                Config.options.background.clockSizeMultiplier = Math.min(7, Config.options.background.clockSizeMultiplier + 0.1)
+        }
+    }
 }

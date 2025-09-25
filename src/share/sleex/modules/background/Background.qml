@@ -146,6 +146,7 @@ Scope {
                 screenHeight: bgRoot.screen.height
                 clockX: bgRoot.clockX
                 clockY: bgRoot.clockY
+                clockSizeMultiplier: Config.options.background.clockSizeMultiplier
                 fixedClockPosition: root.fixedClockPosition
                 textColor: bgRoot.colText
                 textHorizontalAlignment: bgRoot.textHorizontalAlignment
