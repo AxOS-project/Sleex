@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# toggle-display-mode.sh
+# Insomnia.sh
 # - Activates: keyboard backlight -> 0, start idle-inhibitor, then:
 #     * if external monitor present: disable eDP-1 and run a watcher which will re-enable eDP-1 if external monitor disappears
 #     * if no external monitor: toggle DPMS for eDP-1
