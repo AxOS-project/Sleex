@@ -1,0 +1,68 @@
+#!/bin/bash
+
+clear
+sudo pacman -Syu --noconfirm
+echo ""
+echo "Updating System"
+echo ""
+
+# Remove unused dependencies (orphans)
+clear
+echo "Removing Orphan Packages"
+echo ""
+sleep 2
+sudo pacman -Rns $(pacman -Qtdq) --noconfirm 2>/dev/null || echo "No orphans found"
+
+# Clear pacman cache, keeping the last 3 versions
+clear
+echo "Cleaning Package Cache"
+echo ""
+sleep 2
+sudo paccache -r -k 3
+
+# Clear journal logs older than 7 days
+clear
+echo "Cleaning Journal Logs"
+echo ""
+sleep 2
+sudo journalctl --vacuum-time=7d
+
+# Clear user cache (~/.cache)
+clear
+echo "Cleaning User Cache"
+echo ""
+sleep 2
+rm -rf ~/.cache/*
+
+# Optional: Clear thumbnails
+clear
+echo "Cleaning Thumbnails"
+echo ""
+sleep 2
+rm -rf ~/.thumbnails/*
+
+# Optional: Clear AUR helper cache (if using yay)
+clear
+echo "Cleaning AUR Cache"
+echo ""
+sleep 2
+yay -Sc --noconfirm
+
+# Optional: Clean temporary files
+clear
+echo "Cleaning Temporary Files"
+echo ""
+sleep 2
+sudo rm -rf /tmp/*
+
+clear
+echo "System cleanup completed!"
+echo ""
+
+# Wait for a key press
+read -n1 -r -p "Press any key to continue" key
+clear
+
+# Run fastfetch
+fastfetch
+
