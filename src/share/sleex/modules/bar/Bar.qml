@@ -516,9 +516,10 @@ Scope {
                                         color: rightSidebarButton.colText
 				                    }
                                     BluetoothIndicator {
-                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                        Layout.rightMargin: batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
                                     }
                                     BatteryIndicator {
+                                        id: batIndicator
                                         visible: (barRoot.useShortenedForm < 2 && UPower.displayDevice.isLaptopBattery)
                                         Layout.alignment: Qt.AlignVCenter
                                     }
