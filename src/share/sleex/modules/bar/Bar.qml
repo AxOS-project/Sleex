@@ -469,6 +469,12 @@ Scope {
                                         }
                                     }
 
+                                    HyprlandXkbIndicator {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                    }
+
+
                                     Revealer {
                                         reveal: Audio.sink?.audio?.muted ?? false
                                         Layout.fillHeight: true
