@@ -20,13 +20,15 @@ Singleton {
         } else {
             if (strength >= 80)
                 return "signal_wifi_4_bar";
-            if (strength >= 60)
+            else if (strength >= 60)
                 return "network_wifi_3_bar";
-            if (strength >= 40)
+            else if (strength >= 40)
                 return "network_wifi_2_bar";
-            if (strength >= 20)
+            else if (strength >= 20)
                 return "network_wifi_1_bar";
-            return "signal_wifi_0_bar";
+            else if (strength >= 0)
+                return "signal_wifi_0_bar";
+            else return "settings_ethernet"
         }
     }
 
