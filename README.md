@@ -18,15 +18,6 @@ Sleex is the third desktop environement of AxOS. It is based on Hyprland with Qu
 |------|
 | ![preview](preview.mp4) |
 
-## Todo
-- [x] Lockscreen
-- [ ] Full screen music mode
-- [ ] Plugin system for the dashboard
-- [x] Better looking weather widget
-- [ ] Color scheme widget
-- [ ] Wallpaper selector in the settings app
-- [x] Wifi menu in the settings app
-- [ ] volume mixer
 ## Installation
 
 > [!IMPORTANT]
