@@ -159,45 +159,16 @@ Item {
                         implicitWidth: size
                         implicitHeight: size
                         onClicked: {
+                           let player = Config.options.dashboard.mediaPlayer
 
-                      if (Config.options.dashboard.mediaPlayer === "YouTube Music") {
-                               Quickshell.execDetached(["youtube-music"])
-                        } else if (Config.options.dashboard.mediaPlayer === "YouTube Music Web") {
-                               Qt.openUrlExternally("https://music.youtube.com") }
-                               
-                        if (Config.options.dashboard.mediaPlayer === "YouTube") {
-                               Quickshell.execDetached(["youtube"])
-                        } else if (Config.options.dashboard.mediaPlayer === "YouTube Web") {
-                               Qt.openUrlExternally("https://youtube.com")}
-                               
-                        if (Config.options.dashboard.mediaPlayer === "Spotify") {
-                               Quickshell.execDetached(["spotify"])
-                        } else if (Config.options.dashboard.mediaPlayer === "Spotify Web") {
-                               Qt.openUrlExternally("https://open.spotify.com")}
-                               
-                        if (Config.options.dashboard.mediaPlayer === "High Tide") {
-                               Quickshell.execDetached(["high-tide"])
-                        } else if (Config.options.dashboard.mediaPlayer === "Tidal Web") {
-                               Qt.openUrlExternally("https://tidal.com")}
-                               
-                        if (Config.options.dashboard.mediaPlayer === "Deezer") {
-                               Quickshell.execDetached(["deezer"])
-                        } else if (Config.options.dashboard.mediaPlayer === "Deezer Web") {
-                               Qt.openUrlExternally("https://www.deezer.com")}
-                               
-                        if (Config.options.dashboard.mediaPlayer === "Apple Music") {
-                               Qt.openUrlExternally("https://music.apple.com")}
-                        
-                        if (Config.options.dashboard.mediaPlayer === "Sound Cloud") {
-                              Qt.openUrlExternally("https://soundcloud.com")}
-
-                        if (Config.options.dashboard.mediaPlayer === "Amazon Music") {
-                              Qt.openUrlExternally("https://music.amazon.com")}
-                               
-                        if (Config.options.dashboard.mediaPlayer === "Amberol") {
-                               Quickshell.execDetached(["amberol"])}
-                        }
-
+                           if (player.startsWith("http://") || player.startsWith("https://")) {
+                               // Open website
+                               Qt.openUrlExternally(player)
+                       } else {
+                           // Launch app
+                           Quickshell.execDetached([player])
+                       }
+                    }
                         buttonRadius: Appearance?.rounding.normal
                         colBackground: blendedColors.colSecondaryContainer
                         colBackgroundHover: blendedColors.colSecondaryContainerHover
