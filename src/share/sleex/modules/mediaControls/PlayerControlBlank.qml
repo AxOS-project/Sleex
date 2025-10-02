@@ -158,7 +158,26 @@ Item {
                         property real size: 44
                         implicitWidth: size
                         implicitHeight: size
-                        onClicked: {} // Do nothing
+                        onClicked: {
+
+                        if (Config.options.dashboard.mediaPlayer === "YouTube Music") {
+                            Qt.openUrlExternally("https://music.youtube.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "YouTube") {
+                               Qt.openUrlExternally("https://youtube.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Spotify") {
+                               Qt.openUrlExternally("https://open.spotify.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Amazon Music") {
+                               Qt.openUrlExternally("https://music.amazon.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Apple Music") {
+                               Qt.openUrlExternally("https://music.apple.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Tidal") {
+                               Qt.openUrlExternally("https://tidal.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Sound Cloud") {
+                               Qt.openUrlExternally("https://soundcloud.com")
+                        } else if (Config.options.dashboard.mediaPlayer === "Deezer") {
+                               Qt.openUrlExternally("https://www.deezer.com")
+                          }
+                        }
 
                         buttonRadius: Appearance?.rounding.normal
                         colBackground: blendedColors.colSecondaryContainer
