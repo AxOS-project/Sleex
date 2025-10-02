@@ -5,6 +5,7 @@ import qs.services
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Sleex.Services
 
 Item {
     id: root
@@ -27,19 +28,19 @@ Item {
             case "memory":
                 return [
                     { icon: "memory", label: "Memory Usage", value: "" },
-                    { icon: "storage", label: "Used:", value: formatKB(ResourceUsage.memoryUsed) },
-                    { icon: "check_circle", label: "Free:", value: formatKB(ResourceUsage.memoryFree) },
-                    { icon: "dns", label: "Total:", value: formatKB(ResourceUsage.memoryTotal) },
-                    { icon: "percent", label: "Usage:", value: `${Math.round(ResourceUsage.memoryUsedPercentage * 100)}%` }
+                    { icon: "storage", label: "Used:", value: formatKB(ResourceMonitor.memoryTotal - ResourceMonitor.memoryFree) },
+                    { icon: "check_circle", label: "Free:", value: formatKB(ResourceMonitor.memoryFree) },
+                    { icon: "dns", label: "Total:", value: formatKB(ResourceMonitor.memoryTotal) },
+                    { icon: "percent", label: "Usage:", value: `${Math.round(ResourceMonitor.memoryUsedPercentage * 100)}%` }
                 ]
             case "swap_horiz":
-                return ResourceUsage.swapTotal > 0 ?
+                return ResourceMonitor.swapTotal > 0 ?
                 [
                     { icon: "swap_horiz", label: "Swap Usage", value: "" },
-                    { icon: "storage", label: "Used:", value: formatKB(ResourceUsage.swapUsed) },
-                    { icon: "check_circle", label: "Free:", value: formatKB(ResourceUsage.swapFree) },
-                    { icon: "dns", label: "Total:", value: formatKB(ResourceUsage.swapTotal) },
-                    { icon: "percent", label: "Usage:", value: `${Math.round(ResourceUsage.swapUsedPercentage * 100)}%` }
+                    { icon: "storage", label: "Used:", value: formatKB(ResourceMonitor.swapTotal - ResourceMonitor.swapFree) },
+                    { icon: "check_circle", label: "Free:", value: formatKB(ResourceMonitor.swapFree) },
+                    { icon: "dns", label: "Total:", value: formatKB(ResourceMonitor.swapTotal) },
+                    { icon: "percent", label: "Usage:", value: `${Math.round(ResourceMonitor.swapUsedPercentage * 100)}%` }
                 ] :
                 [
                     { icon: "swap_horiz", label: "Swap:", value: "Not configured" }
@@ -47,12 +48,12 @@ Item {
             case "settings_slow_motion":
                 return [
                     { icon: "settings_slow_motion", label: "CPU Usage", value: "" },
-                    { icon: "bolt", label: "Current:", value: `${Math.round(ResourceUsage.cpuUsage * 100)}%` },
-                    { icon: "speed", label: "Load:", value: ResourceUsage.cpuUsage > 0.8 ?
+                    { icon: "bolt", label: "Current:", value: `${Math.round(ResourceMonitor.cpuUsage * 100)}%` },
+                    { icon: "speed", label: "Load:", value: ResourceMonitor.cpuUsage > 0.8 ?
                         "High" :
-                        ResourceUsage.cpuUsage > 0.5 ? "Medium" : "Low"
+                        ResourceMonitor.cpuUsage > 0.5 ? "Medium" : "Low"
                     },
-                    { icon: "thermostat", label: "Temperature:", value: `${ResourceUsage.cpuTemperature} °C` }
+                    { icon: "thermostat", label: "Temperature:", value: `${ResourceMonitor.cpuTemperature} °C` }
                 ]
             default:
                 return [

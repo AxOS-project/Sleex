@@ -1,0 +1,7 @@
+module Sleex.Services
+linktarget sleex-servicesplugin
+optional plugin sleex-servicesplugin
+classname Sleex_ServicesPlugin
+typeinfo sleex-services.qmltypes
+prefer :/qt/qml/Sleex/Services/
+

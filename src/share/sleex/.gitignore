@@ -1,1 +1,9 @@
 .qmlls.ini
+.qt/
+.rcc/
+.vscode
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile

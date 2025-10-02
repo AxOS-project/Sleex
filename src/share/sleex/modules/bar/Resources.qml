@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
+import Sleex.Services
 
 Item {
     id: root
@@ -23,17 +24,17 @@ Item {
 
         Resource {
             iconName: "memory"
-            percentage: ResourceUsage.memoryUsedPercentage
+            percentage: ResourceMonitor.memoryUsedPercentage
         }
 
         Resource {
             iconName: "swap_horiz"
-            percentage: ResourceUsage.swapUsedPercentage
+            percentage: ResourceMonitor.swapUsedPercentage
         }
 
         Resource {
             iconName: "settings_slow_motion"
-            percentage: ResourceUsage.cpuUsage
+            percentage: ResourceMonitor.cpuUsage
             Layout.leftMargin: shown ? 4 : 0
         }
 
