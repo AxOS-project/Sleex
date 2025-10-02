@@ -190,6 +190,9 @@ Item {
                         
                         if (Config.options.dashboard.mediaPlayer === "Sound Cloud") {
                               Qt.openUrlExternally("https://soundcloud.com")}
+
+                        if (Config.options.dashboard.mediaPlayer === "Amazon Music") {
+                              Qt.openUrlExternally("https://music.amazon.com")}
                                
                         if (Config.options.dashboard.mediaPlayer === "Amberol") {
                                Quickshell.execDetached(["amberol"])}
