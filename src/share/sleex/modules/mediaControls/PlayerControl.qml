@@ -2,8 +2,6 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
 import qs.modules.common.functions
-import qs.modules.common.functions
-import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Effects
@@ -19,15 +17,16 @@ import Quickshell.Hyprland
 Item { // Player instance
     id: playerController
     required property MprisPlayer player
-    property var artUrl: player?.trackArtUrl
-    property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl) + ".jpg"
-    property string artFilePath: `${artDownloadLocation}/${artFileName}`
-    property color artDominantColor: colorQuantizer?.colors[0] || Appearance.m3colors.m3secondaryContainer
-    property bool downloaded: false
+
+    // art props
+    property string artUrl: player?.trackArtUrl || ""
+    property color artDominantColor: Appearance.m3colors.m3secondaryContainer
+    property bool artLoaded: false
+
+    // visualizer properties (kept)
     property list<real> visualizerPoints: []
-    property real maxVisualizerValue: 1000 // Max value in the data points
-    property int visualizerSmoothing: 2 // Number of points to average for smoothing
+    property real maxVisualizerValue: 1000
+    property int visualizerSmoothing: 2
 
     implicitWidth: widgetWidth
     implicitHeight: widgetHeight
@@ -63,34 +62,34 @@ Item { // Player instance
         }
     }
 
+    // react when player.trackArtUrl changes
     onArtUrlChanged: {
-        if (playerController.artUrl.length == 0) {
-            playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer
-            return;
-        }
-        // console.log("PlayerControl: Art URL changed to", playerController.artUrl)
-        // console.log("Download cmd:", coverArtDownloader.command.join(" "))
-        playerController.downloaded = false
-        coverArtDownloader.running = true
+        console.log("[playerController] artUrl changed ->", artUrl)
+        artLoaded = false
+        // set image.source below in mediaArt/blurredArt (they read playerController.artUrl)
+        // ColorQuantizer.source is driven by mediaArt.source when artLoaded is true
     }
 
-    Process { // Cover art downloader
-        id: coverArtDownloader
-        property string targetFile: playerController.artUrl
-        command: [ "bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'` ]
-        onExited: (exitCode, exitStatus) => {
-            playerController.downloaded = true
-        }
-    }
-
+    // ColorQuantizer: only run when mediaArt has loaded
     ColorQuantizer {
         id: colorQuantizer
-        source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
-        depth: 0 // 2^0 = 1 color
-        rescaleSize: 1 // Rescale to 1x1 pixel for faster processing
+        // set source only when artLoaded so it doesn't spin on invalid URL
+        source: playerController.artLoaded ? mediaArt.source : ""
+        depth: 0
+        rescaleSize: 1
+
+        onColorsChanged: {
+            if (colors && colors.length > 0) {
+                playerController.artDominantColor = colors[0]
+                console.log("[colorQuantizer] dominant color:", colors[0])
+            } else {
+                playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer
+            }
+        }
     }
 
-    property bool backgroundIsDark: artDominantColor.hslLightness < 0.5
+    property bool backgroundIsDark: (artDominantColor && artDominantColor.hslLightness) ? (artDominantColor.hslLightness < 0.5) : true
+
     property QtObject blendedColors: QtObject {
         property color colLayer0: ColorUtils.mix(Appearance.colors.colLayer0, artDominantColor, (backgroundIsDark && Appearance.m3colors.darkmode) ? 0.6 : 0.5)
         property color colLayer1: ColorUtils.mix(Appearance.colors.colLayer1, artDominantColor, 0.5)
@@ -105,13 +104,11 @@ Item { // Player instance
         property color colSecondaryContainerActive: ColorUtils.mix(Appearance.colors.colSecondaryContainerActive, artDominantColor, 0.5)
         property color colOnPrimary: ColorUtils.mix(ColorUtils.adaptToAccent(Appearance.m3colors.m3onPrimary, artDominantColor), artDominantColor, 0.5)
         property color colOnSecondaryContainer: ColorUtils.mix(Appearance.m3colors.m3onSecondaryContainer, artDominantColor, 0.5)
-
     }
 
     Rectangle { // Background
         id: background
         anchors.fill: parent
-        
         color: blendedColors.colLayer0
         radius: Appearance.rounding.normal
 
@@ -127,13 +124,24 @@ Item { // Player instance
         Image {
             id: blurredArt
             anchors.fill: parent
-            source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+
+            // use artUrl directly (QML Image handles http(s) and file://)
+            source: playerController.artUrl && playerController.artUrl.length > 0 ? playerController.artUrl : ""
+            cache: true
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
             sourceSize.width: background.width
             sourceSize.height: background.height
-            fillMode: Image.PreserveAspectCrop
-            cache: false
             antialiasing: true
-            asynchronous: true
+
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    console.log("[blurredArt] loaded:", source)
+                    // do not set artLoaded here — prefer mediaArt (higher-res square) to control quantizer
+                } else if (status === Image.Error) {
+                    console.warn("[blurredArt] failed to load:", source, "error:", errorString)
+                }
+            }
 
             layer.enabled: true
             layer.effect: MultiEffect {
@@ -182,21 +190,34 @@ Item { // Player instance
                     }
                 }
 
-                Image { // Art image
+                Image { // Art image (square album art)
                     id: mediaArt
                     property int size: parent.height
                     anchors.fill: parent
-
-                    source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
-                    fillMode: Image.PreserveAspectCrop
-                    cache: false
-                    antialiasing: true
-                    asynchronous: true
-
                     width: size
                     height: size
                     sourceSize.width: size
                     sourceSize.height: size
+                    fillMode: Image.PreserveAspectCrop
+                    antialiasing: true
+                    asynchronous: true
+                    cache: true
+
+                    // prefer playerController.artUrl; if empty, keep blank
+                    source: playerController.artUrl && playerController.artUrl.length > 0 ? playerController.artUrl : ""
+
+                    onStatusChanged: {
+                        if (status === Image.Ready) {
+                            console.log("[mediaArt] loaded:", source)
+                            // mark art as loaded so ColorQuantizer will run
+                            playerController.artLoaded = true
+                        } else if (status === Image.Error) {
+                            playerController.artLoaded = false
+                            console.warn("[mediaArt] failed to load:", source, "error:", errorString)
+                        } else if (status === Image.Loading) {
+                            playerController.artLoaded = false
+                        }
+                    }
                 }
             }
 
@@ -251,7 +272,7 @@ Item { // Player instance
                             Layout.fillWidth: true
                             implicitHeight: 4
 
-                            StyledProgressBar { 
+                            StyledProgressBar {
                                 id: progressBar
                                 anchors.fill: parent
                                 highlightColor: blendedColors.colPrimary
