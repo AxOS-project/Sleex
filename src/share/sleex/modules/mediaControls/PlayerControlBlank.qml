@@ -158,8 +158,17 @@ Item {
                         property real size: 44
                         implicitWidth: size
                         implicitHeight: size
-                        onClicked: {} // Do nothing
+                        onClicked: {
+                           let player = Config.options.dashboard.mediaPlayer
 
+                           if (player.startsWith("http://") || player.startsWith("https://")) {
+                               // Open website
+                               Qt.openUrlExternally(player)
+                       } else {
+                           // Launch app
+                           Quickshell.execDetached([player])
+                       }
+                    }
                         buttonRadius: Appearance?.rounding.normal
                         colBackground: blendedColors.colSecondaryContainer
                         colBackgroundHover: blendedColors.colSecondaryContainerHover
