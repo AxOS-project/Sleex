@@ -148,6 +148,7 @@ Singleton {
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
                 property string weatherLocation: ""
+                property string mediaPlayer: ""
             }
 
             property JsonObject dock: JsonObject {
