@@ -15,6 +15,8 @@ import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
+import Sleex.Services
+
 Scope {
     property int dashboardWidth: Appearance.sizes.dashboardWidth
     property int dashboardPadding: 15

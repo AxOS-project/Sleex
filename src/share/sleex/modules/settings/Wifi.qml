@@ -9,6 +9,8 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
+import Sleex.Services
+
 ContentPage {
     id: root
     forceWidth: true
@@ -130,7 +132,7 @@ ContentPage {
             RowLayout {
                 id: networkItem
 
-                required property Network.AccessPoint modelData
+                required property var modelData
                 readonly property bool isConnecting: root.connectingToSsid === modelData.ssid
                 readonly property bool loading: networkItem.isConnecting
 

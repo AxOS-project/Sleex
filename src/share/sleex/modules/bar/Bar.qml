@@ -12,6 +12,8 @@ import Quickshell.Wayland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 
+import Sleex.Services
+
 Scope {
     id: bar
 
@@ -511,7 +513,7 @@ Scope {
                                     }
                                     MaterialSymbol {
                                         Layout.rightMargin: indicatorsRowLayout.realSpacing
-                                        text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "wifi_off"
+                                        text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "signal_wifi_off"
                                         iconSize: Appearance.font.pixelSize.larger
                                         color: rightSidebarButton.colText
 				                    }
