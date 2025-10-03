@@ -9,6 +9,8 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
+import Sleex.Services
+
 ContentPage {
     id: root
     forceWidth: true
@@ -73,38 +75,6 @@ ContentPage {
             color: Appearance.colors.colOnLayer0
             font.pixelSize: Appearance.font.pixelSize.huge
         }
-
-        RippleButton {
-            id: discoverBtn
-
-            contentItem: Rectangle {
-                id: discoverBtnBody
-                radius: Appearance.rounding.full
-                color: Network.scanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
-                implicitWidth: height
-
-                MaterialSymbol {
-                    id: scanIcon
-
-                    anchors.centerIn: parent
-                    text: "replay"
-                    color: Network.scanning ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
-                    fill: Network.scanning ? 1 : 0
-                }
-            }
-
-            MouseArea {
-                id: discoverArea
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: Network.rescanWifi();
-
-                StyledToolTip {
-                    extraVisibleCondition: discoverArea.containsMouse
-                    content: "Rescan networks"
-                }
-            }
-        }
     }
 
     ContentSection {
@@ -130,7 +100,7 @@ ContentPage {
             RowLayout {
                 id: networkItem
 
-                required property Network.AccessPoint modelData
+                required property var modelData
                 readonly property bool isConnecting: root.connectingToSsid === modelData.ssid
                 readonly property bool loading: networkItem.isConnecting
 

@@ -1,0 +1,1 @@
+--foreign-types=/usr/lib/qt6/metatypes/qt6qml_relwithdebinfo_metatypes.json,/usr/lib/qt6/metatypes/qt6core_relwithdebinfo_metatypes.json,/usr/lib/qt6/metatypes/qt6network_relwithdebinfo_metatypes.json

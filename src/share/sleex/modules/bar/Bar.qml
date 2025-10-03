@@ -12,6 +12,8 @@ import Quickshell.Wayland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 
+import Sleex.Services
+
 Scope {
     id: bar
 
@@ -469,6 +471,12 @@ Scope {
                                         }
                                     }
 
+                                    HyprlandXkbIndicator {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                    }
+
+
                                     Revealer {
                                         reveal: Audio.sink?.audio?.muted ?? false
                                         Layout.fillHeight: true
@@ -505,14 +513,15 @@ Scope {
                                     }
                                     MaterialSymbol {
                                         Layout.rightMargin: indicatorsRowLayout.realSpacing
-                                        text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "wifi_off"
+                                        text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "signal_wifi_off"
                                         iconSize: Appearance.font.pixelSize.larger
                                         color: rightSidebarButton.colText
 				                    }
                                     BluetoothIndicator {
-                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                        Layout.rightMargin: batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
                                     }
                                     BatteryIndicator {
+                                        id: batIndicator
                                         visible: (barRoot.useShortenedForm < 2 && UPower.displayDevice.isLaptopBattery)
                                         Layout.alignment: Qt.AlignVCenter
                                     }

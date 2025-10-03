@@ -1,6 +1,6 @@
 pkgname="sleex"
-pkgver="1.14"
-pkgrel="2"
+pkgver="1.15"
+pkgrel="1"
 pkgdesc="Third desktop environment for AxOS"
 arch=("x86_64")
 depends=(
@@ -19,15 +19,31 @@ depends=(
 	"sleex-toolkit"
 	"sleex-widgets"
 	"sleex-user-config"
+
+	"libnm"
+	"gio-qt"
 )
 # optdepends=(
 # 	"sleex-optional: Optional packages"
 # )
 
+build() {
+    cd "$srcdir/share/sleex"
+    cmake -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j
+}
 
 package() {
-        mkdir -p "$pkgdir/usr/"
-        cp -r "$srcdir/bin" "$pkgdir/usr/"
-        cp -r "$srcdir/share" "$pkgdir/usr/"
+    mkdir -p "$pkgdir/usr/bin"
+    cp -r "$srcdir/bin/"* "$pkgdir/usr/bin/"
+
+    mkdir -p "$pkgdir/usr/share/sleex"
+    cd "$srcdir/share/sleex"
+    cmake --install build --prefix "$pkgdir/"
+    rm -rf build
+    cp -r "$srcdir/share/sleex/" "$pkgdir/usr/share/"
+
+    mkdir -p "$pkgdir/usr/share/wayland-sessions"
+    cp -r "$srcdir/share/wayland-sessions/"* "$pkgdir/usr/share/wayland-sessions/"
 }
 

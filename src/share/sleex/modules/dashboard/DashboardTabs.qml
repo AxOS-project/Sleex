@@ -13,6 +13,7 @@ Item {
     property var tabButtonList: [
         {"icon": "rocket_launch", "name": qsTr("Home")}, 
         {"name": qsTr("Todo"), "icon": "checklist_rtl"},
+        {"name": qsTr("AI"), "icon": "api"},
         // {"name": qsTr("Quick settings"), "icon": "settings"},
     ]
     property int dialogMargins: 20
@@ -119,6 +120,12 @@ Item {
             }
 
             TodoWidgetGroup {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+            }
+            
+            AiWidgetGroup {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillHeight: true
                 Layout.fillWidth: true
