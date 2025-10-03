@@ -64,7 +64,7 @@ Item { // Player instance
 
     // react when player.trackArtUrl changes
     onArtUrlChanged: {
-        console.log("[playerController] artUrl changed ->", artUrl)
+        // console.log("[playerController] artUrl changed ->", artUrl)
         artLoaded = false
         // set image.source below in mediaArt/blurredArt (they read playerController.artUrl)
         // ColorQuantizer.source is driven by mediaArt.source when artLoaded is true
@@ -81,7 +81,7 @@ Item { // Player instance
         onColorsChanged: {
             if (colors && colors.length > 0) {
                 playerController.artDominantColor = colors[0]
-                console.log("[colorQuantizer] dominant color:", colors[0])
+                // console.log("[colorQuantizer] dominant color:", colors[0])
             } else {
                 playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer
             }
@@ -136,7 +136,7 @@ Item { // Player instance
 
             onStatusChanged: {
                 if (status === Image.Ready) {
-                    console.log("[blurredArt] loaded:", source)
+                    // console.log("[blurredArt] loaded:", source)
                     // do not set artLoaded here — prefer mediaArt (higher-res square) to control quantizer
                 } else if (status === Image.Error) {
                     console.warn("[blurredArt] failed to load:", source, "error:", errorString)
@@ -208,7 +208,7 @@ Item { // Player instance
 
                     onStatusChanged: {
                         if (status === Image.Ready) {
-                            console.log("[mediaArt] loaded:", source)
+                            // console.log("[mediaArt] loaded:", source)
                             // mark art as loaded so ColorQuantizer will run
                             playerController.artLoaded = true
                         } else if (status === Image.Error) {
