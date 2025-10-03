@@ -19,6 +19,9 @@ depends=(
 	"sleex-toolkit"
 	"sleex-widgets"
 	"sleex-user-config"
+
+	"libnm"
+	"gio-qt"
 )
 # optdepends=(
 # 	"sleex-optional: Optional packages"
