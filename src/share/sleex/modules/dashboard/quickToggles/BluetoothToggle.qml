@@ -9,6 +9,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
+import Sleex.Services
+
 QuickToggleButton {
     toggled: Bluetooth.bluetoothEnabled
     buttonIcon: Bluetooth.bluetoothConnected ? "bluetooth_connected" : Bluetooth.bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"

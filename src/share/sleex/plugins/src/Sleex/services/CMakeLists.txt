@@ -7,7 +7,10 @@ qml_module(sleex-services
         brightness.cpp brightness.hpp
         resourceUsage.cpp resourceUsage.hpp
         network.cpp network.hpp
+        bluetooth.cpp bluetooth.hpp
         plugin.cpp  
+    DEPENDENCIES
+            Qt::Bluetooth
 )
 
 target_include_directories(sleex-services PRIVATE 
@@ -23,4 +26,11 @@ target_link_libraries(sleex-services PRIVATE
 target_compile_options(sleex-services PRIVATE 
     ${LIBNM_CFLAGS_OTHER}
     ${GLIB_CFLAGS_OTHER}
+)
+
+target_link_libraries(sleex-services
+    PRIVATE
+        Qt6::Core
+        Qt6::Qml
+        Qt6::Bluetooth
 )

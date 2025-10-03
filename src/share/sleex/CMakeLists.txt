@@ -12,16 +12,4 @@ set(DISTRIBUTOR "Unset" CACHE STRING "Distributor")
 set(INSTALL_LIBDIR "usr/lib/sleex" CACHE STRING "Library install dir")
 set(INSTALL_QMLDIR "usr/lib/qt6/qml" CACHE STRING "QML install dir")
 
-add_compile_options(
-    -Wall -Wextra -Wpedantic -Wshadow -Wconversion
-    -Wold-style-cast -Wnull-dereference -Wdouble-promotion
-    -Wformat=2 -Wfloat-equal -Woverloaded-virtual
-    -Wsign-conversion -Wredundant-decls -Wswitch
-    -Wunreachable-code
-)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wunused-lambda-capture)
-endif()
-
 add_subdirectory(plugins)

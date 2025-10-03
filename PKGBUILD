@@ -22,6 +22,7 @@ depends=(
 
 	"libnm"
 	"gio-qt"
+	"qt6-connectivity"
 )
 # optdepends=(
 # 	"sleex-optional: Optional packages"
