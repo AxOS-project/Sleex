@@ -7,15 +7,16 @@ import qs.modules.common.functions
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Bluetooth
 import Quickshell.Hyprland
 
 import Sleex.Services
 
 QuickToggleButton {
-    toggled: BluetoothService.bluetoothEnabled
-    buttonIcon: BluetoothService.bluetoothConnected ? "bluetooth_connected" : BluetoothService.bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
+    toggled: Bluetooth.defaultAdapter.enabled
+    buttonIcon: BluetoothService.bluetoothConnected ? "bluetooth_connected" : Bluetooth.defaultAdapter.enabled ? "bluetooth" : "bluetooth_disabled"
     onClicked: {
-        toggleBluetooth.running = true
+        Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled
     }
     altAction: () => {
         Quickshell.execDetached(["bash", "-c", `${Config.options.apps.bluetooth}`])
@@ -23,7 +24,7 @@ QuickToggleButton {
     }
     Process {
         id: toggleBluetooth
-        command: ["bash", "-c", `bluetoothctl power ${BluetoothService.bluetoothEnabled ? "off" : "on"}`]
+        command: ["bash", "-c", `bluetoothctl power ${Bluetooth.defaultAdapter.enabled ? "off" : "on"}`]
         onRunningChanged: {
             if(!running) {
                 BluetoothService.update()
@@ -32,7 +33,7 @@ QuickToggleButton {
     }
     StyledToolTip {
         content: StringUtils.format(qsTr("{0} | Right-click to configure"),
-            (BluetoothService.bluetoothEnabled && BluetoothService.bluetoothDeviceName.length > 0) ?
+            (Bluetooth.defaultAdapter.enabled && BluetoothService.bluetoothDeviceName.length > 0) ?
             BluetoothService.bluetoothDeviceName : qsTr("Bluetooth"))
 
     }

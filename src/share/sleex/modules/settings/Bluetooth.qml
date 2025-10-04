@@ -127,7 +127,7 @@ ContentPage {
 
         Repeater {
             model: ScriptModel {
-                values: [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.paired - a.paired)).slice(0, 5)
+                values: [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.paired - a.paired))
             }
 
             RowLayout {
