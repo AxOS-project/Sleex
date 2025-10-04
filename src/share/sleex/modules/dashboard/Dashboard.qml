@@ -14,6 +14,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Bluetooth
 
 import Sleex.Services
 
@@ -166,7 +167,10 @@ Scope {
                                 color: Appearance.colors.colLayer1
 
                                 NetworkToggle {}
-                                BluetoothToggle {}
+                                Loader {
+                                    active: Bluetooth.adapters != undefined
+                                    sourceComponent: BluetoothToggle {}
+                                }
                                 NightLight {}
                                 IdleInhibitor {}
                             }
