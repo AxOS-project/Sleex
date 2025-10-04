@@ -5,7 +5,7 @@
 #include <QtBluetooth/QBluetoothDeviceDiscoveryAgent>
 #include <QtQml/qqml.h>
 
-class BluetoothService : public QObject {
+class Bluetooth : public QObject {
     Q_OBJECT
     QML_SINGLETON
     QML_NAMED_ELEMENT(Bluetooth)
@@ -17,7 +17,7 @@ class BluetoothService : public QObject {
     Q_PROPERTY(QString bluetoothDeviceAddress READ bluetoothDeviceAddress NOTIFY bluetoothDeviceAddressChanged FINAL)
 
 public:
-    explicit BluetoothService(QObject *parent = nullptr);
+    explicit Bluetooth(QObject *parent = nullptr);
 
     bool bluetoothAvailable() const { return m_available; }
     bool bluetoothEnabled() const { return m_enabled; }
