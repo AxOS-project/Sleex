@@ -26,7 +26,7 @@ QuickToggleButton {
         command: ["bash", "-c", `bluetoothctl power ${BluetoothService.bluetoothEnabled ? "off" : "on"}`]
         onRunningChanged: {
             if(!running) {
-                Bluetooth.update()
+                BluetoothService.update()
             }
         }
     }
