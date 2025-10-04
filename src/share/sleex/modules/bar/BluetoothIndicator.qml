@@ -4,8 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Bluetooth
 
-import Sleex.Services
-
 Item {
     id: root
 

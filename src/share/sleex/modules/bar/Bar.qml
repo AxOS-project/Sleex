@@ -512,19 +512,16 @@ Scope {
                                         }
                                     }
                                     MaterialSymbol {
-                                        Layout.rightMargin: btIndicatorLoader.active ? indicatorsRowLayout.realSpacing : 0
+                                        Layout.rightMargin: btIndicatorLoader.active || batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
                                         text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "signal_wifi_off"
                                         iconSize: Appearance.font.pixelSize.larger
                                         color: rightSidebarButton.colText
 				                    }
                                     Loader {
                                         id: btIndicatorLoader
-                                        active: Bluetooth.adapters != undefined
-                                        sourceComponent: BluetoothIndicator {
-                                            id: btIndicator
-                                            visible: Bluetooth.adapters != undefined
-                                            Layout.rightMargin: batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
-                                        }
+                                        active: Bluetooth.adapters.values.length > 0
+                                        Layout.rightMargin: batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
+                                        sourceComponent: BluetoothIndicator {}
                                     }
                                     BatteryIndicator {
                                         id: batIndicator

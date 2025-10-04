@@ -16,8 +16,6 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Bluetooth
 
-import Sleex.Services
-
 Scope {
     property int dashboardWidth: Appearance.sizes.dashboardWidth
     property int dashboardPadding: 15
@@ -168,7 +166,7 @@ Scope {
 
                                 NetworkToggle {}
                                 Loader {
-                                    active: Bluetooth.adapters != undefined
+                                    active: Bluetooth.adapters.values.length > 0
                                     sourceComponent: BluetoothToggle {}
                                 }
                                 NightLight {}

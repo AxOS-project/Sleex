@@ -12,8 +12,8 @@ import Quickshell.Hyprland
 import Sleex.Services
 
 QuickToggleButton {
-    toggled: Bluetooth.bluetoothEnabled
-    buttonIcon: Bluetooth.bluetoothConnected ? "bluetooth_connected" : Bluetooth.bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
+    toggled: BluetoothService.bluetoothEnabled
+    buttonIcon: BluetoothService.bluetoothConnected ? "bluetooth_connected" : BluetoothService.bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
     onClicked: {
         toggleBluetooth.running = true
     }
@@ -23,7 +23,7 @@ QuickToggleButton {
     }
     Process {
         id: toggleBluetooth
-        command: ["bash", "-c", `bluetoothctl power ${Bluetooth.bluetoothEnabled ? "off" : "on"}`]
+        command: ["bash", "-c", `bluetoothctl power ${BluetoothService.bluetoothEnabled ? "off" : "on"}`]
         onRunningChanged: {
             if(!running) {
                 Bluetooth.update()
@@ -32,8 +32,8 @@ QuickToggleButton {
     }
     StyledToolTip {
         content: StringUtils.format(qsTr("{0} | Right-click to configure"),
-            (Bluetooth.bluetoothEnabled && Bluetooth.bluetoothDeviceName.length > 0) ?
-            Bluetooth.bluetoothDeviceName : qsTr("Bluetooth"))
+            (BluetoothService.bluetoothEnabled && BluetoothService.bluetoothDeviceName.length > 0) ?
+            BluetoothService.bluetoothDeviceName : qsTr("Bluetooth"))
 
     }
 }

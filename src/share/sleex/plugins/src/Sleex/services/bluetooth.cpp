@@ -1,6 +1,6 @@
 #include "bluetooth.hpp"
 
-Bluetooth::Bluetooth(QObject *parent)
+BluetoothService::BluetoothService(QObject *parent)
     : QObject(parent)
 {
     // Check for Bluetooth adapters
@@ -22,7 +22,7 @@ Bluetooth::Bluetooth(QObject *parent)
     }
 }
 
-void Bluetooth::update()
+void BluetoothService::update()
 {
     if (!m_available || !m_localDevice) {
         // Reset state if no adapter
