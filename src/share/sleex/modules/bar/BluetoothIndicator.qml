@@ -3,6 +3,7 @@ import qs.modules.common.widgets
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Bluetooth
+import Quickshell
 
 Item {
     id: root
@@ -36,26 +37,52 @@ Item {
     RowLayout {
         id: indicatorsRowLayout
 
-        MaterialSymbol {
-            Layout.rightMargin: bluetoothConnected ? 4 : indicatorsRowLayout.realSpacing
-            text: bluetoothConnected ? deviceType : bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
-            iconSize: Appearance.font.pixelSize.larger
-            color: rightSidebarButton.colText
+        ClippedFilledCircularProgress {
+            id: circProg
+            value: device?.battery
+            icon: bluetoothConnected ? deviceType : bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
+            colPrimary: (device?.battery * 100) <= 20 ? Appearance.m3colors.m3error : Appearance.colors.colOnLayer1
         }
-        
-        // Repeater {
-        //     model: Bluetooth.devices.values.filter(d => d.state !== BluetoothDeviceState.Disconnected)
-        //     delegate: StyledText {
-        //         text: `${modelData.battery * 100}%`
-        //         visible: modelData.state !== BluetoothDeviceState.Disconnected
-        //         Layout.rightMargin: indicatorsRowLayout.realSpacing
-        //     }
-        // }
+    }
 
-        StyledText {
-            // Round the battery percentage to avoid decimal points
-            text: `${Math.round(device?.battery * 100 ?? 0)}%`
-            visible: device?.batteryAvailable ?? false
+    MouseArea {
+        id: mouseArea
+        anchors.fill: indicatorsRowLayout
+        hoverEnabled: true
+    }
+
+    LazyLoader {
+        id: popupLoader
+        active: mouseArea.containsMouse
+
+        component: PanelWindow {
+            id: popupWindow
+            visible: true
+            color: "transparent"
+            exclusiveZone: 0
+
+            anchors.top: true
+            anchors.left: true
+
+            implicitWidth: btPopup.implicitWidth
+            implicitHeight: btPopup.implicitHeight
+
+            margins {
+                left: root.mapToGlobal(Qt.point(
+                    (root.width - btPopup.implicitWidth) / 2,
+                    0
+                )).x
+                top: root.mapToGlobal(Qt.point(0, root.height)).y - 30 
+            }
+
+            mask: Region {
+                item: btPopup
+            }
+
+            BtPopup {
+                id: btPopup
+                anchors.centerIn: parent
+            }
         }
     }
 }

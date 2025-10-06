@@ -10,9 +10,11 @@ Item {
     id: root
     property int count: Notifications.list.length
     height: 20
+    width: notifRow.width
     visible: count > 0
 
     RowLayout {
+        id: notifRow
         anchors.margins: 2
         spacing: 2
 

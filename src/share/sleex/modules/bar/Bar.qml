@@ -466,9 +466,7 @@ Scope {
                                                 easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                                             }
                                         }
-                                        NotifIndicator {
-                                            width: indicatorsRowLayout.realSpacing * 2
-                                        }
+                                        NotifIndicator {}
                                     }
 
                                     HyprlandXkbIndicator {
