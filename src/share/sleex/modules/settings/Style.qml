@@ -104,6 +104,59 @@ ContentPage {
         }
 
         StyledText {
+            text: "Transition Style"
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledComboBox {
+            id: styleComboBox
+            model: [
+                "Fade",
+                "Simple",
+                "Wipe",
+                "Wave",
+                "Grow",
+                "Center",
+                "Outer",
+                "Random",
+                "None"
+            ]
+            currentIndex: model.indexOf(
+                (() => {
+                    switch (Config.options.transition.style.type) {
+                        case "fade": return "Fade";
+                        case "simple": return "Simple";
+                        case "wipe": return "Wipe";
+                        case "wave": return "Wave";
+                        case "grow": return "Grow";
+                        case "center": return "Center";
+                        case "outer": return "Outer";
+                        case "random": return "Random";
+                        case "none": return "None";
+                        default: return "Fade";
+                    }
+                })()
+            )
+            onCurrentIndexChanged: {
+                const valueMap = {
+                    "Fade": "fade",
+                    "Simple": "simple",
+                    "Wipe": "wipe",
+                    "Wave": "wave",
+                    "Grow": "grow",
+                    "Center": "center",
+                    "Outer": "outer",
+                    "Random": "random",
+                    "None": "none"
+                }
+                const selectedValue = valueMap[model[currentIndex]]
+                if (Config.options.transition.style.type !== selectedValue) {
+                    Config.options.transition.style.type = selectedValue
+                }
+            }
+        }
+
+        StyledText {
             text: "Wallpaper"
             color: Appearance.colors.colSubtext
         }
