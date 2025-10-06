@@ -85,6 +85,14 @@ Singleton {
                 }
             }
 
+            property JsonObject transition: JsonObject {
+                property bool transparency: true
+                property int opacity: 50
+                property JsonObject style: JsonObject {
+                    property string type: "fade" // Allowed: fade, simple, wipe, wave, grow, center, outer, random, none
+                }
+            }
+
             property JsonObject audio: JsonObject { // Values in %
                 property JsonObject protection: JsonObject { // Prevent sudden bangs
                     property bool enable: true
