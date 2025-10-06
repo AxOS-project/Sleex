@@ -208,10 +208,27 @@ switch() {
             matugen_args=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
 
-            if [ -f "$SHELL_CONFIG" ]; then
-                swww img "$imgpath" --transition-step 100 --transition-fps 120 --transition-type grow --transition-angle 30 --transition-duration 1 --transition-pos "$cursorposx, $cursorposy_inverted" &
-                jq --arg path "$imgpath" '.background.wallpaperPath = $path' "$SHELL_CONFIG" > "$SHELL_CONFIG.tmp" && mv "$SHELL_CONFIG.tmp" "$SHELL_CONFIG"
-            fi
+    if [ -f "$SHELL_CONFIG" ]; then
+    # Read transition type from settings.json, default to "none"
+    TRANSITION_TYPE=$(jq -r '.transition.style.type // "none"' "$SHELL_CONFIG" 2>/dev/null)
+
+    # Validate allowed transitions
+    if ! printf '%s\n' fade simple wipe wave grow center outer random none | grep -qx "$TRANSITION_TYPE"; then
+        TRANSITION_TYPE="none"
+    fi
+
+    # Apply wallpaper with swww
+    swww img "$imgpath" \
+        --transition-step 100 \
+        --transition-fps 120 \
+        --transition-type "$TRANSITION_TYPE" \
+        --transition-angle 30 \
+        --transition-duration 1 \
+        --transition-pos "$cursorposx,$cursorposy_inverted" &
+
+    # Update wallpaper path in config
+    jq --arg path "$imgpath" '.background.wallpaperPath = $path' "$SHELL_CONFIG" > "$SHELL_CONFIG.tmp" && mv "$SHELL_CONFIG.tmp" "$SHELL_CONFIG"
+fi
             remove_restore
         fi
     fi
