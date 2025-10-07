@@ -21,6 +21,8 @@ Item {
         switch (true) {
             case icon.includes("headset"):
                 return "headphones";
+            case icon.includes("headphones"):
+                return "headphones";
             case icon.includes("earbuds"):
                 return "earbuds_2";
             case icon.includes("speaker"):
@@ -29,8 +31,34 @@ Item {
                 return "keyboard_alt";
             case icon.includes("mouse"):
                 return "mouse";
+            case icon.includes("phone"):
+                return "smartphone";
+            case icon.includes("audio-card"):
+                return "speaker"; // Closest material icon for audio-card
+            case icon.includes("camera-photo"):
+                return "camera";
+            case icon.includes("camera-video"):
+                return "camera";
+            case icon.includes("computer"):
+                return "computer";
+            case icon.includes("input-gaming"):
+                return "gamepad";
+            case icon.includes("input-tablet"):
+                return "tablet";
+            case icon.includes("modem"):
+                return "router"; // Closest for modem
+            case icon.includes("multimedia-player"):
+                return "play_circle";
+            case icon.includes("network-wireless"):
+                return "network_wifi";
+            case icon.includes("printer"):
+                return "print";
+            case icon.includes("scanner"):
+                return "document_scanner";
+            case icon.includes("video-display"):
+                return "monitor";
             default:
-                return "bluetooth_connected";
+                return "bluetooth_connected"; // For unknown or other bluetooth devices
         }
     }
 

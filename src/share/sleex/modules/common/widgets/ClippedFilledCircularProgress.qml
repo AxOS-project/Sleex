@@ -7,13 +7,13 @@ import Qt5Compat.GraphicalEffects
 Item {
     id: root
 
-    property int implicitSize: 20
+    property int implicitSize: 22
     property int lineWidth: 2
     property real value: 0
     property string icon
     property color colPrimary: Appearance?.colors.colOnSecondaryContainer ?? "#685496"
     property color colSecondary: ColorUtils.transparentize(colPrimary, 0.5) ?? "#F1D3F9"
-    property real gapAngle: 360 / 18
+    property real gapAngle: 360 / 23
     property bool fill: true
     property int fillOverflow: 2
     property bool enableAnimation: true
@@ -27,6 +27,7 @@ Item {
             anchors.centerIn: parent
             text: icon
             iconSize: Appearance.font.pixelSize.normal
+            fill: 1
         }
     }
 
