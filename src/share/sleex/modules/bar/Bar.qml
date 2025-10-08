@@ -517,7 +517,7 @@ Scope {
 				                    }
                                     Loader {
                                         id: btIndicatorLoader
-                                        active: Bluetooth.adapters.values.length > 0 && Bluetooth.devices.values.find(d => d.connected) != null
+                                        active: Bluetooth.devices.values.find(d => d.connected) != null
                                         Layout.rightMargin: batIndicator.visible && btIndicatorLoader.active ? indicatorsRowLayout.realSpacing : 0
                                         sourceComponent: BluetoothIndicator {}
                                     }

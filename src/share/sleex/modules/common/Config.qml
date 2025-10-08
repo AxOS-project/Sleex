@@ -140,6 +140,7 @@ Singleton {
                 property string wallpaperSelectorPath: "/usr/share/sleex/wallpapers/"
                 property string clockFontFamily: "Rubik"
                 property real clockSizeMultiplier: 1
+                property bool enableQuote: true
             }
 
             property JsonObject dashboard: JsonObject {

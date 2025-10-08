@@ -164,6 +164,9 @@ Scope {
             Watermark {
                 visibleWatermark: Config.options.background.showWatermark
             }
+            Quote {
+                visibleQuote: Config.options.background.enableQuote
+            }
         }
     }
 }

@@ -238,25 +238,41 @@ ContentPage {
             Layout.fillWidth: true
             spacing: 10
 
-            ConfigSwitch {
-                text: "Show clock"
-                checked: Config.options.background.enableClock
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.background.enableClock = checked;
+            ConfigRow {
+                uniform: true
+
+                ConfigSwitch {
+                    text: "Show clock"
+                    checked: Config.options.background.enableClock
+                    onClicked: checked = !checked;
+                    onCheckedChanged: Config.options.background.enableClock = checked;
+                }
+
+                ConfigSwitch {
+                    text: "Fixed clock position"
+                    checked: Config.options.background.fixedClockPosition
+                    onClicked: checked = !checked;
+                    onCheckedChanged: Config.options.background.fixedClockPosition = checked;
+                }
             }
 
-            ConfigSwitch {
-                text: "Fixed clock position"
-                checked: Config.options.background.fixedClockPosition
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.background.fixedClockPosition = checked;
-            }
+            ConfigRow {
+                uniform: true
 
-            ConfigSwitch {
-                text: "Show watermark"
-                checked: Config.options.background.showWatermark
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.background.showWatermark = checked;
+                ConfigSwitch {
+                    text: "Show watermark"
+                    checked: Config.options.background.showWatermark
+                    onClicked: checked = !checked;
+                    onCheckedChanged: Config.options.background.showWatermark = checked;
+                }
+
+                ConfigSwitch {
+                    text: "Show quotes"
+                    checked: Config.options.background.enableQuote
+                    onClicked: checked = !checked
+                    onCheckedChanged: Config.options.background.enableQuote = checked
+                }
+
             }
 
             StyledText {
