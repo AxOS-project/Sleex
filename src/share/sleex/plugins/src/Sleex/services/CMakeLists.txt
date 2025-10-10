@@ -4,7 +4,6 @@ pkg_check_modules(GLIB REQUIRED glib-2.0 gobject-2.0 gio-2.0)
 qml_module(sleex-services
     URI Sleex.Services
     SOURCES
-        brightness.cpp brightness.hpp
         resourceUsage.cpp resourceUsage.hpp
         network.cpp network.hpp
         bluetooth.cpp bluetooth.hpp
