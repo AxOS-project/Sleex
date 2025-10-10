@@ -329,8 +329,24 @@ Scope {
                                 Layout.fillWidth: true
                             }
                         }
-
                     }
+
+                    //AudioOsd {}
+                }
+
+                BrightnessOsd {
+                    anchors.right: middleSection.left
+                    anchors.leftMargin: 10
+                    anchors.verticalCenter: middleSection.verticalCenter
+                    z: 10
+                }
+
+                // AudioOsd - positioned absolutely on the right side
+                AudioOsd {
+                    anchors.left: middleSection.right
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: middleSection.verticalCenter
+                    z: 10
                 }
 
                 RoundCorner {
@@ -339,7 +355,6 @@ Scope {
                     size: Appearance.rounding.screenRounding
                     corner: cornerEnum.topLeft
                     color: Appearance.colors.colLayer0
-                    z: 1000
                     anchors.margins: -Appearance.rounding.screenRounding
                     visible: barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false
                 }
@@ -350,7 +365,6 @@ Scope {
                     size: Appearance.rounding.screenRounding
                     corner: cornerEnum.topRight
                     color: Appearance.colors.colLayer0
-                    z: 1000
                     anchors.margins: -Appearance.rounding.screenRounding
                     visible: barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false
                 }
@@ -510,17 +524,14 @@ Scope {
                                         }
                                     }
                                     MaterialSymbol {
-                                        Layout.rightMargin: btIndicatorLoader.active || batIndicator.visible ? indicatorsRowLayout.realSpacing : 0
+                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
                                         text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "signal_wifi_off"
                                         iconSize: Appearance.font.pixelSize.larger
                                         color: rightSidebarButton.colText
 				                    }
-                                    Loader {
-                                        id: btIndicatorLoader
-                                        active: Bluetooth.devices.values.find(d => d.connected) != null
-                                        Layout.rightMargin: batIndicator.visible && btIndicatorLoader.active ? indicatorsRowLayout.realSpacing : 0
-                                        sourceComponent: BluetoothIndicator {}
-                                    }
+
+                                    BluetoothIndicator {}
+
                                     BatteryIndicator {
                                         id: batIndicator
                                         visible: (barRoot.useShortenedForm < 2 && UPower.displayDevice.isLaptopBattery)
