@@ -1,7 +1,0 @@
-pkgname=sleex-audio
-pkgver=2.0
-pkgrel=1
-pkgdesc='Sleex Audio Dependencies'
-arch=(any)
-license=(None)
-depends=('cava' 'pavucontrol-qt' 'wireplumber' 'libdbusmenu-gtk3' 'playerctl')
