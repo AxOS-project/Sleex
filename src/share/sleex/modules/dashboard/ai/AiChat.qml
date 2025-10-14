@@ -336,10 +336,10 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
 
                 onContentYChanged: shouldAutoScroll = atYEnd
                 onContentHeightChanged: {
-                    if (shouldAutoScroll) positionViewAtEnd();
+                    if (shouldAutoScroll) Qt.callLater(positionViewAtEnd);
                 }
                 onCountChanged: { // Auto-scroll when new messages are added
-                    if (shouldAutoScroll) positionViewAtEnd();
+                    if (shouldAutoScroll) Qt.callLater(positionViewAtEnd);
                 }
 
                 add: null // Prevent function calls from being janky
