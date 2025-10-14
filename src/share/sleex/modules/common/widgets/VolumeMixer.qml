@@ -42,7 +42,7 @@ Item {
                     // Component.onCompleted: console.log("VolumeMixerEntry created for node:", modelData.id, modelData.ready, modelData.name, modelData.audio.volume)
 
                     implicitHeight: rowLayout.implicitHeight
-                    implicitWidth: root.width
+                    implicitWidth: parent.width
 
                     RowLayout {
                         id: rowLayout
@@ -52,7 +52,7 @@ Item {
                         PwObjectTracker {
                             objects: [modelData]
                         }
-                        
+
                         Image {
                             property real size: slider.height * 0.9
                             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
