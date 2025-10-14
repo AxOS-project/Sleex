@@ -17,8 +17,7 @@ Item {
         return node.isSink && node.isStream
     })
 
-    onAppPwNodesChanged: console.log("Volume Mixer: Number of audio nodes:", root.appPwNodes.length)
-
+    // onAppPwNodesChanged: console.log("Volume Mixer: Number of audio nodes:", root.appPwNodes.length)
 
     ColumnLayout {
         anchors.fill: parent
@@ -40,10 +39,10 @@ Item {
                 delegate: Item {
                     id: rootEntry
 
-                    Component.onCompleted: console.log("VolumeMixerEntry created for node:", modelData.id, modelData.ready, modelData.name, modelData.audio.volume)
+                    // Component.onCompleted: console.log("VolumeMixerEntry created for node:", modelData.id, modelData.ready, modelData.name, modelData.audio.volume)
 
                     implicitHeight: rowLayout.implicitHeight
-
+                    implicitWidth: root.width
 
                     RowLayout {
                         id: rowLayout
@@ -53,7 +52,7 @@ Item {
                         PwObjectTracker {
                             objects: [modelData]
                         }
-
+                        
                         Image {
                             property real size: slider.height * 0.9
                             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -88,7 +87,6 @@ Item {
                             }
 
                             StyledSlider {
-
                                 id: slider
                                 value: modelData.audio.volume
                                 onValueChanged: modelData.audio.volume = value

@@ -81,35 +81,35 @@ ContentPage {
     ContentSection {
         title: "Volume mixer"
 
-        Rectangle {
-            Layout.fillWidth: true
-            height: warnChildren.height + 40
-            color: "#40FF9800"
-            radius: 6
+        // Rectangle {
+        //     Layout.fillWidth: true
+        //     height: warnChildren.height + 40
+        //     color: "#40FF9800"
+        //     radius: 6
 
-            RowLayout {
-                id: warnChildren
-                anchors.fill: parent
-                anchors.margins: 10
+        //     RowLayout {
+        //         id: warnChildren
+        //         anchors.fill: parent
+        //         anchors.margins: 10
 
-                Label {
-                    text: "🚧"
-                    font.pixelSize: 16 // Slightly smaller icon
-                    Layout.alignment: Qt.AlignVCenter
-                    rightPadding: 6
-                }
+        //         Label {
+        //             text: "🚧"
+        //             font.pixelSize: 16 // Slightly smaller icon
+        //             Layout.alignment: Qt.AlignVCenter
+        //             rightPadding: 6
+        //         }
 
-                Label {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    text: "<b>WORK IN PROGRESS:</b> This module is incomplete. Use at your own risk.</code>"
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    textFormat: Text.RichText
-                    color: "white"
-                }
-            }
-        }
+        //         Label {
+        //             Layout.fillWidth: true
+        //             Layout.alignment: Qt.AlignVCenter
+        //             text: "<b>WORK IN PROGRESS:</b> This module is incomplete. Use at your own risk.</code>"
+        //             font.pixelSize: 12
+        //             wrapMode: Text.WordWrap
+        //             textFormat: Text.RichText
+        //             color: "white"
+        //         }
+        //     }
+        // }
 
         VolumeMixer {
             id: volumeMixer
