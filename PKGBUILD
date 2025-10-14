@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.17"
-pkgrel="1"
+pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -54,6 +54,7 @@ optdepends=(
 
 build() {
     cd "$srcdir/share/sleex"
+    rm -rf build/
     cmake -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build -j
 }
