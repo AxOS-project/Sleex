@@ -108,7 +108,7 @@ ContentPage {
 
                 StyledToolTip {
                     extraVisibleCondition: discoverArea.containsMouse
-                    content: "Discover new devices"
+                    text: "Discover new devices"
                 }
             }
         }

@@ -15,7 +15,7 @@ ContentPage {
             text: "Transparency"
             checked: Config.options.appearance.transparency
             onClicked: checked = !checked;
-            StyledToolTip { content: "Enable the blur effect on the shell." }
+            StyledToolTip { text: "Enable the blur effect on the shell." }
             onCheckedChanged: Config.options.appearance.transparency = checked;
         }
 

@@ -133,7 +133,7 @@ Scope {
                                         Quickshell.reload(true)
                                     }
                                     StyledToolTip {
-                                        content: qsTr("Reload Hyprland & Quickshell")
+                                        text: qsTr("Reload Hyprland & Quickshell")
                                     }
                                 }
                                 QuickToggleButton {
@@ -144,7 +144,7 @@ Scope {
                                         GlobalStates.dashboardOpen = false
                                     }
                                     StyledToolTip {
-                                        content: qsTr("Settings")
+                                        text: qsTr("Settings")
                                     }
                                 }
                                 QuickToggleButton {
@@ -154,7 +154,7 @@ Scope {
                                         Hyprland.dispatch("global quickshell:sessionOpen")
                                     }
                                     StyledToolTip {
-                                        content: qsTr("Session")
+                                        text: qsTr("Session")
                                     }
                                 }
                             }

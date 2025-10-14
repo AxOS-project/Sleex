@@ -541,8 +541,6 @@ Scope {
                             }
 
                             SysTray {
-                                bar: barRoot
-                                visible: barRoot.useShortenedForm === 0
                                 Layout.fillWidth: false
                                 Layout.fillHeight: true
                             }

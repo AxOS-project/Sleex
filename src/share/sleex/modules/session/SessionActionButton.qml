@@ -56,7 +56,7 @@ RippleButton {
     }
 
     StyledToolTip {
-        content: buttonText
+        text: buttonText
     }
 
 }

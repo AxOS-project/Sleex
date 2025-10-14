@@ -32,7 +32,7 @@ QuickToggleButton {
         }
     }
     StyledToolTip {
-        content: StringUtils.format(qsTr("{0} | Right-click to configure"),
+        text: StringUtils.format(qsTr("{0} | Right-click to configure"),
             (Bluetooth.defaultAdapter.enabled && BluetoothService.bluetoothDeviceName.length > 0) ?
             BluetoothService.bluetoothDeviceName : qsTr("Bluetooth"))
 

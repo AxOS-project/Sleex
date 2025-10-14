@@ -43,7 +43,7 @@ ContentPage {
                 checked: Config.options.dashboard.enableWeather
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.enableWeather = checked
-                StyledToolTip { content: "The weather module uses your approximate location based on your local IP. It uses the https://wttr.in provider." }
+                StyledToolTip { text: "The weather module uses your approximate location based on your local IP. It uses the https://wttr.in provider." }
             }
 
             MaterialTextField {

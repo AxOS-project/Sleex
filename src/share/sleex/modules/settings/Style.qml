@@ -112,7 +112,7 @@ ContentPage {
             Layout.alignment: Qt.AlignHCenter
             RippleButtonWithIcon {
                 materialIcon: "wallpaper"
-                StyledToolTip { content: "Pick wallpaper image on your system" }
+                StyledToolTip { text: "Pick wallpaper image on your system" }
 
                 onClicked: {
                     Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`])

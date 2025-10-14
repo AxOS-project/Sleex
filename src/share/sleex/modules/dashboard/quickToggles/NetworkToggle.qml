@@ -23,6 +23,6 @@ QuickToggleButton {
         GlobalStates.dashboardOpen = false
     }
     StyledToolTip {
-        content: StringUtils.format(qsTr("{0} | Right-click to configure"), Network.active.ssid)
+        text: StringUtils.format(qsTr("{0} | Right-click to configure"), Network.active.ssid)
     }
 }

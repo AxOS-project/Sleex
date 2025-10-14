@@ -165,7 +165,7 @@ ApplicationWindow {
 
                         StyledToolTip {
                             extraVisibleCondition: !navRail.expanded
-                            content: "Edit shell config file"
+                            text: "Edit shell config file"
                         }
                     }
 

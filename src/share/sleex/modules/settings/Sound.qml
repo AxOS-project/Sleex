@@ -48,7 +48,7 @@ ContentPage {
                 Config.options.audio.protection.enable = checked;
             }
             StyledToolTip {
-                content: "Prevents abrupt increments and restricts volume limit"
+                text: "Prevents abrupt increments and restricts volume limit"
             }
         }
         ConfigSpinBox {
@@ -62,7 +62,7 @@ ContentPage {
                 Config.options.audio.protection.maxAllowed = value;
             }
             StyledToolTip {
-                content: "Maximum volume level allowed by earbang protection"
+                text: "Maximum volume level allowed by earbang protection"
             }
         }
     }

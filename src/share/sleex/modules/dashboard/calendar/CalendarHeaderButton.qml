@@ -32,7 +32,7 @@ RippleButton {
     }
 
     StyledToolTip {
-        content: tooltipText
+        text: tooltipText
         extraVisibleCondition: tooltipText.length > 0
     }
 }

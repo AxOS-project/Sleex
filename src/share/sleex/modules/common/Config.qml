@@ -127,6 +127,12 @@ Singleton {
                 property bool showWorkspaces: true
                 property bool showClock: false
                 property bool showTrayAndIcons: true
+                property JsonObject tray: JsonObject {
+                    property bool monochromeIcons: true
+                    property bool showItemId: false
+                    property bool invertPinnedItems: true // Makes the below a whitelist for the tray and blacklist for the pinned area
+                    property list<string> pinnedItems: [ ]
+                }
             }
 
             property JsonObject background: JsonObject {

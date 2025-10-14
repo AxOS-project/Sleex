@@ -61,7 +61,7 @@ ContentPage {
                     Network.enableWifi(checked)
                 }
                 StyledToolTip {
-                    content: "Doesn't works idk why"
+                    text: "Doesn't works idk why"
                 }
             }
         }
@@ -192,7 +192,7 @@ ContentPage {
                                     hoverEnabled: true
                                 }
                                 StyledToolTip {
-                                    content: "Unlock first. Expand to enter password."
+                                    text: "Unlock first. Expand to enter password."
                                     visible: !networkItem.modelData.isKnown
                                     extraVisibleCondition: toggleSwitchArea.containsMouse
                                 }
@@ -251,7 +251,7 @@ ContentPage {
 
                                             StyledToolTip {
                                                 extraVisibleCondition: forgetArea.containsMouse
-                                                content: "Forget network"
+                                                text: "Forget network"
                                             }
                                         }
                                     }

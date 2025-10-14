@@ -101,6 +101,7 @@ Item {
 
         Loader {
             active: root.meaningfulPlayers.length > 0
+            anchors.fill: parent
             visible: active
             sourceComponent: PlayerControl {
                 player: root.meaningfulPlayers[0]

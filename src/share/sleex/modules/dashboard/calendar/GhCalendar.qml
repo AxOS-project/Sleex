@@ -53,7 +53,7 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 StyledToolTip {
-                                    content: `${contribs[realIndex]?.count || 0} commits on ${contribs[realIndex]?.date || "unknown"}`
+                                    text: `${contribs[realIndex]?.count || 0} commits on ${contribs[realIndex]?.date || "unknown"}`
                                     extraVisibleCondition: infoMouseArea.containsMouse
                                 }
                             }

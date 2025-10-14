@@ -21,6 +21,6 @@ QuickToggleButton {
     }
 
     StyledToolTip {
-        content: qsTr("Game mode")
+        text: qsTr("Game mode")
     }
 }
