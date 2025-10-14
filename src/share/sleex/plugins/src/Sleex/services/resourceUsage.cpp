@@ -36,27 +36,30 @@ void ResourceMonitor::onTimeout() {
 
 void ResourceMonitor::updateMemory() {
     // use sysinfo(2) — very cheap
-    struct sysinfo info;
-    if (sysinfo(&info) == 0) {
-        // sysinfo returns values in kibibytes multiples of mem_unit
-        unsigned long long mem_unit = info.mem_unit ? info.mem_unit : 1;
-        unsigned long long totalBytes = info.totalram * mem_unit;
-        unsigned long long freeBytes = info.freeram * mem_unit;
-        // Use available-like metric where possible: estimate with freeram + buff/cache
-        unsigned long long available = freeBytes;
-        if (info.bufferram)
-            available += info.bufferram * mem_unit;
-        // convert to kilobytes to match /proc/meminfo semantics if desired, but here use bytes
-        m_memoryTotal = static_cast<double>(totalBytes) / 1024.0; // KB
-        m_memoryFree  = static_cast<double>(available) / 1024.0;  // KB
-        m_swapTotal = static_cast<double>(info.totalswap * mem_unit) / 1024.0;
-        m_swapFree  = static_cast<double>(info.freeswap * mem_unit) / 1024.0;
+    // struct sysinfo info;
+    // if (sysinfo(&info) == 0) {
+    //     // sysinfo returns values in kibibytes multiples of mem_unit
+    //     unsigned long long mem_unit = info.mem_unit ? info.mem_unit : 1;
+    //     unsigned long long totalBytes = info.totalram * mem_unit;
+    //     unsigned long long freeBytes = info.freeram * mem_unit;
+    //     // Use available-like metric where possible: estimate with freeram + buff/cache
+    //     // Estimate available memory: free + buffers + shared
+    //     unsigned long long available = info.freeram + info.bufferram + info.sharedram;
+    //     available *= mem_unit;
+    //     // If cached memory is available, subtract it from used (add to available)
+    //     #ifdef _SC_AVPHYS_PAGES
+    //     // Optionally, use sysconf(_SC_AVPHYS_PAGES) for available memory
+    //     #endif
+    //     m_memoryTotal = static_cast<double>(totalBytes) / 1024.0; // KB
+    //     m_memoryFree  = static_cast<double>(available) / 1024.0;  // KB
+    //     m_swapTotal = static_cast<double>(info.totalswap * mem_unit) / 1024.0;
+    //     m_swapFree  = static_cast<double>(info.freeswap * mem_unit) / 1024.0;
 
-        emit memoryChanged();
-        return;
-    }
+    //     emit memoryChanged();
+    //     return;
+    // }
 
-    // fallback: read /proc/meminfo (rare)
+    // read /proc/meminfo (rare)
     QFile f("/proc/meminfo");
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
     const QByteArray all = f.readAll();
