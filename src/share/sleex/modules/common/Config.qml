@@ -55,7 +55,6 @@ Singleton {
             id: configOptionsJsonAdapter
             property JsonObject policies: JsonObject {
                 property int ai: 2 // 0: No | 1: Yes | 2: Local
-
             }
 
             property JsonObject ai: JsonObject {
@@ -218,6 +217,8 @@ Singleton {
                 // https://doc.qt.io/qt-6/qtime.html#toString
                 property string format: "hh:mm"
                 property string dateFormat: "dddd, dd/MM"
+                property string longDateFormat: "dd/MM/yyyy"
+                property int firstDayOfWeek: 0 // 0: Monday, 1: Tuesday, 2: Wednesday, 3: Thursday, 4: Friday, 5: Saturday, 6: Sunday
             }
 
             property JsonObject hacks: JsonObject {

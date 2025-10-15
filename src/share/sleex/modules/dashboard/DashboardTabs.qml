@@ -14,6 +14,7 @@ Item {
         {"icon": "rocket_launch", "name": qsTr("Home")}, 
         {"name": qsTr("Todo"), "icon": "checklist_rtl"},
         {"name": qsTr("AI"), "icon": "api"},
+        {"name": qsTr("Calendar"), "icon": "calendar_today"},
         // {"name": qsTr("Quick settings"), "icon": "settings"},
     ]
     property int dialogMargins: 20
@@ -131,11 +132,11 @@ Item {
                 Layout.fillWidth: true
             }
 
-            // SettingsWidgetGroup {
-            //     Layout.alignment: Qt.AlignHCenter
-            //     Layout.fillHeight: true
-            //     Layout.fillWidth: true
-            // }
+            CalendarWidgetGroup {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+            }
         }
     }
 }

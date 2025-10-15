@@ -1,4 +1,4 @@
-import "./ai"
+import "./calendar"
 import QtQuick
 
 Rectangle {
@@ -6,7 +6,7 @@ Rectangle {
     color: "transparent"
     clip: true
 
-    AiChat {
+    CalendarTimeTable {
         anchors.fill: parent
     }
 }
