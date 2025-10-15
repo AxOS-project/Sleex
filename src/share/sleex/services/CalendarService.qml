@@ -190,6 +190,7 @@ Singleton {
               }
               root.events = events
               root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
+              root.isLoading = false
           }
     
         }
@@ -197,12 +198,11 @@ Singleton {
 
       Process {
         id: syncProcess
-        running: true
+        running: config.options.calendar.useVdirsyncer && !getEventsProcess.running
         command: ["vdirsyncer", "sync"]
         onExited: (exitCode) => {
           if(exitCode === 0) {
             getEventsProcess.running = true
-            root.isLoading = false
             //console.log("Calendars synced successfully")
           } else {
             console.log("Error syncing calendars: " + exitCode)
@@ -213,7 +213,7 @@ Singleton {
       Timer {
         id: interval
         running: false
-        interval:10000
+        interval: config.options.calendar.syncInterval * 60000 // m to ms
         repeat: true
         onTriggered: {
           getEventsProcess.running = true

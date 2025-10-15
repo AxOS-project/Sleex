@@ -311,4 +311,26 @@ ContentPage {
             }
         }
     }
+
+    ContentSection {
+        title: "Calendar"
+
+        ConfigSwitch {
+            text: "Use vdirsyncer"
+            checked: Config.options.dashboard.calendar.useVdirsyncer
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.calendar.useVdirsyncer = checked;
+        }
+
+        ConfigSpinBox {
+            text: "Sync interval (minutes)"
+            value: Config.options.dashboard.calendar.syncInterval
+            from: 1
+            to: 1440 // 24 hours
+            stepSize: 1
+            onValueChanged: {
+                Config.options.dashboard.calendar.syncInterval = value;
+            }
+        }
+    }
 }

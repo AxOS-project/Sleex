@@ -155,6 +155,10 @@ Singleton {
                 property bool enableWeather: false
                 property string weatherLocation: ""
                 property string mediaPlayer: ""
+                property JsonObject calendar: JsonObject {
+                    property bool useVdirsyncer: true
+                    property real syncInterval: 15 // minutes
+                }
             }
 
             property JsonObject dock: JsonObject {
