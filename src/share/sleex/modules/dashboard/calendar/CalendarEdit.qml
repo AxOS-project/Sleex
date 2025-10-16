@@ -13,22 +13,33 @@ Rectangle {
     required property bool editMode
     required property var event
 
+    signal editingFinished()
+
     property var newEventData: {
         content: ""
-        start: undefined
-        end: undefined
-        date: undefined
+        start: ""
+        end: ""
+        date: ""
     }
 
     anchors.fill: parent
-    color: Appearance.m3colors.m3surface
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: Appearance.m3colors.m3surface }
+        GradientStop { position: 0.3; color: Appearance.m3colors.m3surface }
+        GradientStop { position: 1.0; color: Appearance.colors.colLayer0 }
+        orientation: Gradient.Horizontal
+    }
     radius: Appearance.rounding.large
     z: 100
     visible: root.editMode
     opacity: visible ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: 180 } }
 
-    MouseArea { anchors.fill: parent }
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        preventStealing: true
+    }
 
     Column {
         anchors.centerIn: parent
@@ -58,6 +69,10 @@ Rectangle {
             placeholderText: qsTr("Title")
             text: root.event.title
             placeholderTextColor: Appearance.m3colors.m3outline
+            validator: RegularExpressionValidator {
+                // Allow any non-empty string
+                regularExpression: /^(?!\s*$).+/
+            }
 
             background: Rectangle {
                 anchors.fill: parent
@@ -88,6 +103,10 @@ Rectangle {
             placeholderText: qsTr("Date (YYYY-MM-DD)")
             text: root.event.date
             placeholderTextColor: Appearance.m3colors.m3outline
+            validator: RegularExpressionValidator {
+                // Simple regex for YYYY-MM-DD format
+                regularExpression: /^\d{4}-\d{2}-\d{2}$/
+            }
 
             background: Rectangle {
                 anchors.fill: parent
@@ -118,6 +137,10 @@ Rectangle {
             placeholderText: qsTr("Start Time (HH:MM)")
             text: root.event.start
             placeholderTextColor: Appearance.m3colors.m3outline
+            validator: RegularExpressionValidator {
+                // Simple regex for HH:MM format (24-hour)
+                regularExpression: /^([01]\d|2[0-3]):([0-5]\d)$/
+            }
 
             background: Rectangle {
                 anchors.fill: parent
@@ -148,6 +171,10 @@ Rectangle {
             placeholderText: qsTr("End Time (HH:MM)")
             text: root.event.end
             placeholderTextColor: Appearance.m3colors.m3outline
+            validator: RegularExpressionValidator {
+                // Simple regex for HH:MM format (24-hour)
+                regularExpression: /^([01]\d|2[0-3]):([0-5]\d)$/
+            }
 
             background: Rectangle {
                 anchors.fill: parent
@@ -232,6 +259,7 @@ Rectangle {
                     } catch (e) {
                         console.error("Error adding event:", e);
                     }
+                    root.editingFinished();
                 }
             }
 
@@ -258,6 +286,7 @@ Rectangle {
                         date: "",
                     };
                     root.editMode = false;
+                    root.editingFinished(); 
                 }
             }
         }

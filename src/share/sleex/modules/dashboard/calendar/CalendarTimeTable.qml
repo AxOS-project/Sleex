@@ -12,8 +12,9 @@ Item {
     property real spacing: 8
     property color backgroundColor: "transparent"
 
-    property bool addMode: false
-    property bool editMode: false
+    property alias addMode: calendarAddComponent.editMode
+    property alias editMode: calendarEditComponent.editMode
+    
 
     property var tempCalendarEvent: null // used to pass event to CalendarEdit
 
@@ -720,7 +721,7 @@ Item {
         colBackground: Appearance.colors.colPrimary
         colBackgroundHover: Appearance.colors.colPrimaryHover
 
-        onClicked: root.editMode = true;
+        onClicked: root.addMode = true;
 
         contentItem: MaterialSymbol {
             anchors.centerIn: parent
@@ -755,14 +756,16 @@ Item {
     }
 
     CalendarAdd {
+        id: calendarAddComponent
         anchors.fill: parent
-        editMode: root.addMode
+        editMode: root._addMode
         z: 100
     }
 
     CalendarEdit {
+        id: calendarEditComponent
         anchors.fill: parent
-        editMode: root.editMode
+        editMode: root._editMode
         event: root.tempCalendarEvent
         z: 100
     }
