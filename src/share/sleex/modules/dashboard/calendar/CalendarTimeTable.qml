@@ -686,59 +686,9 @@ Item {
         MouseArea { anchors.fill: parent }
     }
 
-    Rectangle {
+    CalendarEdit {
         anchors.fill: parent
-        color: Appearance.colors.colLayer0
-        radius: Appearance.rounding.large
+        editMode: root.editMode
         z: 100
-        visible: root.editMode
-        opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-
-        MouseArea { anchors.fill: parent }
-
-        Column {
-            anchors.centerIn: parent
-            spacing: 16
-            width: parent.width * 0.8
-
-            StyledText {
-                text: qsTr("Edit mode is not yet implemented.")
-                font.pixelSize: Appearance.font.pixelSize.title
-                font.weight: Font.Medium
-                color: Appearance.colors.colOnLayer0
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
-
-            StyledText {
-                text: qsTr("To add or edit events, please use khal or an external calendar application that uses khal.")
-                font.pixelSize: Appearance.font.pixelSize.bodyLarge
-                font.weight: Font.Normal
-                color: Appearance.colors.colOnLayer0
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
-
-            RippleButton {
-                buttonRadius: Appearance.rounding.normal
-                Layout.preferredHeight: 40
-                Layout.preferredWidth: 160
-                colBackground: Appearance.colors.colPrimary
-                colBackgroundHover: Appearance.colors.colPrimaryHover
-                contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: qsTr("Exit Edit Mode")
-                    color: Appearance.colors.colOnPrimary
-                    font.pixelSize: Appearance.font.pixelSize.bodyLarge
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-                onClicked: {
-                    root.editMode = false;
-                }
-            }
-        }
     }
 }

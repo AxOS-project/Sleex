@@ -198,7 +198,7 @@ Singleton {
 
       Process {
         id: syncProcess
-        running: config.options.calendar.useVdirsyncer && !getEventsProcess.running
+        running: Config.options.dashboard.calendar.useVdirsyncer && !getEventsProcess.running
         command: ["vdirsyncer", "sync"]
         onExited: (exitCode) => {
           if(exitCode === 0) {
@@ -213,7 +213,7 @@ Singleton {
       Timer {
         id: interval
         running: false
-        interval: config.options.calendar.syncInterval * 60000 // m to ms
+        interval: Config.options.dashboard.calendar.syncInterval * 60000 // m to ms
         repeat: true
         onTriggered: {
           getEventsProcess.running = true
@@ -241,10 +241,45 @@ Singleton {
 
 
       function addItem(item){
-        let title =  item['content']
-        let formattedDate = Qt.formatDate(item['date'], "dd/MM/yyyy")
-        khalAddTaskProcess.command = ["khal", "new", formattedDate, title]
-        khalAddTaskProcess.running = true
+        // console.log("Adding item:", JSON.stringify(item));
+        
+        if (!item || !item.content) {
+            console.error("Cannot add event: missing required fields");
+            return false;
+        }
+        
+        let title = item.content;
+        
+        let formattedDate;
+        if (item.date) {
+            // Convert yyyy-mm-dd to dd/MM/yyyy
+            const parts = item.date.split('-');
+            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        } else {
+            formattedDate = Qt.formatDate(new Date(), "dd/MM/yyyy");
+        }
+        
+        let cmd = ["khal", "new"];
+        
+        if (!item.allDay && item.start) {
+            cmd.push(`${formattedDate} ${item.start}`);
+            
+            if (item.end) {
+                cmd.push(`${item.end}`);
+            }
+        } else {
+            cmd.push(formattedDate);
+        }
+        
+        cmd.push(title);
+        
+        // console.log("Running command:", cmd.join(' '));
+        khalAddTaskProcess.command = cmd;
+        khalAddTaskProcess.running = true;
+                
+        getEventsProcess.running = true;
+        
+        return true;
       }
 
 
@@ -262,7 +297,6 @@ Singleton {
           "DELETE FROM events WHERE item LIKE '%SUMMARY:" + taskToDelete + "%';"
           ]
 
-        
           khalRemoveProcess.running = true
           console.log(khalRemoveProcess.command)
     }
