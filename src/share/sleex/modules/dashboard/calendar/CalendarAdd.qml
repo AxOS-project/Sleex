@@ -11,13 +11,13 @@ Rectangle {
     id: root
 
     required property bool editMode
-    required property var event
 
     property var newEventData: {
         content: ""
         start: undefined
         end: undefined
         date: undefined
+        allDay: false
     }
 
     anchors.fill: parent
@@ -36,7 +36,7 @@ Rectangle {
         width: parent.width * 0.8
 
         StyledText {
-            text: qsTr("Edit an event.")
+            text: qsTr("Add a new event.")
             font.pixelSize: Appearance.font.pixelSize.title
             font.weight: Font.Medium
             color: Appearance.colors.colOnLayer0
@@ -56,7 +56,6 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Title")
-            text: root.event.title
             placeholderTextColor: Appearance.m3colors.m3outline
 
             background: Rectangle {
@@ -86,7 +85,6 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Date (YYYY-MM-DD)")
-            text: root.event.date
             placeholderTextColor: Appearance.m3colors.m3outline
 
             background: Rectangle {
@@ -116,7 +114,6 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Start Time (HH:MM)")
-            text: root.event.start
             placeholderTextColor: Appearance.m3colors.m3outline
 
             background: Rectangle {
@@ -146,7 +143,6 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("End Time (HH:MM)")
-            text: root.event.end
             placeholderTextColor: Appearance.m3colors.m3outline
 
             background: Rectangle {
@@ -162,6 +158,16 @@ Rectangle {
                 color: eventTimeEndInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
                 radius: 1
             }
+        }
+
+        ConfigSwitch {
+            id: allDaySwitch
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            text: qsTr("All Day Event")
+            checked: false
+            onCheckedChanged: root.newEventData.allDay = checked
         }
 
         Row {
@@ -219,15 +225,17 @@ Rectangle {
                             date: formattedDate,
                             start: startStr || "", 
                             end: endStr || "",
+                            allDay: allDaySwitch.checked
                         };
-
-                        console.log("Editing event:", JSON.stringify(root.newEventData));
-                        CalendarService.editItem(root.event.uid, root.newEventData);
+                        
+                        console.log("Adding event:", JSON.stringify(root.newEventData));
+                        CalendarService.addItem(root.newEventData);
 
                         eventTitleInput.text = "";
                         eventDateInput.text = "";
                         eventTimeStartInput.text = "";
                         eventTimeEndInput.text = "";
+                        allDaySwitch.checked = false;
                         root.editMode = false;
                     } catch (e) {
                         console.error("Error adding event:", e);
@@ -256,6 +264,7 @@ Rectangle {
                         start: "",
                         end: "",
                         date: "",
+                        allDay: false
                     };
                     root.editMode = false;
                 }

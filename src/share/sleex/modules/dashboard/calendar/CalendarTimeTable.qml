@@ -12,7 +12,10 @@ Item {
     property real spacing: 8
     property color backgroundColor: "transparent"
 
+    property bool addMode: false
     property bool editMode: false
+
+    property var tempCalendarEvent: null // used to pass event to CalendarEdit
 
     property int startHour: 0
     property int startMinute: 0
@@ -568,12 +571,55 @@ Item {
                                     HoverHandler {
                                         id: eventHover
                                     }
+                                    Row {
+                                        anchors.bottom: parent.bottom
+                                        anchors.right: parent.right
+                                        anchors.margins: 4
+                                        spacing: 4
 
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            root.editMode = true;
+                                        RippleButton {
+                                            width: 28
+                                            height: 28
+                                            buttonRadius: Appearance.rounding.large
+                                            opacity: eventHover.hovered ? 1 : 0
+                                            visible: opacity > 0
+
+                                            colBackgroundHover: Appearance.colors.colSurfaceContainerHigh
+
+                                            Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                                            contentItem: MaterialSymbol {
+                                                anchors.fill: parent
+                                                horizontalAlignment: Text.AlignHCenter
+                                                font.pixelSize: Appearance.font.pixelSize.title
+                                                text: "edit"
+                                            }
+
+                                            onClicked: {
+                                                root.tempCalendarEvent = modelData;
+                                                root.editMode = true;
+                                            }
+                                        }
+
+                                        RippleButton {
+                                            width: 28
+                                            height: 28
+                                            buttonRadius: Appearance.rounding.large
+                                            opacity: eventHover.hovered ? 1 : 0
+                                            visible: opacity > 0
+
+                                            colBackgroundHover: Appearance.colors.colSurfaceContainerHigh
+
+                                            Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                                            contentItem: MaterialSymbol {
+                                                anchors.fill: parent
+                                                horizontalAlignment: Text.AlignHCenter
+                                                font.pixelSize: Appearance.font.pixelSize.title
+                                                text: "cancel"
+                                            }
+
+                                            onClicked: CalendarService.removeItem(modelData)
                                         }
                                     }
 
@@ -664,6 +710,28 @@ Item {
         }
     }
 
+    RippleButton {
+        width: 65
+        height: 65
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.margins: 16
+        buttonRadius: Appearance.rounding.normal
+        colBackground: Appearance.colors.colPrimary
+        colBackgroundHover: Appearance.colors.colPrimaryHover
+
+        onClicked: root.editMode = true;
+
+        contentItem: MaterialSymbol {
+            anchors.centerIn: parent
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: Appearance.font.pixelSize.title * 1.5
+            color: Appearance.colors.colOnPrimary
+            text: "add"
+        }
+    }
+
+
     // Loading overlay when CalendarService.isLoading is true
     Rectangle {
         anchors.fill: parent
@@ -686,9 +754,16 @@ Item {
         MouseArea { anchors.fill: parent }
     }
 
+    CalendarAdd {
+        anchors.fill: parent
+        editMode: root.addMode
+        z: 100
+    }
+
     CalendarEdit {
         anchors.fill: parent
         editMode: root.editMode
+        event: root.tempCalendarEvent
         z: 100
     }
 }

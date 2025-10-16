@@ -35,7 +35,8 @@ Singleton {
                   title: "Example: This is a sample event\nUse khal to add real events",
                   start: "7:30",
                   end: "9:20",
-                  color: Appearance.m3colors.m3error   
+                  color: Appearance.m3colors.m3error,
+                  uid: "example-uid-1"
                 },
               ]
             },
@@ -131,7 +132,8 @@ Singleton {
                     "start": start_time,
                     "end": end_time,
                     "title": title,
-                    "color": evt['color'] 
+                    "color": evt['color'],
+                    "uid": evt['uid']
                 });
               });
               result.push(obj)
@@ -146,7 +148,7 @@ Singleton {
       id: getEventsProcess
       running: false
         // get events for 3 months
-        command: ["khal", "list", "--json", "title", "--json", "start-date", "--json" ,"start-time", "--json" ,"end-time",    Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() - 3); return d; })(), "dd/MM/yyyy") ,Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() + 3); return d; })(), "dd/MM/yyyy")]
+        command: ["khal", "list", "--json", "title", "--json", "start-date", "--json" ,"start-time", "--json" ,"end-time", "--json", "uid", Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() - 3); return d; })(), "dd/MM/yyyy") ,Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() + 3); return d; })(), "dd/MM/yyyy")]
         stdout: StdioCollector {
 
           onStreamFinished:{
@@ -185,6 +187,7 @@ Singleton {
                       "startDate": startDate,
                       "endDate": endDate,
                       "color": ColorUtils.stringToColor(event['title']),  
+                      "uid": event['uid']
                   })
                 }
               }
@@ -276,8 +279,8 @@ Singleton {
         // console.log("Running command:", cmd.join(' '));
         khalAddTaskProcess.command = cmd;
         khalAddTaskProcess.running = true;
-                
-        getEventsProcess.running = true;
+        
+        syncProcess.running = true;
         
         return true;
       }
@@ -289,16 +292,62 @@ Singleton {
       }
 
       function removeItem(item){
-        let taskToDelete =  item['content']
+        let taskToDelete =  item['uid']
 
         khalRemoveProcess.command = [ // currently only this hack is possible to delte without interactive shell issue:https://github.com/pimutils/khal/issues/603
           "sqlite3",
           String(StandardPaths.standardLocations(StandardPaths.HomeLocation)[0]).replace("file://", "") + "/.local/share/khal/khal.db",
-          "DELETE FROM events WHERE item LIKE '%SUMMARY:" + taskToDelete + "%';"
+          "DELETE FROM events WHERE item LIKE '%UID:" + taskToDelete + "%';"
           ]
 
           khalRemoveProcess.running = true
           console.log(khalRemoveProcess.command)
+          syncProcess.running = true
+    }
+
+    Process {
+      id: khalEditProcess
+      running: false
+    }
+
+    function editItem(uid, item){
+      if (!uid || !item || !item.content) {
+        console.error("Cannot edit event: missing required fields");
+        return false;
+      }
+      
+      let title = item.content;
+      
+      let formattedDate;
+      if (item.date) {
+        // Convert yyyy-mm-dd to dd/MM/yyyy
+        const parts = item.date.split('-');
+        formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      } else {
+        formattedDate = Qt.formatDate(new Date(), "dd/MM/yyyy");
+      }
+
+      let cmd = ["khal", "edit", "--show-past", uid];
+
+      if (!item.allDay && item.start) {
+        cmd.push(`${formattedDate} ${item.start}`);
+        
+        if (item.end) {
+          cmd.push(`${item.end}`);
+        }
+      } else {
+        cmd.push(formattedDate);
+      }
+      
+      cmd.push(title);
+      
+      console.log("Running command:", cmd.join(' '));
+      khalEditProcess.command = cmd;
+      khalEditProcess.running = true;
+      
+      syncProcess.running = true;
+      
+      return true;
     }
 
     property int currentWeekOffset: 0
@@ -335,7 +384,8 @@ Singleton {
             "start": start_time,
             "end": end_time,
             "title": title,
-            "color": evt['color']
+            "color": evt['color'],
+            "uid": evt['uid']
           });
         });
         result.push(obj);
