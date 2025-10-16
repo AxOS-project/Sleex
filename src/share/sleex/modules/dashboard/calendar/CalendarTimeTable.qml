@@ -19,7 +19,7 @@ Item {
     property int endHour: 24
     property int slotDuration: 60 // in minutes
     property int slotHeight: 60 // in pixels
-    property int timeColumnWidth: 100
+    property int timeColumnWidth: 90
     property real maxContentWidth: parent.width
 
     readonly property int totalSlots: Math.floor(((endHour * 60) - (startHour * 60 + startMinute)) / slotDuration)
@@ -30,7 +30,20 @@ Item {
     property real headerHeight: 64 // Material 3 standard header height
     property real currentTimeY: -1
     property bool initialScrollApplied: false
-    readonly property real dayColumnWidth: Math.min(180, (maxContentWidth - timeColumnWidth - (days.length + 1) * spacing) / days.length)
+    // Make columns adapt to available space by calculating dayColumnWidth based on available width
+    readonly property real dayColumnWidth: (function() {
+        if (!root.days || root.days.length === 0) return 100
+        // Calculate available space excluding time column and spacing
+        const totalWidth = root.maxContentWidth || root.width
+        const availableWidth = totalWidth - timeColumnWidth - spacing
+        // Calculate exact column width (remove extra spacing at the end)
+        return (availableWidth - (root.days.length - 1) * spacing) / root.days.length
+    })()
+
+    // Calculate total content width based on the column widths
+    readonly property real totalContentWidth: timeColumnWidth + spacing + 
+        (root.days ? (root.days.length * dayColumnWidth + (root.days.length - 1) * spacing) : 0)
+
     readonly property int currentDayIndex: (DateTime.clock.date.getDay() - Config.options.time.firstDayOfWeek+ 6)%7
 
     implicitWidth: Math.min(maxContentWidth, timeColumnWidth + (dayColumnWidth * days.length) + ((days.length + 1) * spacing))
@@ -391,17 +404,74 @@ Item {
             Layout.bottomMargin: 8
         }
 
-        // TODO: replace or check for StyledScrollBar
+        // StyledFlickable with calendar grid
         StyledFlickable {
             id: styledFlickable
             Layout.fillWidth: true
             Layout.fillHeight: true
 
             clip: true
-            contentWidth: width
+            // Set contentWidth to match the calculated total content width
+            contentWidth: root.totalContentWidth
             contentHeight: root.contentHeight
             topMargin: 20
             bottomMargin: 20
+
+            // Background grid (placed before content to ensure it's behind events)
+            Item {
+                id: gridBackground
+                width: eventsRow.width
+                height: contentRow.height
+                x: timeColumn.width + root.spacing
+                z: -10
+
+                // Hour grid lines (horizontal)
+                Repeater {
+                    model: root.totalSlots
+                    Rectangle {
+                        x: 0
+                        y: index * root.slotHeight
+                        width: parent.width
+                        height: 1
+                        color: Appearance.colors.colOutlineVariant
+                        opacity: 0.6
+                    }
+                }
+
+                // Vertical grid lines (one per day column)
+                Row {
+                    spacing: root.spacing
+                    
+                    Repeater {
+                        model: root.days ? root.days.length : 0
+                        delegate: Item {
+                            width: root.dayColumnWidth
+                            height: gridBackground.height
+                            
+                            // Left border of each day column
+                            Rectangle {
+                                x: 0
+                                y: 0
+                                width: 1
+                                height: parent.height
+                                color: Appearance.colors.colOutlineVariant
+                                opacity: 0.7
+                            }
+                            
+                            // Right border of the last column
+                            Rectangle {
+                                visible: index === (root.days ? root.days.length - 1 : 0)
+                                x: parent.width
+                                y: 0
+                                width: 1
+                                height: parent.height
+                                color: Appearance.colors.colOutlineVariant
+                                opacity: 0.7
+                            }
+                        }
+                    }
+                }
+            }
 
             Row {
                 id: contentRow
