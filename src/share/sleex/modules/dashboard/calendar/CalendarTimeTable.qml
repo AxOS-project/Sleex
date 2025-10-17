@@ -755,6 +755,25 @@ Item {
         }
 
         RippleButton {
+            width: 50
+            height: 50
+            buttonRadius: Appearance.rounding.full
+            colBackground: Appearance.colors.colPrimary
+            colBackgroundHover: Appearance.colors.colPrimaryHover
+            anchors.verticalCenter: parent.verticalCenter
+
+            onClicked: CalendarService.syncCalendars();
+
+            contentItem: MaterialSymbol {
+                anchors.centerIn: parent
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Appearance.font.pixelSize.title * 1.5
+                color: Appearance.colors.colOnPrimary
+                text: "sync"
+            }
+        }
+
+        RippleButton {
             width: 65
             height: 65
             buttonRadius: Appearance.rounding.normal
