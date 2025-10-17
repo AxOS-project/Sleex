@@ -11,12 +11,18 @@ Rectangle {
     id: root
 
     required property bool editMode
-    required property var event
+    property var event: {
+        uid: ""
+        title: ""
+        start: ""
+        end: ""
+        date: ""
+    }
 
     signal editingFinished()
 
     property var newEventData: {
-        content: ""
+        title: ""
         start: ""
         end: ""
         date: ""
@@ -67,7 +73,7 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Title")
-            text: root.event.title
+            text: root.event?.title || ""
             placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Allow any non-empty string
@@ -101,7 +107,7 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Date (YYYY-MM-DD)")
-            text: root.event.date
+            text: root.event?.date || ""
             placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Simple regex for YYYY-MM-DD format
@@ -135,7 +141,7 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Start Time (HH:MM)")
-            text: root.event.start
+            text: root.event?.start || ""
             placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Simple regex for HH:MM format (24-hour)
@@ -169,7 +175,7 @@ Rectangle {
             selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
             selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("End Time (HH:MM)")
-            text: root.event.end
+            text: root.event?.end || ""
             placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Simple regex for HH:MM format (24-hour)

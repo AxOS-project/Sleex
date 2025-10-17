@@ -24,7 +24,7 @@ Item {
     property int slotDuration: 60 // in minutes
     property int slotHeight: 60 // in pixels
     property int timeColumnWidth: 90
-    property real maxContentWidth: parent.width
+    property real maxContentWidth: parent.width - 10
 
     readonly property int totalSlots: Math.floor(((endHour * 60) - (startHour * 60 + startMinute)) / slotDuration)
     readonly property real pixelsPerMinute: slotHeight / slotDuration
@@ -288,33 +288,33 @@ Item {
                         anchors.centerIn: parent
                         spacing: 8
 
-                        RippleButton {
-                            buttonRadius: Appearance.rounding.full
-                            width: 35
-                            height: 35
-                            onClicked: CalendarService.previousWeek()
-                            colBackground: Appearance.colors.colSurfaceContainerHigh
-                            contentItem: MaterialSymbol {
-                                anchors.centerIn: parent
-                                horizontalAlignment: Text.AlignHCenter
-                                font.pixelSize: Appearance.font.pixelSize.title
-                                text: "chevron_left"
-                            }
-                        }
+                        // RippleButton {
+                        //     buttonRadius: Appearance.rounding.full
+                        //     width: 35
+                        //     height: 35
+                        //     onClicked: CalendarService.previousWeek()
+                        //     colBackground: Appearance.colors.colSurfaceContainerHigh
+                        //     contentItem: MaterialSymbol {
+                        //         anchors.centerIn: parent
+                        //         horizontalAlignment: Text.AlignHCenter
+                        //         font.pixelSize: Appearance.font.pixelSize.title
+                        //         text: "chevron_left"
+                        //     }
+                        // }
 
-                        RippleButton {
-                            buttonRadius: Appearance.rounding.full
-                            width: 35
-                            height: 35
-                            onClicked: CalendarService.nextWeek()
-                            colBackground: Appearance.colors.colSurfaceContainerHigh
-                            contentItem: MaterialSymbol {
-                                anchors.centerIn: parent
-                                horizontalAlignment: Text.AlignHCenter
-                                font.pixelSize: Appearance.font.pixelSize.title
-                                text: "chevron_right"
-                            }
-                        }
+                        // RippleButton {
+                        //     buttonRadius: Appearance.rounding.full
+                        //     width: 35
+                        //     height: 35
+                        //     onClicked: CalendarService.nextWeek()
+                        //     colBackground: Appearance.colors.colSurfaceContainerHigh
+                        //     contentItem: MaterialSymbol {
+                        //         anchors.centerIn: parent
+                        //         horizontalAlignment: Text.AlignHCenter
+                        //         font.pixelSize: Appearance.font.pixelSize.title
+                        //         text: "chevron_right"
+                        //     }
+                        // }
                     }
                 }
             }
@@ -413,7 +413,7 @@ Item {
             id: styledFlickable
             Layout.fillWidth: true
             Layout.fillHeight: true
-
+            flickableDirection: Flickable.VerticalFlick
             clip: true
             // Set contentWidth to match the calculated total content width
             contentWidth: root.totalContentWidth
@@ -710,25 +710,67 @@ Item {
             }
         }
     }
-
-    RippleButton {
-        width: 65
-        height: 65
+    Row {
+        spacing: 10
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         anchors.margins: 16
-        buttonRadius: Appearance.rounding.normal
-        colBackground: Appearance.colors.colPrimary
-        colBackgroundHover: Appearance.colors.colPrimaryHover
 
-        onClicked: root.addMode = true;
+        RippleButton {
+            width: 50
+            height: 50
+            buttonRadius: Appearance.rounding.full
+            colBackground: Appearance.colors.colPrimary
+            colBackgroundHover: Appearance.colors.colPrimaryHover
+            anchors.verticalCenter: parent.verticalCenter
 
-        contentItem: MaterialSymbol {
-            anchors.centerIn: parent
-            horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: Appearance.font.pixelSize.title * 1.5
-            color: Appearance.colors.colOnPrimary
-            text: "add"
+            onClicked: CalendarService.previousWeek();
+
+            contentItem: MaterialSymbol {
+                anchors.centerIn: parent
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Appearance.font.pixelSize.title * 1.5
+                color: Appearance.colors.colOnPrimary
+                text: "chevron_left"
+            }
+        }
+
+        RippleButton {
+            width: 50
+            height: 50
+            buttonRadius: Appearance.rounding.full
+            colBackground: Appearance.colors.colPrimary
+            colBackgroundHover: Appearance.colors.colPrimaryHover
+            anchors.verticalCenter: parent.verticalCenter
+
+            onClicked: CalendarService.nextWeek();
+
+            contentItem: MaterialSymbol {
+                anchors.centerIn: parent
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Appearance.font.pixelSize.title * 1.5
+                color: Appearance.colors.colOnPrimary
+                text: "chevron_right"
+            }
+        }
+
+        RippleButton {
+            width: 65
+            height: 65
+            buttonRadius: Appearance.rounding.normal
+            colBackground: Appearance.colors.colPrimary
+            colBackgroundHover: Appearance.colors.colPrimaryHover
+            anchors.leftMargin: 20
+
+            onClicked: root.addMode = true;
+
+            contentItem: MaterialSymbol {
+                anchors.centerIn: parent
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Appearance.font.pixelSize.title * 1.5
+                color: Appearance.colors.colOnPrimary
+                text: "add"
+            }
         }
     }
 
@@ -758,14 +800,14 @@ Item {
     CalendarAdd {
         id: calendarAddComponent
         anchors.fill: parent
-        editMode: root._addMode
+        editMode: root.addMode
         z: 100
     }
 
     CalendarEdit {
         id: calendarEditComponent
         anchors.fill: parent
-        editMode: root._editMode
+        editMode: root.editMode
         event: root.tempCalendarEvent
         z: 100
     }
