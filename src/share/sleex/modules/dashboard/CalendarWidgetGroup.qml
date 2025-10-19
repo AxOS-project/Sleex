@@ -1,4 +1,4 @@
-import "./calendar"
+import qs.modules.dashboard.calendar
 import QtQuick
 
 Rectangle {

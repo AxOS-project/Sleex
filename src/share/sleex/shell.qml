@@ -5,28 +5,28 @@
 // Adjust this to make the shell smaller or larger
 //@ pragma Env QT_SCALE_FACTOR=1
 
-import "./modules/common/"
-import "./modules/bar/"
-import "./modules/cheatsheet/"
-import "./modules/dock/"
-import "./modules/mediaControls/"
-import "./modules/notificationPopup/"
-import "./modules/onScreenDisplay/"
-import "./modules/overview/"
-import "./modules/screenCorners/"
-import "./modules/session/"
-import "./modules/dashboard/"
-import "./modules/sidebarLeft/"
-import "./modules/wallpaperSelector/"
-import "./modules/background/"
-import "./modules/lockscreen/"
+import qs.modules.common
+import qs.modules.bar
+import qs.modules.cheatsheet
+import qs.modules.dock
+import qs.modules.mediaControls
+import qs.modules.notificationPopup
+import qs.modules.onScreenDisplay
+import qs.modules.overview
+import qs.modules.screenCorners
+import qs.modules.session
+import qs.modules.dashboard
+import qs.modules.sidebarLeft
+import qs.modules.wallpaperSelector
+import qs.modules.background
+import qs.modules.lockscreen
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import Quickshell
-import "./services/"
+import qs.services
 
 ShellRoot {
     // Enable/disable modules here. False = not loaded at all, so rest assured
