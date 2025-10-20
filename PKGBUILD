@@ -1,5 +1,5 @@
 pkgname="sleex"
-pkgver="1.17"
+pkgver="1.18"
 pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
@@ -62,6 +62,9 @@ build() {
 package() {
     mkdir -p "$pkgdir/usr/bin"
     cp -r "$srcdir/bin/"* "$pkgdir/usr/bin/"
+
+    mkdir -p "$pkgdir/etc"
+    cp -r "$srcdir/etc/"* "$pkgdir/etc/"
 
     mkdir -p "$pkgdir/usr/share/sleex"
     cd "$srcdir/share/sleex"

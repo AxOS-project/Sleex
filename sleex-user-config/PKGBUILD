@@ -1,5 +1,5 @@
 pkgname="sleex-user-config"
-pkgver="1.11"
+pkgver="1.12"
 pkgrel="1"
 pkgdesc="User configuration for Sleex desktop environment"
 arch=("x86_64")
