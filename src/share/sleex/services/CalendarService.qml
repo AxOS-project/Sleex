@@ -234,7 +234,7 @@ Singleton {
 
     Timer {
         id: syncInterval
-        running: true
+        running: Config.options.dashboard.calendar.useVdirsyncer
         interval: 600000 // 10 minutes
         repeat: true
         onTriggered: {
@@ -278,7 +278,7 @@ Singleton {
         cmd.push(title)
         khalAddTaskProcess.command = cmd
         khalAddTaskProcess.running = true
-        syncProcess.running = true
+        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
         return true
     }
 
@@ -297,7 +297,7 @@ Singleton {
         ]
         khalRemoveProcess.running = true
         console.log(khalRemoveProcess.command)
-        syncProcess.running = true
+        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
     }
 
     Process {
@@ -338,7 +338,7 @@ Singleton {
         console.log("Running command:", cmd.join(' '))
         khalEditProcess.command = cmd
         khalEditProcess.running = true
-        syncProcess.running = true
+        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
         return true
     }
 
