@@ -14,6 +14,10 @@ import qs.modules.common
 Singleton {
     id: root
 
+    Component.onCompleted: {
+        // console.log("[CalendarService] initialized. khalAvailable=" + root.khalAvailable + " isLoading=" + root.isLoading)
+    }
+
     property bool khalAvailable: false
     property bool isLoading: true
     property var events: []
@@ -74,14 +78,20 @@ Singleton {
         running: true
         onExited: (exitCode) => {
             root.khalAvailable = (exitCode === 0)
+            // console.log("[CalendarService] khalCheckProcess exited with code", exitCode, "khalAvailable=", root.khalAvailable)
             if (root.khalAvailable) {
+                // console.log("[CalendarService] khal available — starting initial sync and enabling interval")
+                // Start an initial sync immediately and enable the periodic interval
+                syncCalendars()
                 interval.running = true
             }
         }
     }
 
     function getTasksByDate(currentDate) {
+        // console.log("[CalendarService] getTasksByDate for", currentDate.toDateString(), "khalAvailable=", khalAvailable)
         if (!khalAvailable) {
+            // console.log("[CalendarService] khal not available, returning empty list")
             return []
         }
         const res = []
@@ -107,6 +117,7 @@ Singleton {
     function getEventsInWeek() {
         const d = new Date()
         const num_day_today = d.getDay()
+        // console.log("[CalendarService] getEventsInWeek called")
         let result = []
         for (let i = 0; i < root.weekdays.length; i++) {
             const dayOffset = (i + Config.options.time.firstDayOfWeek + 1)
@@ -151,13 +162,29 @@ Singleton {
         ]
         stdout: StdioCollector {
             onStreamFinished: {
-                let events = []
-                let lines = this.text.split('\n')
+                    // console.log("[CalendarService] getEventsProcess stdout finished; parsing events")
+                    // Handle blank output gracefully
+                    if (!this.text || String(this.text).trim().length === 0) {
+                        console.warn("[CalendarService] khal returned blank output; treating as zero events")
+                        root.events = []
+                        root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
+                        root.isLoading = false
+                        return
+                    }
+
+                    let events = []
+                    let lines = this.text.split('\n')
                 for (let line of lines) {
                     line = line.trim()
                     if (!line || line === "[]")
                         continue
-                    let dayEvents = JSON.parse(line)
+                    let dayEvents
+                    try {
+                        dayEvents = JSON.parse(line)
+                    } catch (e) {
+                        console.error("[CalendarService] JSON parse error while reading khal output:", e, "line:", line)
+                        continue
+                    }
                     for (let event of dayEvents) {
                         let startDateParts = event['start-date'].split('/')
                         let startTimeParts = event['start-time']
@@ -193,7 +220,26 @@ Singleton {
                         })
                     }
                 }
+                // console.log("[CalendarService] parsed events count=", events.length)
                 root.events = events
+                root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
+                root.isLoading = false
+            }
+        }
+        onStarted: {
+            // console.log("[CalendarService] getEventsProcess started; command=", getEventsProcess.command.join(' '))
+        }
+        onExited: (exitCode) => {
+            // console.log("[CalendarService] getEventsProcess exited with code=", exitCode, "stdout_len=", stdoutCollector.text ? stdoutCollector.text.length : 0)
+            if (exitCode !== 0) {
+                console.error("[CalendarService] getEventsProcess failed with exit code", exitCode)
+                root.isLoading = false
+                return
+            }
+
+            if (!stdoutCollector.text || String(stdoutCollector.text).trim().length === 0) {
+                console.warn("[CalendarService] getEventsProcess exited with empty stdout; no events loaded")
+                root.events = []
                 root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
                 root.isLoading = false
             }
@@ -206,15 +252,17 @@ Singleton {
         command: ["vdirsyncer", "sync"]
         onExited: (exitCode) => {
             if (exitCode === 0) {
+                // console.log("[CalendarService] syncProcess completed successfully")
                 getEventsProcess.running = true
             } else {
-                console.log("Error syncing calendars: " + exitCode)
+                // console.log("Error syncing calendars: " + exitCode)
             }
         }
     }
 
     function syncCalendars() {
         root.isLoading = true
+        // console.log("[CalendarService] syncCalendars invoked; useVdirsyncer=", Config.options.dashboard.calendar.useVdirsyncer)
         if (Config.options.dashboard.calendar.useVdirsyncer) {
             syncProcess.running = true
         } else {
@@ -249,6 +297,7 @@ Singleton {
 
     function addItem(item) {
         root.isLoading = true
+        // console.log("[CalendarService] addItem called", item)
         if (!item || !item.content) {
             console.error("Cannot add event: missing required fields")
             return false
@@ -277,8 +326,10 @@ Singleton {
 
         cmd.push(title)
         khalAddTaskProcess.command = cmd
+        // console.log("[CalendarService] addItem command:", cmd.join(' '))
         khalAddTaskProcess.running = true
         if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
+        else syncCalendars()
         return true
     }
 
@@ -296,8 +347,9 @@ Singleton {
             "DELETE FROM events WHERE item LIKE '%UID:" + taskToDelete + "%';"
         ]
         khalRemoveProcess.running = true
-        console.log(khalRemoveProcess.command)
+        // console.log("[CalendarService] removeItem command:", khalRemoveProcess.command.join(' '))
         if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
+        else syncCalendars()
     }
 
     Process {
@@ -307,6 +359,7 @@ Singleton {
 
     function editItem(uid, item) {
         root.isLoading = true
+        // console.log("[CalendarService] editItem called uid=", uid, "item=", item)
 
         if (!uid || !item || !item.content) {
             console.error("Cannot edit event: missing required fields")
@@ -335,10 +388,11 @@ Singleton {
         }
 
         cmd.push(title)
-        console.log("Running command:", cmd.join(' '))
+        // console.log("[CalendarService] editItem command:", cmd.join(' '))
         khalEditProcess.command = cmd
         khalEditProcess.running = true
         if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
+        else syncCalendars()
         return true
     }
 
@@ -355,6 +409,7 @@ Singleton {
     }
 
     function getEventsInWeekWithOffset(offset) {
+        // console.log("[CalendarService] getEventsInWeekWithOffset offset=", offset)
         const today = new Date()
         const firstDayOfWeek = Config.options.time.firstDayOfWeek + 1
         let result = []

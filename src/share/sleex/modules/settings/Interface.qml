@@ -315,6 +315,10 @@ ContentPage {
     ContentSection {
         title: "Calendar"
 
+        ContentSubsection {
+            title: "Advanced"
+            tooltip: "Vdirsyncer is not configured by default.\nPlease refer to the documentation\n to set it up. Enable only after configuring it."
+        }
         ConfigSwitch {
             text: "Use vdirsyncer"
             checked: Config.options.dashboard.calendar.useVdirsyncer
