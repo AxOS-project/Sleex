@@ -159,6 +159,11 @@ Singleton {
                     property bool useVdirsyncer: false
                     property real syncInterval: 15 // minutes
                 }
+                property JsonObject opt: JsonObject {
+                    property bool enableTodo: true
+                    property bool enableAIAssistant: true
+                    property bool enableCalendar: true
+                }
             }
 
             property JsonObject dock: JsonObject {

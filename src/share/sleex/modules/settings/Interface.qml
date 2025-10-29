@@ -173,6 +173,30 @@ ContentPage {
                 Config.options.dashboard.userDesc = text;
             }
         }
+
+        ContentSubsection {
+            title: "Optional features"
+            tooltip: "Affects performances.\nWill make dashboard load slower"
+
+            ConfigSwitch {
+                text: "Todo list"
+                checked: Config.options.dashboard.opt.enableTodo
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
+            }
+            ConfigSwitch {
+                text: "Calendar tab"
+                checked: Config.options.dashboard.opt.enableCalendar
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
+            }
+            ConfigSwitch {
+                text: "AI assistant"
+                checked: Config.options.dashboard.opt.enableAIAssistant
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
+            }
+        }
     }
 
     ContentSection {
