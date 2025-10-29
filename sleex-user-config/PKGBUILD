@@ -12,4 +12,5 @@ conflicts=("axskel-hypr")
 package(){
    mkdir -p ${pkgdir}/etc/skel/
    cp -r ${srcdir}/.config/ ${pkgdir}/etc/skel/
+   cp -r ${srcdir}/.local/ ${pkgdir}/etc/skel/
 }
