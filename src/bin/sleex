@@ -11,6 +11,11 @@ for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-c
     fi
 done
 
+if [ ! -d ~/.local/share/khal/calendars/default ]
+    mkdir -p ~/.local/share/khal/calendars/default
+    chown -R $USER:$USER ~/.local/share/khal
+fi
+
 for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitty starship.toml; do
     if [ ! -f ~/.config/$file ]; then
         cp /etc/skel/.config/$file ~/.config/$file
