@@ -2,4 +2,52 @@
 export XDG_CURRENT_DESKTOP="Sleex"
 export HYPRLAND_INSTANCE_SIGNATURE=""
 systemctl --user import-environment XDG_CURRENT_DESKTOP
-Hyprland
+
+# Check if config dirs/files exist, if not copy them from /etc/skel
+for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
+    if [ ! -d ~/.config/$dir ]; then
+        cp -r /etc/skel/.config/$dir ~/.config/$dir
+        chown -R $USER:$USER ~/.config/$dir
+    fi
+done
+
+if [ ! -d ~/.local/share/khal/calendars/default ]
+    mkdir -p ~/.local/share/khal/calendars/default
+    chown -R $USER:$USER ~/.local/share/khal
+fi
+
+for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitty starship.toml; do
+    if [ ! -f ~/.config/$file ]; then
+        cp /etc/skel/.config/$file ~/.config/$file
+        chown $USER:$USER ~/.config/$file
+    fi
+done
+
+# First run setup
+if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
+    # Sets up the user's environment to use Sleex.
+    CONFIG_FILE="$HOME/.config/hypr/custom/general.conf"
+    VC_KEYMAP=$(grep -i KEYMAP /etc/vconsole.conf | cut -d= -f2 | tr -d '"')
+    LAYOUT=$(echo "$VC_KEYMAP" | awk '{print tolower($0)}')
+
+
+    echo "Setting keyboard layout to '$LAYOUT' in $CONFIG_FILE."
+
+    if grep -q "^input:kb_layout" "$CONFIG_FILE"; then
+        sed -i "s/^input:kb_layout.*/input:kb_layout = $LAYOUT/" "$CONFIG_FILE"
+    else
+        echo "input:kb_layout = $LAYOUT" >> "$CONFIG_FILE"
+    fi
+
+    if lsmod | grep -q '^nvidia'; then
+    echo "Nvidia GPU found"
+    {
+        echo "env = LIBVA_DRIVER_NAME,nvidia"
+        echo "env = __GLX_VENDOR_LIBRARY_NAME,nvidia"
+    } >> ~/.config/hypr/custom/env.conf
+    fi
+fi
+
+
+# Start Hyprland with the Sleex config
+Hyprland -c /etc/sleex/hyprland.conf

@@ -3,7 +3,7 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
-import "./quickToggles/"
+import qs.modules.dashboard.quickToggles
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

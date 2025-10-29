@@ -55,7 +55,6 @@ Singleton {
             id: configOptionsJsonAdapter
             property JsonObject policies: JsonObject {
                 property int ai: 2 // 0: No | 1: Yes | 2: Local
-
             }
 
             property JsonObject ai: JsonObject {
@@ -156,6 +155,15 @@ Singleton {
                 property bool enableWeather: false
                 property string weatherLocation: ""
                 property string mediaPlayer: ""
+                property JsonObject calendar: JsonObject {
+                    property bool useVdirsyncer: false
+                    property real syncInterval: 15 // minutes
+                }
+                property JsonObject opt: JsonObject {
+                    property bool enableTodo: true
+                    property bool enableAIAssistant: true
+                    property bool enableCalendar: true
+                }
             }
 
             property JsonObject dock: JsonObject {
@@ -170,10 +178,10 @@ Singleton {
             }
             property JsonObject interactions: JsonObject {
                 property JsonObject scrolling: JsonObject {
-                    property bool fasterTouchpadScroll: false // Enable faster scrolling with touchpad
+                    property bool fasterTouchpadScroll: true // Enable faster scrolling with touchpad
                     property int mouseScrollDeltaThreshold: 120 // delta >= this then it gets detected as mouse scroll rather than touchpad
                     property int mouseScrollFactor: 120
-                    property int touchpadScrollFactor: 450
+                    property int touchpadScrollFactor: 50
                 }
             }
 
@@ -218,6 +226,8 @@ Singleton {
                 // https://doc.qt.io/qt-6/qtime.html#toString
                 property string format: "hh:mm"
                 property string dateFormat: "dddd, dd/MM"
+                property string longDateFormat: "dd/MM/yyyy"
+                property int firstDayOfWeek: 0 // 0: Monday, 1: Tuesday, 2: Wednesday, 3: Thursday, 4: Friday, 5: Saturday, 6: Sunday
             }
 
             property JsonObject hacks: JsonObject {

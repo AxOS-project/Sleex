@@ -1,6 +1,6 @@
 pkgname="sleex-user-config"
-pkgver="1.10"
-pkgrel="1"
+pkgver="1.12"
+pkgrel="3"
 pkgdesc="User configuration for Sleex desktop environment"
 arch=("x86_64")
 depend=("sleex")
@@ -12,4 +12,5 @@ conflicts=("axskel-hypr")
 package(){
    mkdir -p ${pkgdir}/etc/skel/
    cp -r ${srcdir}/.config/ ${pkgdir}/etc/skel/
+   cp -r ${srcdir}/.local/ ${pkgdir}/etc/skel/
 }

@@ -1,10 +1,10 @@
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
-import "./notifications"
-import "./calendar"
-import "../mediaControls"
-import "./weather"
+import qs.modules.dashboard.notifications
+import qs.modules.dashboard.calendar
+import qs.modules.mediaControls
+import qs.modules.dashboard.weather
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell.Io

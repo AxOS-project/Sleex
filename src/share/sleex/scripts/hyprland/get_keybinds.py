@@ -11,7 +11,7 @@ MOD_SEPARATORS = ['+', ' ']
 COMMENT_BIND_PATTERN = "#/#"
 
 parser = argparse.ArgumentParser(description='Hyprland keybind reader')
-parser.add_argument('--path', type=str, default="$HOME/.config/hypr/hyprland/keybinds.conf", help='path to keybind file (sourcing isn\'t supported)')
+parser.add_argument('--path', type=str, default="/etc/sleex/hyprland/keybinds.conf", help='path to keybind file (sourcing isn\'t supported)')
 args = parser.parse_args()
 content_lines = []
 reading_line = 0

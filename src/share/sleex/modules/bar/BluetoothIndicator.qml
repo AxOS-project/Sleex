@@ -71,7 +71,7 @@ Item {
 
         ClippedFilledCircularProgress {
             id: circProg
-            value: device?.battery
+            value: device?.battery ?? 0
             icon: bluetoothConnected ? deviceType : bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
             colPrimary: (device?.battery * 100) <= 20 ? Appearance.m3colors.m3error : Appearance.colors.colOnLayer1
         }

@@ -9,7 +9,6 @@ import Quickshell.Hyprland
 Singleton {
     id: root
     property string firstRunFilePath: `${Directories.state}/sleex/user/first_run.txt`
-    property string firstRunScriptPath: `/usr/share/sleex/scripts/firstRun.sh`
     property string firstRunFileContent: "This file is just here to confirm you've been greeted :>"
     property string defaultWallpaperPath: FileUtils.trimFileProtocol(`/usr/share/sleex/wallpapers/SleexOne.png`)
     property string welcomeNotifTitle: "Welcome to Sleex!"
@@ -19,16 +18,8 @@ Singleton {
         firstRunFileView.reload()
     }
 
-    function enableNextTime() {
-        Quickshell.execDetached(["bash", "-c", `rm -f ${root.firstRunFilePath}`]) 
-    }
-    function disableNextTime() {
-        Quickshell.execDetached(["bash", "-c", `echo ${root.firstRunFileContent} > ${root.firstRunFilePath}`])
-    }
-
     function handleFirstRun() {
         Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} ${root.defaultWallpaperPath} --mode dark`])
-        Quickshell.execDetached(["sh", `${root.firstRunScriptPath}`])
         Quickshell.execDetached(['bash', '-c', `sleep 0.5; notify-send '${root.welcomeNotifTitle}' '${root.welcomeNotifBody}' -a 'Sleex' &`])
         //Quickshell.reload(true)
     }
@@ -44,5 +35,4 @@ Singleton {
             }
         }
     }
-
 }

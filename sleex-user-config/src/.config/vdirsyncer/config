@@ -1,0 +1,22 @@
+# This is a vdirsyncer configuration sample for syncing Google Calendar with a local filesystem.
+# Replace YOUR_CLIENT_ID and YOUR_CLIENT_SECRET with your actual Google API credentials.
+
+[general]
+status_path = "~/.local/share/vdirsyncer/status/"
+
+[pair google]
+a = "personal"
+b = "default"
+collections = ["from a", "from b"]
+metadata = ["color"]
+
+[storage personal]
+type = "google_calendar"
+token_file = "~/.vdirsyncer/google_calendar_token"
+client_id = "YOUR_CLIENT_ID"
+client_secret = "YOUR_CLIENT_SECRET"
+
+[storage default]
+type = "filesystem"
+path = "~/.local/share/khal/calendars/"
+fileext = ".ics"

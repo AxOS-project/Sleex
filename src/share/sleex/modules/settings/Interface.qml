@@ -173,6 +173,30 @@ ContentPage {
                 Config.options.dashboard.userDesc = text;
             }
         }
+
+        ContentSubsection {
+            title: "Optional features"
+            tooltip: "Affects performances.\nWill make dashboard load slower"
+
+            ConfigSwitch {
+                text: "Todo list"
+                checked: Config.options.dashboard.opt.enableTodo
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
+            }
+            ConfigSwitch {
+                text: "Calendar tab"
+                checked: Config.options.dashboard.opt.enableCalendar
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
+            }
+            ConfigSwitch {
+                text: "AI assistant"
+                checked: Config.options.dashboard.opt.enableAIAssistant
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
+            }
+        }
     }
 
     ContentSection {
@@ -308,6 +332,32 @@ ContentPage {
                         Config.options.background.clockFontFamily = selectedFont
                     }
                 }
+            }
+        }
+    }
+
+    ContentSection {
+        title: "Calendar"
+
+        ContentSubsection {
+            title: "Advanced"
+            tooltip: "Vdirsyncer is not configured by default.\nPlease refer to the documentation\n to set it up. Enable only after configuring it."
+        }
+        ConfigSwitch {
+            text: "Use vdirsyncer"
+            checked: Config.options.dashboard.calendar.useVdirsyncer
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.calendar.useVdirsyncer = checked;
+        }
+
+        ConfigSpinBox {
+            text: "Sync interval (minutes)"
+            value: Config.options.dashboard.calendar.syncInterval
+            from: 1
+            to: 1440 // 24 hours
+            stepSize: 1
+            onValueChanged: {
+                Config.options.dashboard.calendar.syncInterval = value;
             }
         }
     }

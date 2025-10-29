@@ -10,12 +10,16 @@ import QtQuick.Layouts
 Item {
     id: root
     property int currentTab: 0
-    property var tabButtonList: [
-        {"icon": "rocket_launch", "name": qsTr("Home")}, 
-        {"name": qsTr("Todo"), "icon": "checklist_rtl"},
-        {"name": qsTr("AI"), "icon": "api"},
+    property var tabButtonList: (function() {
+        var list = [
+            {"icon": "rocket_launch", "name": qsTr("Home")}
+        ];
+        if (Config.options.dashboard.opt.enableTodo) list.push({"name": qsTr("Todo"), "icon": "checklist_rtl"});
+        if (Config.options.dashboard.opt.enableAIAssistant) list.push({"name": qsTr("AI"), "icon": "api"});
+        if (Config.options.dashboard.opt.enableCalendar) list.push({"name": qsTr("Calendar"), "icon": "calendar_today"});
         // {"name": qsTr("Quick settings"), "icon": "settings"},
-    ]
+        return list;
+    })()
     property int dialogMargins: 20
     property int fabSize: 48
     property int fabMargins: 14
@@ -29,6 +33,7 @@ Item {
             Layout.fillWidth: true
             currentIndex: currentTab
             onCurrentIndexChanged: currentTab = currentIndex
+            visible: tabButtonList.length > 1
 
             background: Item {
                 WheelHandler {
@@ -109,33 +114,35 @@ Item {
             clip: true
             currentIndex: currentTab
             onCurrentIndexChanged: {
-                tabIndicator.enableIndicatorAnimation = true
-                currentTab = currentIndex
+            tabIndicator.enableIndicatorAnimation = true
+            currentTab = currentIndex
             }
 
-            HomeWidgetGroup {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-            }
+            // Predefine components for each page type
+            Component { id: homeComp; HomeWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
+            Component { id: todoComp; TodoWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
+            Component { id: aiComp; AiWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
+            Component { id: calendarComp; CalendarWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
 
-            TodoWidgetGroup {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-            }
-            
-            AiWidgetGroup {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-            }
+            // Create one page per entry in root.tabButtonList so disabled features are not present as empty pages
+            Repeater {
+            model: root.tabButtonList
+            delegate: Item {
+                width: swipeView.width
+                height: swipeView.height
 
-            // SettingsWidgetGroup {
-            //     Layout.alignment: Qt.AlignHCenter
-            //     Layout.fillHeight: true
-            //     Layout.fillWidth: true
-            // }
+                Loader {
+                anchors.fill: parent
+                sourceComponent: (
+                    modelData.icon === "rocket_launch" ? homeComp :
+                    modelData.icon === "checklist_rtl" ? todoComp :
+                    modelData.icon === "api" ? aiComp :
+                    modelData.icon === "calendar_today" ? calendarComp :
+                    null
+                )
+                }
+            }
+            }
         }
     }
 }

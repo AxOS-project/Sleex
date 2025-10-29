@@ -1,4 +1,4 @@
-import qs.modules.dashboard.ai
+import qs.modules.dashboard.calendar
 import QtQuick
 
 Rectangle {
@@ -6,7 +6,7 @@ Rectangle {
     color: "transparent"
     clip: true
 
-    AiChat {
+    CalendarTimeTable {
         anchors.fill: parent
     }
 }
