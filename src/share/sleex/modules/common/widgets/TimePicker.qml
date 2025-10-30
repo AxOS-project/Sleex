@@ -402,15 +402,32 @@ Item {
         NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
       }
 
-      Rectangle {
+      Canvas {
         id: handLine
-        width: 2
-        height: hand.length
-        color: Appearance.colors.colOnSurface
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenterOffset: -hand.length / 2
-        anchors.verticalCenter: parent.verticalCenter
-        transform: Rotation { origin.x: handLine.width / 2; origin.y: hand.length; angle: hand.angleRad * 180 / Math.PI + 90 }
+        anchors.fill: parent
+        antialiasing: true
+        onPaint: {
+          var ctx = getContext('2d')
+          ctx.reset()
+          ctx.lineCap = 'round'
+          ctx.lineJoin = 'round'
+          ctx.strokeStyle = Appearance.colors.colOnSurface
+          ctx.lineWidth = 2
+          
+          var cx = dialArea.centerX
+          var cy = dialArea.centerY
+          var endX = cx + hand.length * Math.cos(hand.angleRad)
+          var endY = cy + hand.length * Math.sin(hand.angleRad)
+          
+          ctx.beginPath()
+          ctx.moveTo(cx, cy)
+          ctx.lineTo(endX, endY)
+          ctx.stroke()
+        }
+        Connections {
+          target: hand
+          function onAngleRadChanged() { handLine.requestPaint() }
+        }
       }
       Rectangle {
         id: knob
