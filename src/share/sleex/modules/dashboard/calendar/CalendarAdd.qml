@@ -14,6 +14,20 @@ Rectangle {
 
     signal addingFinished()
 
+    // store start/end times independently (do not bind to the shared timePicker)
+    property int startHour: 12
+    property int startMinute: 0
+    property int endHour: 13
+    property int endMinute: 0
+    // which field is being edited by the time picker: "start" or "end"
+    property string editingTarget: "start"
+    property string startTime: DateTime.is24Hour ? 
+        String(startHour).padStart(2, '0') + ":" + String(startMinute).padStart(2, '0') : 
+        ((startHour % 12) || 12) + ":" + String(startMinute).padStart(2, '0') + (startHour >= 12 ? " PM" : " AM")
+    property string endTime: DateTime.is24Hour ? 
+        String(endHour).padStart(2, '0') + ":" + String(endMinute).padStart(2, '0') : 
+        ((endHour % 12) || 12) + ":" + String(endMinute).padStart(2, '0') + (endHour >= 12 ? " PM" : " AM")
+
     property var newEventData: {
         content: ""
         start: undefined
@@ -121,69 +135,55 @@ Rectangle {
             }
         }
 
-        TextField {
-            id: eventTimeStartInput
-            Layout.fillWidth: true
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            implicitWidth: 200
-            padding: 10
-            color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
-            renderType: Text.NativeRendering
-            selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-            selectionColor: Appearance.colors.colSecondaryContainer
-            placeholderText: qsTr("Start Time (HH:MM)")
-            placeholderTextColor: Appearance.m3colors.m3outline
-            validator: RegularExpressionValidator {
-                // Simple regex for HH:MM format (24-hour)
-                regularExpression: /^([01]\d|2[0-3]):([0-5]\d)$/
+        Row {
+            spacing: 16
+
+            RippleButton {
+                buttonRadius: Appearance.rounding.normal
+                height: 40
+                width: 160
+                colBackground: Appearance.colors.colPrimary
+                colBackgroundHover: Appearance.colors.colPrimaryHover
+                contentItem: StyledText {
+                    anchors.centerIn: parent
+                    text: qsTr(startTime)
+                    color: Appearance.colors.colOnPrimary
+                    font.pixelSize: Appearance.font.pixelSize.larger
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+                onClicked: {
+                    // open time picker to edit start time
+                    editingTarget = "start"
+                    timePicker.hour = startHour
+                    timePicker.minute = startMinute
+                    timePickerDialog.visible = true
+                }
             }
 
-            background: Rectangle {
-                anchors.fill: parent
-                radius: Appearance.rounding.verysmall
-                border.width: 2
-                border.color: eventTimeStartInput.activeFocus ? Appearance.colors.colPrimary : Appearance.m3colors.m3outline
-                color: "transparent"
-            }
-
-            cursorDelegate: Rectangle {
-                width: 1
-                color: eventTimeStartInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
-                radius: 1
-            }
-        }
-
-        TextField {
-            id: eventTimeEndInput
-            Layout.fillWidth: true
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            implicitWidth: 200
-            padding: 10
-            color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
-            renderType: Text.NativeRendering
-            selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-            selectionColor: Appearance.colors.colSecondaryContainer
-            placeholderText: qsTr("End Time (HH:MM)")
-            placeholderTextColor: Appearance.m3colors.m3outline
-            validator: RegularExpressionValidator {
-                // Simple regex for HH:MM format (24-hour)
-                regularExpression: /^([01]\d|2[0-3]):([0-5]\d)$/
-            }
-
-            background: Rectangle {
-                anchors.fill: parent
-                radius: Appearance.rounding.verysmall
-                border.width: 2
-                border.color: eventTimeEndInput.activeFocus ? Appearance.colors.colPrimary : Appearance.m3colors.m3outline
-                color: "transparent"
-            }
-
-            cursorDelegate: Rectangle {
-                width: 1
-                color: eventTimeEndInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
-                radius: 1
+            RippleButton {
+                buttonRadius: Appearance.rounding.normal
+                height: 40
+                width: 160
+                colBackground: Appearance.colors.colPrimary
+                colBackgroundHover: Appearance.colors.colPrimaryHover
+                contentItem: StyledText {
+                    anchors.centerIn: parent
+                    text: qsTr(endTime)
+                    color: Appearance.colors.colOnPrimary
+                    font.pixelSize: Appearance.font.pixelSize.larger
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+                onClicked: {
+                    // open time picker to edit end time
+                    editingTarget = "end"
+                    timePicker.hour = endHour
+                    timePicker.minute = endMinute
+                    timePickerDialog.visible = true
+                }
             }
         }
 
@@ -218,8 +218,9 @@ Rectangle {
                     try {
                         const title = eventTitleInput.text.trim();
                         const dateStr = eventDateInput.text.trim();
-                        const startStr = eventTimeStartInput.text.trim();
-                        const endStr = eventTimeEndInput.text.trim();
+                        // Use the selected start/end times from this dialog (not missing inputs)
+                        const startStr = startTime;
+                        const endStr = endTime;
                         
                         if (!title) {
                             console.error("Event title is required");
@@ -260,8 +261,11 @@ Rectangle {
 
                         eventTitleInput.text = "";
                         eventDateInput.text = "";
-                        eventTimeStartInput.text = "";
-                        eventTimeEndInput.text = "";
+                        // reset times to defaults
+                        startHour = 12;
+                        startMinute = 0;
+                        endHour = 13;
+                        endMinute = 0;
                         allDaySwitch.checked = false;
                         root.editMode = false;
                     } catch (e) {
@@ -296,6 +300,65 @@ Rectangle {
                     };
                     root.editMode = false;
                     root.addingFinished();
+                }
+            }
+        }
+    }
+
+    // Time selector dialog
+    Rectangle {
+        id: timePickerDialog
+        anchors.fill: parent
+        color: Appearance.colors.colSurfaceContainer
+        visible: false
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
+
+        Rectangle {
+            id: dialogContent
+            width: 400
+            height: 500
+            anchors.centerIn: parent
+            radius: Appearance.rounding.large
+            color: Appearance.m3colors.m3background
+
+            TimePicker {
+                id: timePicker
+                anchors.centerIn: parent
+                is24h: DateTime.is24Hour
+                hour: 12
+                minute: 0
+            }
+
+            RippleButton {
+                buttonRadius: Appearance.rounding.normal
+                height: 40
+                width: 120
+                anchors.right: parent.right
+                anchors.rightMargin: 20
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 20
+                colBackground: Appearance.colors.colPrimary
+                colBackgroundHover: Appearance.colors.colPrimaryHover
+                contentItem: StyledText {
+                    anchors.centerIn: parent
+                    text: qsTr("Done")
+                    color: Appearance.colors.colOnPrimary
+                    font.pixelSize: Appearance.font.pixelSize.larger
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+                onClicked: {
+                    // apply picked time to the appropriate target
+                    if (editingTarget === "start") {
+                        startHour = timePicker.hour
+                        startMinute = timePicker.minute
+                    } else {
+                        endHour = timePicker.hour
+                        endMinute = timePicker.minute
+                    }
+                    timePickerDialog.visible = false;
                 }
             }
         }

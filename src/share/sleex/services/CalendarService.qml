@@ -161,6 +161,7 @@ Singleton {
             Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() + 3); return d; })(), "dd/MM/yyyy")
         ]
         stdout: StdioCollector {
+            id: stdoutCollector
             onStreamFinished: {
                     // console.log("[CalendarService] getEventsProcess stdout finished; parsing events")
                     // Handle blank output gracefully

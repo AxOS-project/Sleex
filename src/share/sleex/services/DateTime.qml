@@ -21,6 +21,8 @@ Singleton {
     property string longDateFormat: Qt.formatDateTime(clock.date, "dddd dd MMMM yyyy")
     property string uptime: "0h, 0m"
 
+    property bool is24Hour: ((Config.options?.time?.format ?? "").toString().toUpperCase().includes("AP") === false)
+
     Timer {
         interval: 10
         running: true
