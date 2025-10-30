@@ -11,7 +11,7 @@ for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-c
     fi
 done
 
-if [ ! -d ~/.local/share/khal/calendars/default ]
+if [ ! -d ~/.local/share/khal/calendars/default ]; then
     mkdir -p ~/.local/share/khal/calendars/default
     chown -R $USER:$USER ~/.local/share/khal
 fi
