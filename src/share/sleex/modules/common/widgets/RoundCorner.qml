@@ -32,6 +32,9 @@ Item {
             var ctx = getContext("2d");
             var r = root.size;
 
+            // Clear previous contents to avoid compositing artifacts
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             ctx.beginPath();
             switch (root.corner) {
                 case cornerEnum.topLeft:
@@ -52,7 +55,14 @@ Item {
                     break;
             }
             ctx.closePath();
-            ctx.fillStyle = root.color;
+
+            // Build an explicit rgba() color string from the QML color components so alpha is preserved
+            var cr = Math.round(root.color.r * 255);
+            var cg = Math.round(root.color.g * 255);
+            var cb = Math.round(root.color.b * 255);
+            var ca = root.color.a;
+            ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
+
             ctx.fill();
         }
     }
