@@ -13,6 +13,7 @@ import qs.modules.mediaControls
 import qs.modules.notificationPopup
 import qs.modules.onScreenDisplay
 import qs.modules.overview
+import qs.modules.polkit
 import qs.modules.screenCorners
 import qs.modules.session
 import qs.modules.dashboard
@@ -21,11 +22,9 @@ import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
 
+import Quickshell
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
-import QtQuick.Window
-import Quickshell
 import qs.services
 
 ShellRoot {
@@ -39,6 +38,7 @@ ShellRoot {
     property bool enableOnScreenDisplayBrightness: false
     property bool enableOnScreenDisplayVolume: false
     property bool enableOverview: true
+    property bool enablePolkit: true
     property bool enableReloadPopup: true
     property bool enableScreenCorners: false
     property bool enableSession: true
@@ -63,6 +63,7 @@ ShellRoot {
     LazyLoader { active: enableOnScreenDisplayBrightness; component: OnScreenDisplayBrightness {} }
     LazyLoader { active: enableOnScreenDisplayVolume; component: OnScreenDisplayVolume {} }
     LazyLoader { active: enableOverview; component: Overview {} }
+    LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
