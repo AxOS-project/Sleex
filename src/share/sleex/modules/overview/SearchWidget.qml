@@ -20,6 +20,68 @@ Item { // Wrapper
     implicitHeight: searchWidgetContent.implicitHeight + Appearance.sizes.elevationMargin * 2
 
     property string mathResult: ""
+    property bool clipboardWorkSafetyActive: false
+
+    property var searchActions: [
+        {
+            action: "accentcolor",
+            execute: args => {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--noswitch", "--color", ...(args != '' ? [`${args}`] : [])]);
+            }
+        },
+        {
+            action: "dark",
+            execute: () => {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch"]);
+            }
+        },
+        {
+            action: "light",
+            execute: () => {
+                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "light", "--noswitch"]);
+            }
+        },
+        {
+            action: "superpaste",
+            execute: args => {
+                if (!/^(\d+)/.test(args.trim())) { // Invalid if doesn't start with numbers
+                    Quickshell.execDetached([
+                        "notify-send", 
+                        "Superpaste", 
+                        "Usage: <tt>%1superpaste NUM_OF_ENTRIES[i]</tt>\nSupply <tt>i</tt> when you want images\nExamples:\n<tt>%1superpaste 4i</tt> for the last 4 images\n<tt>%1superpaste 7</tt> for the last 7 entries".arg(Config.options.search.prefix.action),
+                        "-a", "Shell"
+                    ]);
+                    return;
+                }
+                const syntaxMatch = /^(?:(\d+)(i)?)/.exec(args.trim());
+                const count = syntaxMatch[1] ? parseInt(syntaxMatch[1]) : 1;
+                const isImage = !!syntaxMatch[2];
+                Cliphist.superpaste(count, isImage);
+            }
+        },
+        {
+            action: "todo",
+            execute: args => {
+                Todo.addTask(args);
+            }
+        },
+        {
+            action: "wallpaper",
+            execute: () => {
+                GlobalStates.wallpaperSelectorOpen = true;
+            }
+        },
+        {
+            action: "wipeclipboard",
+            execute: () => {
+                Cliphist.wipe();
+            }
+        },
+    ]
+
+    function focusFirstItem() {
+        appResults.currentIndex = 0;
+    }
 
     function disableExpandAnimation() {
         searchWidthBehavior.enabled = false;
@@ -36,54 +98,21 @@ Item { // Wrapper
         root.searchingText = text;
     }
 
-    property var searchActions: [
-        {
-            action: "dark",
-            execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch"]);
-            }
-        },
-        {
-            action: "light",
-            execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "light", "--noswitch"]);
-            }
-        },
-        {
-            action: "wall",
-            execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath]);
-            }
-        },
-        {
-            action: "konachanwall",
-            execute: () => {
-                Quickshell.execDetached([Quickshell.shellPath("scripts/colors/random_konachan_wall.sh")]);
-            }
-        },
-        {
-            action: "accentcolor",
-            execute: args => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--noswitch", "--color", ...(args != '' ? [`${args}`] : [])]);
-            }
-        },
-        {
-            action: "todo",
-            execute: args => {
-                Todo.addTask(args);
-            }
-        },
-    ]
-
-    function focusFirstItem() {
-        appResults.currentIndex = 0;
+    function containsUnsafeLink(entry) {
+        if (entry == undefined) return false;
+        const unsafeKeywords = Config.options.workSafety.triggerCondition.linkKeywords;
+        return StringUtils.stringListContainsSubstring(entry.toLowerCase(), unsafeKeywords);
     }
 
     Timer {
         id: nonAppResultsTimer
         interval: Config.options.search.nonAppResultDelay
         onTriggered: {
-            mathProcess.calculateExpression(root.searchingText);
+            let expr = root.searchingText;
+            if (expr.startsWith(Config.options.search.prefix.math)) {
+                expr = expr.slice(Config.options.search.prefix.math.length);
+            }
+            mathProcess.calculateExpression(expr);
         }
     }
 
@@ -140,7 +169,7 @@ Item { // Wrapper
         }
 
         // Only handle visible printable characters (ignore control chars, arrows, etc.)
-        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.text.charCodeAt(0) >= 0x20) // ignore control chars like Backspace, Tab, etc.
+        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) // ignore control chars like Backspace, Tab, etc.
         {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
@@ -148,6 +177,7 @@ Item { // Wrapper
                 searchInput.text = searchInput.text.slice(0, searchInput.cursorPosition) + event.text + searchInput.text.slice(searchInput.cursorPosition);
                 searchInput.cursorPosition += 1;
                 event.accepted = true;
+                root.focusFirstItem();
             }
         }
     }
@@ -163,7 +193,7 @@ Item { // Wrapper
         radius: Appearance.rounding.large
         color: Appearance.colors.colLayer0
         border.width: 1
-        border.color: Appearance.colors.colLayer2
+        border.color: Appearance.colors.colLayer0Border
 
         ColumnLayout {
             id: columnLayout
@@ -249,7 +279,7 @@ Item { // Wrapper
                 color: Appearance.colors.colOutlineVariant
             }
 
-            StyledListView { // App results
+            ListView { // App results
                 id: appResults
                 visible: root.showResults
                 Layout.fillWidth: true
@@ -260,8 +290,6 @@ Item { // Wrapper
                 spacing: 2
                 KeyNavigation.up: searchBar
                 highlightMoveDuration: 100
-                add: null
-                remove: null
 
                 onFocusChanged: {
                     if (focus)
@@ -278,9 +306,7 @@ Item { // Wrapper
 
                 model: ScriptModel {
                     id: model
-                    onValuesChanged: {
-                        root.focusFirstItem();
-                    }
+                    objectProp: "key"
                     values: {
                         // Search results are handled here
                         ////////////////// Skip? //////////////////
@@ -290,35 +316,53 @@ Item { // Wrapper
                         ///////////// Special cases ///////////////
                         if (root.searchingText.startsWith(Config.options.search.prefix.clipboard)) {
                             // Clipboard
-                            const searchString = root.searchingText.slice(Config.options.search.prefix.clipboard.length);
-                            return Cliphist.fuzzyQuery(searchString).map(entry => {
+                            const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.clipboard);
+                            return Cliphist.fuzzyQuery(searchString).map((entry, index, array) => {
+                                const mightBlurImage = Cliphist.entryIsImage(entry) && root.clipboardWorkSafetyActive;
+                                let shouldBlurImage = mightBlurImage;
+                                if (mightBlurImage) {
+                                    shouldBlurImage = shouldBlurImage && (containsUnsafeLink(array[index - 1]) || containsUnsafeLink(array[index + 1]));
+                                }
+                                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`
                                 return {
+                                    key: type,
                                     cliphistRawString: entry,
-                                    name: entry.replace(/^\s*\S+\s+/, ""),
+                                    name: StringUtils.cleanCliphistEntry(entry),
                                     clickActionName: "",
-                                    type: `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`,
+                                    type: type,
                                     execute: () => {
                                         Cliphist.copy(entry)
                                     },
                                     actions: [
                                         {
+                                            name: "Copy",
+                                            materialIcon: "content_copy",
+                                            execute: () => {
+                                                Cliphist.copy(entry);
+                                            }
+                                        },
+                                        {
                                             name: "Delete",
-                                            icon: "delete",
+                                            materialIcon: "delete",
                                             execute: () => {
                                                 Cliphist.deleteEntry(entry);
                                             }
                                         }
-                                    ]
+                                    ],
+                                    blurImage: shouldBlurImage,
+                                    blurImageText: "Work safety"
                                 };
                             }).filter(Boolean);
                         }
-                        if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
+                        else if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
                             // Clipboard
-                            const searchString = root.searchingText.slice(Config.options.search.prefix.emojis.length);
+                            const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.emojis);
                             return Emojis.fuzzyQuery(searchString).map(entry => {
+                                const emoji = entry.match(/^\s*(\S+)/)?.[1] || ""
                                 return {
+                                    key: emoji,
                                     cliphistRawString: entry,
-                                    bigText: entry.match(/^\s*(\S+)/)?.[1] || "",
+                                    bigText: emoji,
                                     name: entry.replace(/^\s*\S+\s+/, ""),
                                     clickActionName: "",
                                     type: "Emoji",
@@ -332,6 +376,7 @@ Item { // Wrapper
                         ////////////////// Init ///////////////////
                         nonAppResultsTimer.restart();
                         const mathResultObject = {
+                            key: `Math result: ${root.mathResult}`,
                             name: root.mathResult,
                             clickActionName: "Copy",
                             type: "Math result",
@@ -341,21 +386,48 @@ Item { // Wrapper
                                 Quickshell.clipboardText = root.mathResult;
                             }
                         };
+                        const appResultObjects = AppSearch.fuzzyQuery(StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.app)).map(entry => {
+                            entry.clickActionName = "Launch";
+                            entry.type = "App";
+                            entry.key = entry.execute
+                            return entry;
+                        })
                         const commandResultObject = {
-                            name: searchingText.replace("file://", ""),
+                            key: `cmd ${root.searchingText}`,
+                            name: StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.shellCommand).replace("file://", ""),
                             clickActionName: "Run",
                             type: "Run command",
                             fontType: "monospace",
                             materialSymbol: 'terminal',
                             execute: () => {
-                                const cleanedCommand = root.searchingText.replace("file://", "");
+                                let cleanedCommand = root.searchingText.replace("file://", "");
+                                cleanedCommand = StringUtils.cleanPrefix(cleanedCommand, Config.options.search.prefix.shellCommand);
+                                if (cleanedCommand.startsWith(Config.options.search.prefix.shellCommand)) {
+                                    cleanedCommand = cleanedCommand.slice(Config.options.search.prefix.shellCommand.length);
+                                }
                                 Quickshell.execDetached(["bash", "-c", searchingText.startsWith('sudo') ? `${Config.options.apps.terminal} fish -C '${cleanedCommand}'` : cleanedCommand]);
                             }
                         };
+                        const webSearchResultObject = {
+                            key: `website ${root.searchingText}`,
+                            name: StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.webSearch),
+                            clickActionName: "Search",
+                            type: "Search the web",
+                            materialSymbol: 'travel_explore',
+                            execute: () => {
+                                let query = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.webSearch);
+                                let url = Config.options.search.engineBaseUrl + query;
+                                for (let site of Config.options.search.excludedSites) {
+                                    url += ` -site:${site}`;
+                                }
+                                Qt.openUrlExternally(url);
+                            }
+                        }
                         const launcherActionObjects = root.searchActions.map(action => {
                             const actionString = `${Config.options.search.prefix.action}${action.action}`;
                             if (actionString.startsWith(root.searchingText) || root.searchingText.startsWith(actionString)) {
                                 return {
+                                    key: `Action ${actionString}`,
                                     name: root.searchingText.startsWith(actionString) ? root.searchingText : actionString,
                                     clickActionName: "Run",
                                     type: "Action",
@@ -368,42 +440,32 @@ Item { // Wrapper
                             return null;
                         }).filter(Boolean);
 
+                        //////// Prioritized by prefix /////////
                         let result = [];
+                        const startsWithNumber = /^\d/.test(root.searchingText);
+                        const startsWithMathPrefix = root.searchingText.startsWith(Config.options.search.prefix.math);
+                        const startsWithShellCommandPrefix = root.searchingText.startsWith(Config.options.search.prefix.shellCommand);
+                        const startsWithWebSearchPrefix = root.searchingText.startsWith(Config.options.search.prefix.webSearch);
+                        if (startsWithNumber || startsWithMathPrefix) {
+                            result.push(mathResultObject);
+                        } else if (startsWithShellCommandPrefix) {
+                            result.push(commandResultObject);
+                        } else if (startsWithWebSearchPrefix) {
+                            result.push(webSearchResultObject);
+                        }
 
                         //////////////// Apps //////////////////
-                        result = result.concat(AppSearch.fuzzyQuery(root.searchingText).map(entry => {
-                            entry.clickActionName = "Launch";
-                            entry.type = "App";
-                            return entry;
-                        }));
+                        result = result.concat(appResultObjects);
 
                         ////////// Launcher actions ////////////
                         result = result.concat(launcherActionObjects);
 
-                        /////////// Math result & command //////////
-                        const startsWithNumber = /^\d/.test(root.searchingText);
-                        if (startsWithNumber) {
-                            result.push(mathResultObject);
-                            result.push(commandResultObject);
-                        } else {
-                            result.push(commandResultObject);
-                            result.push(mathResultObject);
+                        /// Math result, command, web search ///
+                        if (Config.options.search.prefix.showDefaultActionsWithoutPrefix) {
+                            if (!startsWithShellCommandPrefix) result.push(commandResultObject);
+                            if (!startsWithNumber && !startsWithMathPrefix) result.push(mathResultObject);
+                            if (!startsWithWebSearchPrefix) result.push(webSearchResultObject);
                         }
-
-                        ///////////////// Web search ////////////////
-                        result.push({
-                            name: root.searchingText,
-                            clickActionName: "Search",
-                            type: "Search the web",
-                            materialSymbol: 'travel_explore',
-                            execute: () => {
-                                let url = Config.options.search.engineBaseUrl + root.searchingText;
-                                for (let site of Config.options.search.excludedSites) {
-                                    url += ` -site:${site}`;
-                                }
-                                Qt.openUrlExternally(url);
-                            }
-                        });
 
                         return result;
                     }
@@ -415,7 +477,15 @@ Item { // Wrapper
                     anchors.left: parent?.left
                     anchors.right: parent?.right
                     entry: modelData
-                    query: root.searchingText.startsWith(Config.options.search.prefix.clipboard) ? root.searchingText.slice(Config.options.search.prefix.clipboard.length) : root.searchingText
+                    query: StringUtils.cleanOnePrefix(root.searchingText, [
+                        Config.options.search.prefix.action,
+                        Config.options.search.prefix.app,
+                        Config.options.search.prefix.clipboard,
+                        Config.options.search.prefix.emojis,
+                        Config.options.search.prefix.math,
+                        Config.options.search.prefix.shellCommand,
+                        Config.options.search.prefix.webSearch
+                    ])
                 }
             }
         }

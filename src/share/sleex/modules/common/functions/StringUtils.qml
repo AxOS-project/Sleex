@@ -8,7 +8,7 @@ Singleton {
      * Formats a string according to the args that are passed inc
      * @param { string } str
      * @param  {...any} args
-     * @returns
+     * @returns { string }
      */
     function format(str, ...args) {
         return str.replace(/{(\d+)}/g, (match, index) => typeof args[index] !== 'undefined' ? args[index] : match);
@@ -35,12 +35,11 @@ Singleton {
     }
 
     /**
-      * Escapes single quotes in shell commands
-      * @param { string } str
-      * @returns { string }
-      */
+     * Escapes single quotes in shell commands
+     * @param { string } str
+     * @returns { string }
+     */
     function shellSingleQuoteEscape(str) {
-        //  escape single quotes
         return String(str)
         // .replace(/\\/g, '\\\\')
         .replace(/'/g, "'\\''");
@@ -49,6 +48,7 @@ Singleton {
     /**
      * Splits markdown blocks into three different types: text, think, and code.
      * @param { string } markdown
+     * @returns {Array<{type: "text" | "think" | "code", content: string, lang?: string, completed?: boolean}>}
      */
     function splitMarkdownBlocks(markdown) {
         const regex = /```(\w+)?\n([\s\S]*?)```|<think>([\s\S]*?)<\/think>/g;
@@ -183,6 +183,11 @@ Singleton {
         return lines.join("\n");
     }
 
+    /**
+     * Cleans up a music title by removing bracketed and special characters.
+     * @param { string } title
+     * @returns { string }
+     */
     function cleanMusicTitle(title) {
         if (!title)
             return "";
@@ -199,6 +204,11 @@ Singleton {
         return title.trim();
     }
 
+    /**
+     * Converts seconds to a friendly time string (e.g. 1:23 or 1:02:03).
+     * @param { number } seconds
+     * @returns { string }
+     */
     function friendlyTimeForSeconds(seconds) {
         if (isNaN(seconds) || seconds < 0)
             return "0:00";
@@ -213,9 +223,66 @@ Singleton {
         }
     }
 
+    /**
+     * Escapes HTML special characters in a string.
+     * @param { string } str
+     * @returns { string }
+     */
     function escapeHtml(str) {
         if (typeof str !== 'string')
             return str;
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Cleans a cliphist entry by removing leading digits and tab.
+     * @param { string } str
+     * @returns { string }
+     */
+    function cleanCliphistEntry(str: string): string {
+        return str.replace(/^\d+\t/, "");
+    }
+
+    /**
+     * Checks if any substring in the list is contained in the string.
+     * @param { string } str
+     * @param { string[] } substrings
+     * @returns { boolean }
+     */
+    function stringListContainsSubstring(str, substrings) {
+        for (let i = 0; i < substrings.length; ++i) {
+            if (str.includes(substrings[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Removes the given prefix from the string if present.
+     * @param { string } str
+     * @param { string } prefix
+     * @returns { string }
+     */
+    function cleanPrefix(str, prefix) {
+        if (str.startsWith(prefix)) {
+            return str.slice(prefix.length);
+        }
+        return str;
+    }
+
+    /**
+     * Removes the first matching prefix from the string if present.
+     * @param { string } str
+     * @param { string[] } prefixes
+     * @returns { string }
+     */
+    function cleanOnePrefix(str, prefixes) {
+        for (let i = 0; i < prefixes.length; ++i) {
+            if (str.startsWith(prefixes[i])) {
+                return str.slice(prefixes[i].length);
+            }
+        }
+        return str;
     }
 }
