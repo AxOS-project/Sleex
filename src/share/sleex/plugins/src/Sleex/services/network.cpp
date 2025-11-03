@@ -474,18 +474,26 @@ void Network::updateNetworks() {
 
 void Network::updateEthernetStatus() {
     bool hasEthernet = false;
-    
+
     const GPtrArray *devices = nm_client_get_devices(m_client);
     for (guint i = 0; i < devices->len; i++) {
         NMDevice *device = NM_DEVICE(g_ptr_array_index(devices, i));
-        if (nm_device_get_device_type(device) == NM_DEVICE_TYPE_ETHERNET) {
-            if (nm_device_get_state(device) == NM_DEVICE_STATE_ACTIVATED) {
-                hasEthernet = true;
-                break;
-            }
+        NMDeviceType type = nm_device_get_device_type(device);
+        NMDeviceState state = nm_device_get_state(device);
+
+        // Debug output to help diagnose what's present on the machine
+        // qDebug() << "NM device:" << (nm_device_get_iface(device) ? nm_device_get_iface(device) : "(no iface)")
+        //          << "type=" << type << "state=" << state;
+
+        // Treat several device types as "ethernet-like"
+        bool isEtherLike = type == NM_DEVICE_TYPE_ETHERNET;
+
+        if (isEtherLike && state == NM_DEVICE_STATE_ACTIVATED) {
+            hasEthernet = true;
+            break;
         }
     }
-    
+
     if (m_ethernet != hasEthernet) {
         m_ethernet = hasEthernet;
         emit ethernetChanged();
