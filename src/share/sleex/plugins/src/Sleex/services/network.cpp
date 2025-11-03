@@ -164,16 +164,54 @@ Network::~Network() {
 }
 
 QString Network::getNetworkIcon(int strength) {
-    if (m_ethernet) {
-        return "lan";
+    const GPtrArray *devices = nm_client_get_devices(m_client);
+
+    for (guint i = 0; i < devices->len; ++i) {
+        NMDevice *device = NM_DEVICE(g_ptr_array_index(devices, i));
+        NMDeviceType type = nm_device_get_device_type(device);
+        NMDeviceState state = nm_device_get_state(device);
+
+        if (state != NM_DEVICE_STATE_ACTIVATED)
+            continue;
+
+        switch (type) {
+        case NM_DEVICE_TYPE_WIFI: {
+            // Use strength for wifi icons
+            // if (strength >= 80) return "signal_wifi_4_bar";
+            // if (strength >= 60) return "signal_wifi_3_bar";
+            // if (strength >= 40) return "signal_wifi_2_bar";
+            // if (strength >= 20) return "signal_wifi_1_bar";
+            // return "signal_wifi_0_bar";
+            switch (strength) {
+                case 80 ... 100:
+                    return "signal_wifi_4_bar";
+                case 60 ... 79:
+                    return "network_wifi_3_bar";
+                case 40 ... 59:
+                    return "network_wifi_2_bar";
+                case 20 ... 39:
+                    return "network_wifi_1_bar";
+                default:
+                    return "signal_wifi_0_bar";
+            }
+        }
+        case NM_DEVICE_TYPE_ETHERNET:
+            return "lan";
+        case NM_DEVICE_TYPE_UNKNOWN:
+            return "signal_wifi_statusbar_not_connected";
+        case NM_DEVICE_TYPE_DUMMY:
+            return "signal_wifi_bad";
+        case NM_DEVICE_TYPE_BT:
+            return "bluetooth_connected";
+        case NM_DEVICE_TYPE_MODEM:
+            return "router";
+        default:
+            break;
+        }
     }
-    
-    if (strength >= 80) return "signal_wifi_4_bar";
-    else if (strength >= 60) return "network_wifi_3_bar";
-    else if (strength >= 40) return "network_wifi_2_bar";
-    else if (strength >= 20) return "network_wifi_1_bar";
-    else if (strength >= 0) return "signal_wifi_0_bar";
-    else return "settings_ethernet";
+
+    // Fallback if no active device found
+    return "signal_wifi_off";
 }
 
 void Network::enableWifi(bool enabled) {
@@ -474,26 +512,18 @@ void Network::updateNetworks() {
 
 void Network::updateEthernetStatus() {
     bool hasEthernet = false;
-
+    
     const GPtrArray *devices = nm_client_get_devices(m_client);
     for (guint i = 0; i < devices->len; i++) {
         NMDevice *device = NM_DEVICE(g_ptr_array_index(devices, i));
-        NMDeviceType type = nm_device_get_device_type(device);
-        NMDeviceState state = nm_device_get_state(device);
-
-        // Debug output to help diagnose what's present on the machine
-        // qDebug() << "NM device:" << (nm_device_get_iface(device) ? nm_device_get_iface(device) : "(no iface)")
-        //          << "type=" << type << "state=" << state;
-
-        // Treat several device types as "ethernet-like"
-        bool isEtherLike = type == NM_DEVICE_TYPE_ETHERNET;
-
-        if (isEtherLike && state == NM_DEVICE_STATE_ACTIVATED) {
-            hasEthernet = true;
-            break;
+        if (nm_device_get_device_type(device) == NM_DEVICE_TYPE_ETHERNET || nm_device_get_device_type(device) == NM_DEVICE_TYPE_DUMMY) {
+            if (nm_device_get_state(device) == NM_DEVICE_STATE_ACTIVATED) {
+                hasEthernet = true;
+                break;
+            }
         }
     }
-
+    
     if (m_ethernet != hasEthernet) {
         m_ethernet = hasEthernet;
         emit ethernetChanged();
