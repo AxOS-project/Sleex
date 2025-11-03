@@ -112,6 +112,7 @@ private:
     static void onConnectionDeactivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionAdded(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onConnectionRemoved(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
+    static void onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data);
     
     void updateNetworks();
     void updateEthernetStatus();

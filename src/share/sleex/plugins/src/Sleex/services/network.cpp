@@ -176,12 +176,6 @@ QString Network::getNetworkIcon(int strength) {
 
         switch (type) {
         case NM_DEVICE_TYPE_WIFI: {
-            // Use strength for wifi icons
-            // if (strength >= 80) return "signal_wifi_4_bar";
-            // if (strength >= 60) return "signal_wifi_3_bar";
-            // if (strength >= 40) return "signal_wifi_2_bar";
-            // if (strength >= 20) return "signal_wifi_1_bar";
-            // return "signal_wifi_0_bar";
             switch (strength) {
                 case 80 ... 100:
                     return "signal_wifi_4_bar";
@@ -215,7 +209,35 @@ QString Network::getNetworkIcon(int strength) {
 }
 
 void Network::enableWifi(bool enabled) {
-    nm_client_wireless_set_enabled(m_client, enabled);
+    GVariant *value = g_variant_new_boolean(enabled);
+    
+    nm_client_dbus_set_property(
+        m_client,
+        NM_DBUS_PATH,
+        NM_DBUS_INTERFACE,
+        "WirelessEnabled",
+        value,
+        -1,  // timeout (-1 for default)
+        nullptr,  // cancellable
+        onWifiEnabledSet,
+        this
+    );
+}
+
+
+void Network::onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data) {
+    Q_UNUSED(user_data);
+    auto *client = NM_CLIENT(source);
+    
+    GError *error = nullptr;
+    gboolean success = nm_client_dbus_set_property_finish(client, result, &error);
+    
+    if (error) {
+        qWarning() << "Failed to set wireless enabled:" << error->message;
+        g_error_free(error);
+    } else if (!success) {
+        qWarning() << "Failed to set wireless enabled (no error details)";
+    }
 }
 
 void Network::toggleWifi() {

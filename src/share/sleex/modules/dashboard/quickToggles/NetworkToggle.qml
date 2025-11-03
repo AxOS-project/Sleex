@@ -14,7 +14,7 @@ import Sleex.Services
 QuickToggleButton {
 
     toggled: Network.wifiEnabled
-    buttonIcon: Network.wifiEnabled ? Network.getNetworkIcon(Network.active.strength ?? 0) : "wifi_off"
+    buttonIcon: Network.wifiEnabled ? Network.getNetworkIcon(Network.active?.strength ?? 0) : "signal_wifi_off"
     onClicked: {
         Network.toggleWifi()
     }
@@ -23,6 +23,6 @@ QuickToggleButton {
         GlobalStates.dashboardOpen = false
     }
     StyledToolTip {
-        text: StringUtils.format(qsTr("{0} | Right-click to configure"), Network.active.ssid)
+        text: StringUtils.format(qsTr("{0} | Right-click to configure"), Network.active?.ssid ?? qsTr("Wi-Fi Disabled"))
     }
 }
