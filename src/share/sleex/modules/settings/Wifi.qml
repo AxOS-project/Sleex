@@ -87,14 +87,33 @@ ContentPage {
             visible: !Network.wifiEnabled
         }
 
+        StyledTextArea {
+            id: networkSearch
+            Layout.fillWidth: true
+            placeholderText: "Search networks"
+            visible: Network.wifiEnabled
+        }
+
 
         Repeater {
             model: ScriptModel {
-                values: [...Network.networks].sort((a, b) => {
-                    if (a.active !== b.active)
-                        return b.active - a.active;
-                    return b.strength - a.strength;
-                }).slice(0, 8)
+                // values: [...Network.networks].sort((a, b) => {
+                //     if (a.active !== b.active)
+                //         return b.active - a.active;
+                //     return b.strength - a.strength;
+                // }).slice(0, 8)
+
+                values: {
+                    let networks = [...Network.networks].sort((a, b) => {
+                        if (a.active !== b.active)
+                            return b.active - a.active;
+                        return b.strength - a.strength;
+                    });
+                    if (networkSearch.text.trim() !== "") {
+                        networks = networks.filter(n => n.ssid.toLowerCase().includes(networkSearch.text.toLowerCase()));
+                    }
+                    return networks;
+                }
             }
 
             RowLayout {

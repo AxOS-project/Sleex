@@ -125,9 +125,22 @@ ContentPage {
             visible: !Bluetooth.adapters.values.length > 0
         }
 
+        StyledTextArea {
+            id: deviceSearch
+            Layout.fillWidth: true
+            placeholderText: "Search devices"
+            visible: Bluetooth.adapters.values.length > 0
+        }
+
         Repeater {
             model: ScriptModel {
-                values: [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.paired - a.paired))
+                values: {
+                    let devices = [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.bonded - a.bonded));
+                    if (deviceSearch.text.trim() !== "") {
+                        devices = devices.filter(d => d.name.toLowerCase().includes(deviceSearch.text.toLowerCase()) || d.address.toLowerCase().includes(deviceSearch.text.toLowerCase()));
+                    }
+                    return devices;
+                }
             }
 
             RowLayout {
