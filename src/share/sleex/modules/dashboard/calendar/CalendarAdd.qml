@@ -69,70 +69,42 @@ Rectangle {
             wrapMode: Text.WordWrap
         }
 
-        TextField {
+        MaterialTextField {
             id: eventTitleInput
             Layout.fillWidth: true
+            implicitWidth: 300
             Layout.leftMargin: 16
             Layout.rightMargin: 16
-            implicitWidth: 200
             padding: 10
-            color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
-            renderType: Text.NativeRendering
-            selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-            selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Title")
-            placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Allow any non-empty string
                 regularExpression: /^(?!\s*$).+/
             }
-
-            background: Rectangle {
-                anchors.fill: parent
-                radius: Appearance.rounding.verysmall
-                border.width: 2
-                border.color: eventTitleInput.activeFocus ? Appearance.colors.colPrimary : Appearance.m3colors.m3outline
-                color: "transparent"
-            }
-
-            cursorDelegate: Rectangle {
-                width: 1
-                color: eventTitleInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
-                radius: 1
-            }
         }
 
-        TextField {
+        MaterialTextField {
             id: eventDateInput
             Layout.fillWidth: true
+            implicitWidth: 300
             Layout.leftMargin: 16
             Layout.rightMargin: 16
-            implicitWidth: 200
             padding: 10
-            color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
-            renderType: Text.NativeRendering
-            selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-            selectionColor: Appearance.colors.colSecondaryContainer
             placeholderText: qsTr("Date (YYYY-MM-DD)")
-            placeholderTextColor: Appearance.m3colors.m3outline
             validator: RegularExpressionValidator {
                 // Simple regex for YYYY-MM-DD format
                 regularExpression: /^\d{4}-\d{2}-\d{2}$/
             }
+        }
 
-            background: Rectangle {
-                anchors.fill: parent
-                radius: Appearance.rounding.verysmall
-                border.width: 2
-                border.color: eventDateInput.activeFocus ? Appearance.colors.colPrimary : Appearance.m3colors.m3outline
-                color: "transparent"
-            }
-
-            cursorDelegate: Rectangle {
-                width: 1
-                color: eventDateInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
-                radius: 1
-            }
+        ConfigSwitch {
+            id: allDaySwitch
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            text: qsTr("All Day Event")
+            checked: false
+            onCheckedChanged: root.newEventData.allDay = checked
         }
 
         Row {
@@ -185,16 +157,6 @@ Rectangle {
                     timePickerDialog.visible = true
                 }
             }
-        }
-
-        ConfigSwitch {
-            id: allDaySwitch
-            Layout.fillWidth: true
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            text: qsTr("All Day Event")
-            checked: false
-            onCheckedChanged: root.newEventData.allDay = checked
         }
 
         Row {
