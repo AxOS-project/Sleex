@@ -91,16 +91,19 @@ Item {
         currentTimeY = diffMinutes * root.pixelsPerMinute;
     }
     
-    // return Date object for a given column index (0..6)
     function dateForColumn(index) {
         const today = new Date(DateTime.clock.date);
         const firstDayOfWeek = Config.options.time.firstDayOfWeek + 1;
         const offset = CalendarService.currentWeekOffset || 0;
-        // compute day offset within the week
-        const dayOffset = (index + firstDayOfWeek) % 7;
-        const d = new Date(today);
-        d.setDate(today.getDate() - today.getDay() + dayOffset + offset * 7);
-        d.setHours(0,0,0,0);
+        
+        const currentDayOfWeek = today.getDay();
+        const daysFromWeekStart = (currentDayOfWeek - firstDayOfWeek + 7) % 7;
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - daysFromWeekStart + offset * 7);
+        
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + index);
+        d.setHours(0, 0, 0, 0);
         return d;
     }
 

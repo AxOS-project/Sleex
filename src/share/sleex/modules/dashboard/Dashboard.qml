@@ -19,7 +19,8 @@ import Quickshell.Bluetooth
 Scope {
     property int dashboardWidth: Appearance.sizes.dashboardWidth
     property int dashboardPadding: 15
-
+    property real dashboardScale: Config.options.dashboard.dashboardScale
+    
     PanelWindow {
         id: dashboardRoot
         visible: GlobalStates.dashboardOpen
@@ -29,8 +30,8 @@ Scope {
         }
 
         exclusiveZone: 0
-        implicitWidth: 1500
-        implicitHeight: 900
+        implicitWidth: 1500 * dashboardScale
+        implicitHeight: 900 * dashboardScale
         WlrLayershell.namespace: "quickshell:dashboard"
         // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
         // WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -45,148 +46,144 @@ Scope {
             }
         }
 
+        Item {
+            id: scaleWrapper
+            anchors.centerIn: parent
+            width: parent.width / dashboardScale
+            height: parent.height / dashboardScale
+            scale: dashboardScale
 
-        Loader {
-            id: dashboardContentLoader
-            active: GlobalStates.dashboardOpen
-            anchors {
-                top: parent.top
-                bottom: parent.bottom
-                right: parent.right
-                left: parent.left
-                topMargin: Appearance.sizes.hyprlandGapsOut
-                rightMargin: Appearance.sizes.hyprlandGapsOut
-                bottomMargin: Appearance.sizes.hyprlandGapsOut
-                leftMargin: Appearance.sizes.elevationMargin
-            }
-            width: dashboardWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-            height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-
-            focus: GlobalStates.dashboardOpen
-            Keys.onPressed: (event) => {
-                if (event.key === Qt.Key_Escape) {
-                    dashboardRoot.hide();
+            Loader {
+                id: dashboardContentLoader
+                active: GlobalStates.dashboardOpen
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    right: parent.right
+                    left: parent.left
+                    topMargin: Appearance.sizes.hyprlandGapsOut
+                    rightMargin: Appearance.sizes.hyprlandGapsOut
+                    bottomMargin: Appearance.sizes.hyprlandGapsOut
+                    leftMargin: Appearance.sizes.elevationMargin
                 }
-            }
+                width: dashboardWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
+                height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
 
-            sourceComponent: Item {
-                implicitHeight: dashboardBackground.implicitHeight
-                implicitWidth: dashboardBackground.implicitWidth
-
-                StyledRectangularShadow {
-                    target: dashboardBackground
-                    visible: Config.options.appearance.transparency
+                focus: GlobalStates.dashboardOpen
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Escape) {
+                        dashboardRoot.hide();
+                    }
                 }
-                Rectangle {
-                    id: dashboardBackground
 
-                    anchors.fill: parent
-                    implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-                    implicitWidth: dashboardWidth - Appearance.sizes.hyprlandGapsOut * 2
-                    color: Appearance.colors.colLayer0
-                    radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+                sourceComponent: Item {
+                    implicitHeight: dashboardBackground.implicitHeight
+                    implicitWidth: dashboardBackground.implicitWidth
 
-                    ColumnLayout {
-                        spacing: dashboardPadding
+                    StyledRectangularShadow {
+                        target: dashboardBackground
+                        visible: Config.options.appearance.transparency
+                    }
+
+                    Rectangle {
+                        id: dashboardBackground
                         anchors.fill: parent
-                        anchors.margins: dashboardPadding
+                        implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
+                        implicitWidth: dashboardWidth - Appearance.sizes.hyprlandGapsOut * 2
+                        color: Appearance.colors.colLayer0
+                        radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
 
-                        RowLayout {
-                            Layout.fillHeight: false
-                            spacing: 10
-                            Layout.margins: 10
-                            Layout.topMargin: 5
-                            Layout.bottomMargin: 0
+                        ColumnLayout {
+                            spacing: dashboardPadding
+                            anchors.fill: parent
+                            anchors.margins: dashboardPadding
 
-                            Item {
-                                implicitWidth: distroIcon.width
-                                implicitHeight: distroIcon.height
-                                CustomIcon {
-                                    id: distroIcon
-                                    width: 30
-                                    height: 30
-                                    source: SystemInfo.distroIcon
+                            RowLayout {
+                                Layout.fillHeight: false
+                                spacing: 10
+                                Layout.margins: 10
+                                Layout.topMargin: 5
+                                Layout.bottomMargin: 0
+
+                                Item {
+                                    implicitWidth: distroIcon.width
+                                    implicitHeight: distroIcon.height
+                                    CustomIcon {
+                                        id: distroIcon
+                                        width: 30
+                                        height: 30
+                                        source: SystemInfo.distroIcon
+                                    }
+                                    ColorOverlay {
+                                        anchors.fill: distroIcon
+                                        source: distroIcon
+                                        color: Appearance.colors.colOnLayer0
+                                    }
                                 }
-                                ColorOverlay {
-                                    anchors.fill: distroIcon
-                                    source: distroIcon
+
+                                StyledText {
+                                    font.pixelSize: Appearance.font.pixelSize.normal
                                     color: Appearance.colors.colOnLayer0
+                                    text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                ButtonGroup {
+                                    QuickToggleButton {
+                                        toggled: false
+                                        buttonIcon: "restart_alt"
+                                        onClicked: {
+                                            Hyprland.dispatch("reload")
+                                            Quickshell.reload(true)
+                                        }
+                                        StyledToolTip { text: qsTr("Reload Hyprland & Quickshell") }
+                                    }
+                                    QuickToggleButton {
+                                        toggled: false
+                                        buttonIcon: "settings"
+                                        onClicked: {
+                                            Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
+                                            GlobalStates.dashboardOpen = false
+                                        }
+                                        StyledToolTip { text: qsTr("Settings") }
+                                    }
+                                    QuickToggleButton {
+                                        toggled: false
+                                        buttonIcon: "power_settings_new"
+                                        onClicked: { Hyprland.dispatch("global quickshell:sessionOpen") }
+                                        StyledToolTip { text: qsTr("Session") }
+                                    }
+                                }
+
+                                ButtonGroup {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    spacing: 5
+                                    padding: 5
+                                    color: Appearance.colors.colLayer1
+
+                                    NetworkToggle {}
+
+                                    Loader {
+                                        active: Bluetooth.adapters.values.length > 0
+                                        sourceComponent: BluetoothToggle {}
+                                    }
+
+                                    NightLight {}
+                                    IdleInhibitor {}
                                 }
                             }
 
-                            StyledText {
-                                font.pixelSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnLayer0
-                                text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
-                            }
-
-                            Item {
+                            DashboardTabs {
+                                id: dashboardTabs
                                 Layout.fillWidth: true
-                            }
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: 600
+                                Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
 
-                            ButtonGroup {
-                                QuickToggleButton {
-                                    toggled: false
-                                    buttonIcon: "restart_alt"
-                                    onClicked: {
-                                        Hyprland.dispatch("reload")
-                                        Quickshell.reload(true)
-                                    }
-                                    StyledToolTip {
-                                        text: qsTr("Reload Hyprland & Quickshell")
-                                    }
-                                }
-                                QuickToggleButton {
-                                    toggled: false
-                                    buttonIcon: "settings"
-                                    onClicked: {
-                                        Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
-                                        GlobalStates.dashboardOpen = false
-                                    }
-                                    StyledToolTip {
-                                        text: qsTr("Settings")
-                                    }
-                                }
-                                QuickToggleButton {
-                                    toggled: false
-                                    buttonIcon: "power_settings_new"
-                                    onClicked: {
-                                        Hyprland.dispatch("global quickshell:sessionOpen")
-                                    }
-                                    StyledToolTip {
-                                        text: qsTr("Session")
-                                    }
-                                }
-                            }
-                            ButtonGroup {
-                                Layout.alignment: Qt.AlignHCenter
-                                spacing: 5
-                                padding: 5
-                                color: Appearance.colors.colLayer1
-
-                                NetworkToggle {}
-                                Loader {
-                                    active: Bluetooth.adapters.values.length > 0
-                                    sourceComponent: BluetoothToggle {}
-                                }
-                                NightLight {}
-                                IdleInhibitor {}
-                            }
-
-                        }
-
-
-                        // Center widget group
-                        DashboardTabs {
-                            id: dashboardTabs
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.preferredHeight: 600
-                            Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
-
-                            onCurrentTabChanged: {
-                                if (currentTab === "greetings") {
-                                    Notifications.timeoutAll();
+                                onCurrentTabChanged: {
+                                    if (currentTab === "greetings")
+                                        Notifications.timeoutAll();
                                 }
                             }
                         }
@@ -194,8 +191,6 @@ Scope {
                 }
             }
         }
-
-
     }
 
     IpcHandler {
@@ -206,10 +201,7 @@ Scope {
             if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
         }
 
-        function close(): void {
-            GlobalStates.dashboardOpen = false;
-        }
-
+        function close(): void { GlobalStates.dashboardOpen = false; }
         function open(): void {
             GlobalStates.dashboardOpen = true;
             Notifications.timeoutAll();
@@ -219,7 +211,6 @@ Scope {
     GlobalShortcut {
         name: "dashboardToggle"
         description: qsTr("Toggles dashboard on press")
-
         onPressed: {
             GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
             if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
@@ -228,7 +219,6 @@ Scope {
     GlobalShortcut {
         name: "dashboardOpen"
         description: qsTr("Opens dashboard on press")
-
         onPressed: {
             GlobalStates.dashboardOpen = true;
             Notifications.timeoutAll();
@@ -237,10 +227,6 @@ Scope {
     GlobalShortcut {
         name: "dashboardClose"
         description: qsTr("Closes dashboard on press")
-
-        onPressed: {
-            GlobalStates.dashboardOpen = false;
-        }
+        onPressed: { GlobalStates.dashboardOpen = false; }
     }
-
 }

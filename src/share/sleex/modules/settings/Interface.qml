@@ -29,7 +29,6 @@ ContentPage {
                 Config.options.appearance.opacity = value;
             }
         }
-
     }
 
     ContentSection {
@@ -141,63 +140,74 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Dashboard"
-
-        MaterialTextField {
-            id: ghUsername
-            Layout.fillWidth: true
-            placeholderText: "Github username"
-            text: Config.options.dashboard.ghUsername
-            wrapMode: TextEdit.Wrap
-            onTextChanged: {
-                Config.options.dashboard.ghUsername = text;
-            }
-        }
-
-        MaterialTextField {
-            id: avatarPath
-            Layout.fillWidth: true
-            placeholderText: "Avatar path"
-            text: Config.options.dashboard.avatarPath
-            onTextChanged: {
-                Config.options.dashboard.avatarPath = text;
-            }
-        }
-
-        MaterialTextField {
-            id: userDesc
-            Layout.fillWidth: true
-            placeholderText: "User description"
-            text: Config.options.dashboard.userDesc
-            onTextChanged: {
-                Config.options.dashboard.userDesc = text;
-            }
-        }
-
-        ContentSubsection {
-            title: "Optional features"
-            tooltip: "Affects performances.\nWill make dashboard load slower"
-
-            ConfigSwitch {
-                text: "Todo list"
-                checked: Config.options.dashboard.opt.enableTodo
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
-            }
-            ConfigSwitch {
-                text: "Calendar tab"
-                checked: Config.options.dashboard.opt.enableCalendar
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
-            }
-            ConfigSwitch {
-                text: "AI assistant"
-                checked: Config.options.dashboard.opt.enableAIAssistant
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
-            }
+    title: "Dashboard"
+        
+    ConfigSpinBox {
+        text: "Scale"
+        value: Config.options.dashboard.dashboardScale * 100
+        from: 0
+        to: 200
+        stepSize: 5
+        onValueChanged: {
+            Config.options.dashboard.dashboardScale = value / 100;
         }
     }
+        
+    MaterialTextField {
+        id: ghUsername
+        Layout.fillWidth: true
+        placeholderText: "Github username"
+        text: Config.options.dashboard.ghUsername
+        wrapMode: TextEdit.Wrap
+        onTextChanged: {
+            Config.options.dashboard.ghUsername = text;
+        }
+    }
+
+    MaterialTextField {
+        id: avatarPath
+        Layout.fillWidth: true
+        placeholderText: "Avatar path"
+        text: Config.options.dashboard.avatarPath
+        onTextChanged: {
+            Config.options.dashboard.avatarPath = text;
+        }
+    }
+
+    MaterialTextField {
+        id: userDesc
+        Layout.fillWidth: true
+        placeholderText: "User description"
+        text: Config.options.dashboard.userDesc
+        onTextChanged: {
+            Config.options.dashboard.userDesc = text;
+        }
+    }
+
+    ContentSubsection {
+        title: "Optional features"
+        tooltip: "Affects performances.\nWill make dashboard load slower"
+
+        ConfigSwitch {
+            text: "Todo list"
+            checked: Config.options.dashboard.opt.enableTodo
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
+        }
+        ConfigSwitch {
+            text: "Calendar tab"
+            checked: Config.options.dashboard.opt.enableCalendar
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
+        }
+        ConfigSwitch {
+            text: "AI assistant"
+            checked: Config.options.dashboard.opt.enableAIAssistant
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
+        }
+    }
+}
 
     ContentSection {
         title: "Dock"

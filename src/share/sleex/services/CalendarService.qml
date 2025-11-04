@@ -413,10 +413,17 @@ Singleton {
         // console.log("[CalendarService] getEventsInWeekWithOffset offset=", offset)
         const today = new Date()
         const firstDayOfWeek = Config.options.time.firstDayOfWeek + 1
+        
+        const currentDayOfWeek = today.getDay()
+        const daysFromWeekStart = (currentDayOfWeek - firstDayOfWeek + 7) % 7
+        const weekStart = new Date(today)
+        weekStart.setDate(today.getDate() - daysFromWeekStart + offset * 7)
+        
         let result = []
         for (let i = 0; i < root.weekdays.length; i++) {
-            let d = new Date(today)
-            d.setDate(today.getDate() - today.getDay() + ((i + firstDayOfWeek) % 7) + offset * 7)
+            let d = new Date(weekStart)
+            d.setDate(weekStart.getDate() + i)
+            
             const events = root.getTasksByDate(d)
             const name_weekday = root.weekdays[d.getDay()]
             let obj = {
