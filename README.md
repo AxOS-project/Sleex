@@ -1,5 +1,9 @@
 # Sleex
 
+> [!CAUTION]
+> This branch is an archive.
+> There is no support for it.
+
 Sleex is the third desktop environement of AxOS. It is based on Hyprland with AGS V1.
 
 ## Features
