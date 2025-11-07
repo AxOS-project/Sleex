@@ -142,7 +142,7 @@ ContentPage {
 
     ContentSection {
         title: "Dashboard"
-
+        
         MaterialTextField {
             id: ghUsername
             Layout.fillWidth: true
@@ -197,7 +197,26 @@ ContentPage {
                 onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
             }
         }
-    }
+    
+    ContentSubsection {
+            title: "Dashboard Scale"
+
+       MaterialTextField {
+    id: dashboardScale
+    Layout.fillWidth: true
+    placeholderText: ""
+    text: Config.options.dashboard.dasboardScale * 100
+    wrapMode: TextEdit.Wrap
+
+    onEditingFinished: {
+        let value = parseFloat(text);
+        if (!isNaN(value)) {
+            Config.options.dashboard.dasboardScale = value / 100;
+            }
+         }
+      }
+   }
+}
 
     ContentSection {
         title: "Dock"
