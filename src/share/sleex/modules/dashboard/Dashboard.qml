@@ -30,7 +30,7 @@ Scope {
         color: "transparent"
         WlrLayershell.namespace: "quickshell:dashboard"
 
-        function hide() {
+        function hide(): void {
             GlobalStates.dashboardOpen = false
         }
 
@@ -160,13 +160,16 @@ Scope {
     IpcHandler {
         target: "dashboard"
 
-        function toggle() {
+        function toggle(): void {
             GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen
             if (GlobalStates.dashboardOpen) Notifications.timeoutAll()
         }
 
-        function close() { GlobalStates.dashboardOpen = false }
-        function open() {
+        function close(): void {
+            GlobalStates.dashboardOpen = false
+        }
+
+        function open(): void {
             GlobalStates.dashboardOpen = true
             Notifications.timeoutAll()
         }
