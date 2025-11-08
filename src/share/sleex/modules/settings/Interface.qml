@@ -29,7 +29,6 @@ ContentPage {
                 Config.options.appearance.opacity = value;
             }
         }
-
     }
 
     ContentSection {
@@ -199,23 +198,24 @@ ContentPage {
         }
     
     ContentSubsection {
-            title: "Dashboard Scale"
+        title: "Dashboard Scale"
 
-       MaterialTextField {
-    id: dashboardScale
-    Layout.fillWidth: true
-    placeholderText: ""
-    text: Config.options.dashboard.dasboardScale * 100
-    wrapMode: TextEdit.Wrap
+    MaterialTextField {
+        id: dashboardScale
+        Layout.fillWidth: true
+        placeholderText: ""
+        text: Config.options.dashboard.dasboardScale * 100
+        wrapMode: TextEdit.Wrap
 
-    onEditingFinished: {
-        let value = parseFloat(text);
-        if (!isNaN(value)) {
-            Config.options.dashboard.dasboardScale = value / 100;
+        onEditingFinished: {
+            let value = parseFloat(text);
+            if (!isNaN(value)) {
+                Config.options.dashboard.dasboardScale = value / 100;
             }
-         }
-      }
-   }
+        }
+    }
+}
+
 }
 
     ContentSection {
