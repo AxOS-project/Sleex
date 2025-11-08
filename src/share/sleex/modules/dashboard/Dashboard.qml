@@ -80,8 +80,8 @@ Scope {
                             Layout.topMargin: 5
 
                             Item {
-                                implicitWidth: 30
-                                implicitHeight: 30
+                                implicitWidth: distroIcon.width
+                                implicitHeight: distroIcon.height
                                 CustomIcon {
                                     id: distroIcon
                                     width: 30
