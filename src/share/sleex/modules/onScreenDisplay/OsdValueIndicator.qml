@@ -86,6 +86,7 @@ Item {
                         color: Appearance.colors.colOnLayer0
                         font.pixelSize: Appearance.font.pixelSize.small
                         Layout.fillWidth: false
+                        Layout.leftMargin: 75
                         text: Math.round(root.value * 100)
                     }
                 }
