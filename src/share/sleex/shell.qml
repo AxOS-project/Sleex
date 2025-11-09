@@ -35,8 +35,8 @@ ShellRoot {
     property bool enableDock: true
     property bool enableMediaControls: true
     property bool enableNotificationPopup: true
-    property bool enableOnScreenDisplayBrightness: false
-    property bool enableOnScreenDisplayVolume: false
+    property bool enableOnScreenDisplayBrightness: Config.options.appearance.fullscreenIndicator
+    property bool enableOnScreenDisplayVolume: Config.options.appearance.fullscreenIndicator
     property bool enableOverview: true
     property bool enablePolkit: true
     property bool enableReloadPopup: true
