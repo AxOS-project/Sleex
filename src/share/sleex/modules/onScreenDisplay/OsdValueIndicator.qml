@@ -22,11 +22,7 @@ Item {
     property real valueIndicatorLeftPadding: 10
     property real valueIndicatorRightPadding: 20 // An icon is circle ish, a column isn't, hence the extra padding
 
-    // --- ADD THIS LINE ---
-    // Bind 'visible' to the 'hasFullscreen' property of the focused workspace.
-    // The '&&' acts as a null-check in case focusedWorkspace is not immediately available.
     visible: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.hasFullscreen
-    // ---------------------
 
     Layout.margins: Appearance.sizes.elevationMargin
     implicitWidth: Appearance.sizes.osdWidth
