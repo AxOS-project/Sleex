@@ -109,6 +109,14 @@ Singleton {
                 property bool sound: true //Added for Battery Sound Toggle
             }
 
+            property JsonObject timeout: JsonObject {
+                property int screendim: 180
+                property int backlight: 180
+                property int lock: 200
+                property int screenoff: 220
+                property int suspend: 240
+            }
+
             property JsonObject bar: JsonObject {
                 property bool bottom: false // Instead of top
                 property bool background: false
