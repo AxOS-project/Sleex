@@ -102,6 +102,10 @@ ContentPage {
 
     ContentSection {
         title: "Power"
+        
+        ContentSubsectionLabel {
+        text: "Battery Alerts"
+        }
 
         ConfigRow {
             visible: UPower.displayDevice.isLaptopBattery
@@ -128,6 +132,52 @@ ContentPage {
                 }
             }
         }
+        
+        ContentSubsectionLabel {
+        text: "Timeout"
+        }
+
+        ConfigRow {
+            uniform: true
+            ConfigSpinBox {
+                text: "Screen Timeout"
+                value: Config.options.timeout.screen
+                from: 10
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.screen = value;
+                }
+            }
+            ConfigSpinBox {
+                text: "Suspend"
+                value: Config.options.timeout.suspend
+                from: 15
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.suspend = value;
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         ContentSubsectionLabel {
             text: "Power profile"
         }
