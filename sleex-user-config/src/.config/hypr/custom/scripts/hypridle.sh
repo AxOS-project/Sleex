@@ -23,7 +23,7 @@ listener {
 
 # turn off keyboard backlight if present (auto-detect device)
 listener {
-    timeout = $LOCK    # Adjustable in Sleex settings.
+    timeout = $BACKLIGHT    # Adjustable in Sleex settings.
     on-timeout = KBD=$(ls /sys/class/leds | grep -i kbd_backlight | head -n1) && \
                  [ -n "$KBD" ] && brightnessctl -sd "$KBD" set 0
     on-resume  = KBD=$(ls /sys/class/leds | grep -i kbd_backlight | head -n1) && \
