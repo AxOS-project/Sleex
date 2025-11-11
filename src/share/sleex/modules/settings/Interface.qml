@@ -28,8 +28,20 @@ ContentPage {
             onValueChanged: {
                 Config.options.appearance.opacity = value;
             }
-        }
 
+        MaterialTextField {
+            id: shellScale
+            Layout.fillWidth: true
+            placeholderText: ""
+            text: Config.options.appearance.shellScale * 100
+            wrapMode: TextEdit.Wrap
+            onEditingFinished: {
+                let value = parseFloat(text)
+                if (!isNaN(value)) {
+                    Config.options.appearance.shellScale = value / 100
+                }
+            }
+        }
     }
 
     ContentSection {
