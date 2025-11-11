@@ -77,6 +77,7 @@ Singleton {
             }
 
             property JsonObject appearance: JsonObject {
+                property string shellScale: "1"
                 property bool transparency: false
                 property int opacity: 50
                 property JsonObject palette: JsonObject {
