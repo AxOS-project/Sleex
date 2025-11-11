@@ -161,23 +161,6 @@ ContentPage {
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         ContentSubsectionLabel {
             text: "Power profile"
         }
