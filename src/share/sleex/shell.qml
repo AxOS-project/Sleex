@@ -3,7 +3,7 @@
 //@ pragma Env QT_QUICK_CONTROLS_STYLE=Basic
 
 // Adjust this to make the shell smaller or larger
-//@ pragma Env QT_SCALE_FACTOR=1
+//@ pragma Env QT_SCALE_FACTOR=Config.options.appearance.shellScale
 
 import qs.modules.common
 import qs.modules.bar
