@@ -67,6 +67,7 @@ ShellRoot {
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
+    LazyLoader { active: enableSession; component: Timeout {} }
     LazyLoader { active: enableSidebarLeft; component: SidebarLeft {} }
     LazyLoader { active: enableDashboard; component: Dashboard {} }
     LazyLoader { active: enableWallSelector; component: WallpaperSelector {} }
