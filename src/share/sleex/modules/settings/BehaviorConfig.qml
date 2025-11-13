@@ -1,184 +1,235 @@
-{
-    "ai": {
-        "extraModels": [
-            {
-                "api_format": "openai",
-                "description": "This is a custom model. Edit the config to add more! | Anyway, this is DeepSeek R1 Distill LLaMA 70B",
-                "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-                "homepage": "https://openrouter.ai/deepseek/deepseek-r1-distill-llama-70b:free",
-                "icon": "spark-symbolic",
-                "key_get_link": "https://openrouter.ai/settings/keys",
-                "key_id": "openrouter",
-                "model": "deepseek/deepseek-r1-distill-llama-70b:free",
-                "name": "Custom: DS R1 Dstl. LLaMA 70B",
-                "requires_key": true
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell.Services.UPower
+import qs.services
+import qs.modules.common
+import qs.modules.common.widgets
+
+ContentPage {
+    forceWidth: true
+
+    ContentSection {
+        title: "Time and date"
+
+        ColumnLayout {
+            // Format
+            ContentSubsectionLabel {
+                text: "Time format"
             }
-        ],
-        "systemPrompt": "## Style\n- Use casual tone, don't be formal! Make sure you answer precisely without hallucination and prefer bullet points over walls of text. You can have a friendly greeting at the beginning of the conversation, but don't repeat the user's question\n\n## Context (ignore when irrelevant)\n- You are a helpful and inspiring sidebar assistant on a AxOS Linux system\n- Desktop environment: Sleex\n- Current date & time: {DATETIME}\n- Focused app: {WINDOWCLASS}\n\n## Presentation\n- Use Markdown features in your response: \n  - **Bold** text to **highlight keywords** in your response\n  - **Split long information into small sections** with h2 headers and a relevant emoji at the start of it (for example `## 🐧 Linux`). Bullet points are preferred over long paragraphs, unless you're offering writing support or instructed otherwise by the user.\n- Asked to compare different options? You should firstly use a table to compare the main aspects, then elaborate or include relevant comments from online forums *after* the table. Make sure to provide a final recommendation for the user's use case!\n- Use LaTeX formatting for mathematical and scientific notations whenever appropriate. Enclose all LaTeX '$$' delimiters. NEVER generate LaTeX code in a latex block unless the user explicitly asks for it. DO NOT use LaTeX for regular documents (resumes, letters, essays, CVs, etc.).\n",
-        "tool": "functions"
-    },
-    "appearance": {
-        "opacity": 50,
-        "palette": {
-            "type": "auto"
-        },
-        "shellScale": "1",
-        "transparency": true
-    },
-    "apps": {
-        "bluetooth": "qs -p /usr/share/sleex/settings.qml",
-        "imageViewer": "loupe",
-        "network": "qs -p /usr/share/sleex/settings.qml",
-        "networkEthernet": "qs -p /usr/share/sleex/settings.qml",
-        "settings": "qs -p /usr/share/sleex/settings.qml",
-        "taskManager": "missioncenter",
-        "terminal": "foot"
-    },
-    "audio": {
-        "protection": {
-            "enable": true,
-            "maxAllowed": 100,
-            "maxAllowedIncrease": 10
+            StyledComboBox {
+                id: timeFormatComboBox
+                Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                model: [
+                    "24h",
+                    "12h AM/PM",
+                ]
+                currentIndex: model.indexOf(
+                    (() => {
+                        switch (Config.options.time.format) {
+                            case "hh:mm": return "24h";
+                            case "h:mm AP": return "12h AM/PM";
+                            default: return "24h";
+                        }
+                    })()
+                )
+                onCurrentIndexChanged: {
+                    const valueMap = {
+                        "24h": "hh:mm",
+                        "12h AM/PM": "h:mm AP",
+                    }
+                    const currentIndex = timeFormatComboBox.currentIndex
+                    if (currentIndex === -1) return;
+                    const selectedValue = valueMap[model[currentIndex]]
+                    if (Config.options.time.format !== selectedValue) {
+                        Config.options.time.format = selectedValue;
+                    }
+                }
+            }
+
+            ColumnLayout {
+                // Format
+                ContentSubsectionLabel {
+                    text: "Date format"
+                }
+                StyledComboBox {
+                    id: dateFormatComboBox
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 56
+                    model: [
+                        "ddd, MMM dd",
+                        "DD/MM/YYYY",
+                        "MM/DD/YYYY",
+                        "YYYY-MM-DD",
+                        "DDDD, DD/MM/YYYY",
+                        "DDDD, DD/MM"
+                    ]
+                    currentIndex: model.indexOf(
+                        (() => {
+                            switch (Config.options.time.dateFormat) {
+                                case "ddd, MMM dd": return "ddd, MMM dd";
+                                case "dd/mm/yyyy": return "DD/MM/YYYY";
+                                case "mm/dd/yyyy": return "MM/DD/YYYY";
+                                case "yyyy-mm-dd": return "YYYY-MM-DD";
+                                case "dddd, dd/mm/yyyy": return "DDDD, DD/MM/YYYY";
+                                case "dddd, dd/mm": return "DDDD, DD/MM";
+                                default: return "DDDD, DD/MM";
+                            }
+                        })()
+                    )
+                    onCurrentIndexChanged: {
+                        const valueMap = {
+                            "ddd, MMM dd": "ddd, MMM dd",
+                            "DD/MM/YYYY": "dd/MM/yyyy",
+                            "MM/DD/YYYY": "MM/dd/yyyy",
+                            "YYYY-MM-DD": "yyyy-MM-dd",
+                            "DDDD, DD/MM": "dddd, dd/MM",
+                            "DDDD, DD/MM/YYYY": "dddd, dd/MM/yyyy"
+                        }
+                        const currentIndex = dateFormatComboBox.currentIndex
+                        if (currentIndex === -1) return;
+                        const selectedValue = valueMap[model[currentIndex]]
+                        if (Config.options.time.dateFormat !== selectedValue) {
+                            Config.options.time.dateFormat = selectedValue;
+                        }
+                    }
+                }
+            }
+
         }
-    },
-    "background": {
-        "clockFontFamily": "Rubik",
-        "clockMode": "light",
-        "clockSizeMultiplier": 1.3,
-        "clockX": 657.84765625,
-        "clockY": 565.67578125,
-        "enableClock": false,
-        "enableQuote": false,
-        "fixedClockPosition": false,
-        "showWatermark": false,
-        "wallpaperPath": "/usr/share/sleex/wallpapers//SleexOne.png",
-        "wallpaperSelectorPath": "/usr/share/sleex/wallpapers/"
-    },
-    "bar": {
-        "background": false,
-        "borderless": false,
-        "bottom": false,
-        "screenList": [
-        ],
-        "showClock": true,
-        "showRessources": false,
-        "showTitle": false,
-        "showTrayAndIcons": true,
-        "showWorkspaces": true,
-        "tray": {
-            "invertPinnedItems": true,
-            "monochromeIcons": true,
-            "pinnedItems": [
-            ],
-            "showItemId": false
-        },
-        "verbose": true,
-        "workspaces": {
-            "alwaysShowNumbers": false,
-            "showAppIcons": true,
-            "showNumberDelay": 300,
-            "shown": 5
+    }
+
+    ContentSection {
+        title: "Power"
+        
+        ContentSubsectionLabel {
+        text: "Battery Alerts"
         }
-    },
-    "battery": {
-        "critical": 5,
-        "low": 20,
-        "sound": true,
-        "suspend": 2
-    },
-    "dashboard": {
-        "avatarPath": "file:///usr/share/sleex/assets/logo/1024px/white.png",
-        "calendar": {
-            "syncInterval": 15,
-            "useVdirsyncer": false
-        },
-        "dasboardScale": "0.67",
-        "enableWeather": true,
-        "ghUsername": "Abscissa24",
-        "mediaPlayer": "spotify",
-        "opt": {
-            "enableAIAssistant": false,
-            "enableCalendar": true,
-            "enableTodo": true
-        },
-        "userDesc": "",
-        "weatherLocation": "Port-Shepstone"
-    },
-    "display": {
-        "nightLightAuto": true,
-        "nightLightEnabled": true,
-        "nightLightFrom": "19:00",
-        "nightLightTemperature": 2792,
-        "nightLightTo": "06:30"
-    },
-    "dock": {
-        "enabled": false,
-        "height": 60,
-        "hoverRegionHeight": 3,
-        "hoverToReveal": false,
-        "pinnedApps": [
-            "pcmanfm-qt",
-            "foot",
-            "firefox"
-        ],
-        "pinnedOnStartup": false
-    },
-    "hacks": {
-        "arbitraryRaceConditionDelay": 20
-    },
-    "interactions": {
-        "scrolling": {
-            "fasterTouchpadScroll": true,
-            "mouseScrollDeltaThreshold": 120,
-            "mouseScrollFactor": 120,
-            "touchpadScrollFactor": 50
+
+        ConfigRow {
+            visible: UPower.displayDevice.isLaptopBattery
+            uniform: true
+            ConfigSpinBox {
+                text: "Low warning"
+                value: Config.options.battery.low
+                from: 0
+                to: 100
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.battery.low = value;
+                }
+            }
+            ConfigSpinBox {
+                visible: UPower.displayDevice.isLaptopBattery
+                text: "Critical warning"
+                value: Config.options.battery.critical
+                from: 0
+                to: 100
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.battery.critical = value;
+                }
+            }
         }
-    },
-    "networking": {
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    },
-    "osd": {
-        "timeout": 1000
-    },
-    "overview": {
-        "numOfCols": 5,
-        "numOfRows": 2,
-        "scale": 0.18,
-        "showXwaylandIndicator": true
-    },
-    "policies": {
-        "ai": 2
-    },
-    "resources": {
-        "updateInterval": 3000
-    },
-    "search": {
-        "engineBaseUrl": "https://www.google.com/search?q=",
-        "excludedSites": [
-            "quora.com"
-        ],
-        "nonAppResultDelay": 30,
-        "prefix": {
-            "action": "/",
-            "clipboard": ";",
-            "emojis": ":"
-        },
-        "sloppy": false
-    },
-    "time": {
-        "dateFormat": "dddd, dd/MM",
-        "firstDayOfWeek": 0,
-        "format": "hh:mm",
-        "longDateFormat": "dd/MM/yyyy"
-    },
-    "timeout": {
-        "illuminance": 10000,
-        "lock": 15000,
-        "standby": 10000,
-        "suspend": 15000
-    },
-    "windows": {
-        "centerTitle": true,
-        "showTitlebar": true
+        
+        ContentSubsectionLabel {
+        text: "Timeout"
+        }
+
+        ConfigRow {
+            uniform: true
+            ConfigSpinBox {
+                text: "Illuminance"
+                value: Config.options.timeout.illuminance / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.illuminance = value * 1000;
+                }
+            }
+            ConfigSpinBox {
+                text: "System Lock"
+                value: Config.options.timeout.lock / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.lock = value * 1000;
+                }
+            }
+        }
+
+        ConfigRow {
+            uniform: true
+            ConfigSpinBox {
+                text: "Standby"
+                value: Config.options.timeout.standby / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.standby = value * 1000;
+                }
+            }
+            
+            ConfigSpinBox {
+                text: "Suspension"
+                value: Config.options.timeout.suspend / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.suspend = value * 1000;
+                }
+            }
+        }
+        
+        ConfigSwitch {
+            id: root
+            text: "Keep system awake"
+            checked: Idle.inhibit
+
+            onClicked: {
+                checked = !checked
+                Idle.toggleInhibit()
+            }
+
+            onCheckedChanged: {
+                Idle.inhibit = checked
+            }
+        }
+        
+        ContentSubsectionLabel {
+            text: "Power profile"
+        }
+        ConfigSelectionArray {
+            currentValue: PowerProfiles.profile
+            configOptionName: PowerProfiles.profile
+            options: [
+                {value: PowerProfile.Balanced, displayName: "Balanced"},
+                {value: PowerProfile.Performance, displayName: "Performance"},
+                {value: PowerProfile.PowerSaver, displayName: "Power Saver"}
+            ]
+            onSelected: (newValue) => {
+                PowerProfiles.profile = newValue;
+            }
+        }
+    }
+
+
+    ContentSection {
+        title: "AI"
+        MaterialTextField {
+            id: systemPromptField
+            Layout.fillWidth: true
+            placeholderText: "System prompt"
+            text: Config.options.ai.systemPrompt
+            wrapMode: TextEdit.Wrap
+            onTextChanged: {
+                Config.options.ai.systemPrompt = text;
+            }
+        }
     }
 }
