@@ -189,10 +189,10 @@ MouseArea {
             easing.type: Easing.OutCubic
         }
 
-        FastBlur {
+        GaussianBlur {
             anchors.fill: parent
             source: backgroundImage
-            radius: 10
+            radius: 15
             opacity: parent.opacity
         }
     }
