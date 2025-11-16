@@ -1,8 +1,18 @@
 #include "network.hpp"
 #include <QDebug>
+#include <QMap>
 #include <QByteArray>
+#include <QTimer>
 
 namespace sleex::services {
+
+// Helper struct to pass data to async callbacks
+struct ConnectionCallbackData {
+    Network *network;
+    QString ssid;
+    
+    ConnectionCallbackData(Network *net, const QString &s) : network(net), ssid(s) {}
+};
 
 // AccessPoint implementation
 AccessPoint::AccessPoint(NMAccessPoint *ap, NMDeviceWifi *device, QObject *parent)
@@ -85,6 +95,17 @@ void AccessPoint::updateProperties() {
                        rsnFlags != NM_802_11_AP_SEC_NONE;
     
     if (m_isSecure != newIsSecure) {
+        // Handle security changes by removing incompatible connection profiles
+        Network* networkService = qobject_cast<Network*>(parent());
+        if (networkService && m_isKnown) {
+            // Remove existing connection profile to prevent authentication issues
+            networkService->forgetNetwork(m_ssid);
+            
+            // Mark as unknown to force credential re-entry
+            m_isKnown = false;
+            emit isKnownChanged();
+        }
+        
         m_isSecure = newIsSecure;
         emit isSecureChanged();
     }
@@ -97,11 +118,41 @@ void AccessPoint::setIsKnown(bool known) {
     }
 }
 
+void AccessPoint::updateAccessPoint(NMAccessPoint *newAp) {
+    // Disconnect from old access point signals
+    if (m_strengthChangedId) {
+        g_signal_handler_disconnect(m_ap, m_strengthChangedId);
+        m_strengthChangedId = 0;
+    }
+    
+    // Release old access point and acquire new one
+    if (m_ap) {
+        g_object_unref(m_ap);
+    }
+    
+    m_ap = newAp;
+    g_object_ref(m_ap);
+    
+    // Connect to new access point signals
+    m_strengthChangedId = g_signal_connect(m_ap, "notify::strength",
+                                          G_CALLBACK(+[](GObject*, GParamSpec*, gpointer data) {
+        auto *self = static_cast<AccessPoint*>(data);
+        int newStrength = nm_access_point_get_strength(self->m_ap);
+        if (self->m_strength != newStrength) {
+            self->m_strength = newStrength;
+            emit self->strengthChanged();
+        }
+    }), this);
+    
+    // Update all properties with new access point data
+    updateProperties();
+}
+
 // Network implementation
 Network::Network(QObject *parent) 
     : QObject(parent), m_client(nullptr), m_wifiDevice(nullptr), 
       m_active(nullptr), m_wifiEnabled(false), m_ethernet(false), m_scanning(false),
-      m_apAddedId(0), m_apRemovedId(0), m_deviceAddedId(0), m_deviceRemovedId(0),
+      m_connectingToSsid(""), m_apAddedId(0), m_apRemovedId(0), m_deviceAddedId(0), m_deviceRemovedId(0),
       m_wirelessEnabledId(0), m_activeConnectionsId(0), 
       m_connectionAddedId(0), m_connectionRemovedId(0) {
     
@@ -245,8 +296,9 @@ void Network::toggleWifi() {
 }
 
 void Network::rescanWifi() {
-    if (!m_wifiDevice || m_scanning) return;
-    
+    if (!m_wifiDevice || m_scanning) {
+        return;
+    }
     m_scanning = true;
     emit scanningChanged();
     
@@ -256,11 +308,40 @@ void Network::rescanWifi() {
 void Network::connectToNetwork(const QString &ssid, const QString &password) {
     if (!m_wifiDevice) return;
     
+    // Find the target network to check security requirements
+    AccessPoint *targetNetwork = nullptr;
+    for (auto *network : m_networks) {
+        if (network->ssid() == ssid) {
+            targetNetwork = network;
+            break;
+        }
+    }
+    
+    // Prevent connection attempts to secure networks without passwords
+    if (targetNetwork && targetNetwork->isSecure() && password.isEmpty()) {
+        return;
+    }
+    
+    // Clean up incompatible connection profiles when security settings change
+    if (targetNetwork && targetNetwork->isKnown() && targetNetwork->isSecure() && password.isEmpty()) {
+        forgetNetwork(ssid);
+        return;
+    }
+    
+    // Set connecting state
+    if (m_connectingToSsid != ssid) {
+        m_connectingToSsid = ssid;
+        emit connectingToSsidChanged();
+    }
+    
+    // Create callback data
+    ConnectionCallbackData *callbackData = new ConnectionCallbackData(this, ssid);
+    
     // Check if it's a known connection
     NMRemoteConnection *connection = findConnectionForSsid(ssid);
     
-    if (connection) {
-        // Activate existing connection
+    if (connection && password.isEmpty()) {
+        // Only use existing connection if no password provided (open network)
         nm_client_activate_connection_async(
             m_client,
             NM_CONNECTION(connection),
@@ -268,9 +349,24 @@ void Network::connectToNetwork(const QString &ssid, const QString &password) {
             nullptr,
             nullptr,
             onConnectionActivated,
-            this
+            callbackData
         );
-    } else {
+    } else if (connection && !password.isEmpty()) {
+        // Network security changed from open to protected - recreate connection
+        
+        GError *deleteError = nullptr;
+        gboolean deleteResult = nm_remote_connection_delete(connection, nullptr, &deleteError);
+        
+        if (deleteError) {
+            qWarning() << "Failed to delete old connection:" << deleteError->message;
+            g_error_free(deleteError);
+        }
+        
+        // Create new connection with password
+        connection = nullptr;
+    }
+    
+    if (!connection) {
         // Find the access point
         AccessPoint *ap = nullptr;
         for (auto *network : m_networks) {
@@ -321,8 +417,8 @@ void Network::connectToNetwork(const QString &ssid, const QString &password) {
             NM_DEVICE(m_wifiDevice),
             nm_object_get_path(NM_OBJECT(ap->nmAccessPoint())),
             nullptr,
-            onConnectionActivated,
-            this
+            onConnectionAddedAndActivated,
+            callbackData
         );
         g_object_unref(newConnection);
     }
@@ -410,6 +506,17 @@ void Network::onScanDone(GObject *source, GAsyncResult *result, gpointer user_da
     if (error) {
         qWarning() << "WiFi scan failed:" << error->message;
         g_error_free(error);
+    } else {
+        // Force network list update to refresh security states and other properties
+        self->updateNetworks();
+        
+        // Also clear known networks cache to force fresh security detection
+        self->updateKnownNetworks();
+        
+        // Force another update after a brief delay to catch any delayed AP changes
+        QTimer::singleShot(500, self, [self]() {
+            self->updateNetworks();
+        });
     }
     
     self->m_scanning = false;
@@ -417,18 +524,340 @@ void Network::onScanDone(GObject *source, GAsyncResult *result, gpointer user_da
 }
 
 void Network::onConnectionActivated(GObject *source, GAsyncResult *result, gpointer user_data) {
-    Q_UNUSED(user_data);
+    auto *callbackData = static_cast<ConnectionCallbackData*>(user_data);
+    auto *network = callbackData->network;
+    QString ssid = callbackData->ssid;
+    
     auto *client = NM_CLIENT(source);
     
     GError *error = nullptr;
     NMActiveConnection *ac = nm_client_activate_connection_finish(client, result, &error);
     
+    // Clear connecting state regardless of result
+    if (network->m_connectingToSsid == ssid) {
+        network->m_connectingToSsid = "";
+        emit network->connectingToSsidChanged();
+    }
+    
     if (error) {
-        qWarning() << "Connection activation failed:" << error->message;
+        qWarning() << "Connection activation failed for" << ssid << ":" << error->message;
+        emit network->connectionFailed(ssid, QString::fromUtf8(error->message));
         g_error_free(error);
     } else if (ac) {
+        // Use multiple verification checks to catch authentication failures quickly
+        // First check after 1 second to catch immediate auth failures
+        QTimer::singleShot(1000, [network, ssid]() {
+            if (network->m_wifiDevice) {
+                NMDeviceState state = nm_device_get_state(NM_DEVICE(network->m_wifiDevice));
+                NMDeviceStateReason reason = nm_device_get_state_reason(NM_DEVICE(network->m_wifiDevice));
+                
+                // Check for immediate auth failures - expanded detection
+                if (state == NM_DEVICE_STATE_FAILED || state == NM_DEVICE_STATE_NEED_AUTH ||
+                    state == NM_DEVICE_STATE_DISCONNECTED ||
+                    reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                    
+                    QString errorMessage = "Incorrect password";
+                    emit network->connectionFailed(ssid, errorMessage);
+                    network->updateNetworks();
+                    network->updateActiveConnection();
+                    return;
+                }
+                
+                // If still in progress, check again after 2 more seconds
+                QTimer::singleShot(2000, [network, ssid]() {
+            // Verify actual connection status and determine specific error
+            bool actuallyConnected = false;
+            QString errorMessage = "Connection failed";
+            
+            // Primary check: device state and active access point
+            if (network->m_wifiDevice) {
+                NMDeviceState state = nm_device_get_state(NM_DEVICE(network->m_wifiDevice));
+                
+                if (state == NM_DEVICE_STATE_ACTIVATED) {
+                    NMAccessPoint *activeAp = nm_device_wifi_get_active_access_point(network->m_wifiDevice);
+                    if (activeAp) {
+                        GBytes *ssidBytes = nm_access_point_get_ssid(activeAp);
+                        if (ssidBytes) {
+                            gsize size;
+                            const char *ssidData = (const char *)g_bytes_get_data(ssidBytes, &size);
+                            QString activeSsid = QString::fromUtf8(ssidData, size);
+                            actuallyConnected = (activeSsid == ssid);
+                        }
+                    }
+                } else {
+                    // Get device state reason for more specific error detection
+                    NMDeviceStateReason reason = nm_device_get_state_reason(NM_DEVICE(network->m_wifiDevice));
+                    
+                    // Determine error based on device state and reason
+                    switch (state) {
+                        case NM_DEVICE_STATE_FAILED:
+                            // Check specific failure reasons
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Connection failed - network or device error";
+                            }
+                            break;
+                        case NM_DEVICE_STATE_NEED_AUTH:
+                            errorMessage = "Incorrect password";
+                            break;
+                        case NM_DEVICE_STATE_CONFIG:
+                            if (reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                                errorMessage = "Incorrect password or authentication timeout";
+                            } else {
+                                errorMessage = "Configuring connection - please wait";
+                            }
+                            break;
+                        case NM_DEVICE_STATE_IP_CONFIG:
+                            errorMessage = "Getting IP address - network may be congested";
+                            break;
+                        case NM_DEVICE_STATE_DISCONNECTED:
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Could not connect to network";
+                            }
+                            break;
+                        default:
+                            // For unknown states, check if it's auth-related
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Authentication failed or connection timed out";
+                            }
+                    }
+                }
+            }
+            
+            // Fallback check: active connections list
+            if (!actuallyConnected) {
+                const GPtrArray *activeConnections = nm_client_get_active_connections(network->m_client);
+                if (activeConnections) {
+                    for (guint i = 0; i < activeConnections->len; i++) {
+                        NMActiveConnection *activeConn = (NMActiveConnection *)g_ptr_array_index(activeConnections, i);
+                        const char *connSsid = nm_active_connection_get_id(activeConn);
+                        if (connSsid && QString::fromUtf8(connSsid) == ssid) {
+                            NMActiveConnectionState connState = nm_active_connection_get_state(activeConn);
+                            actuallyConnected = (connState == NM_ACTIVE_CONNECTION_STATE_ACTIVATED);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (actuallyConnected) {
+                emit network->connectionSucceeded(ssid);
+                network->updateNetworks();
+                network->updateActiveConnection();
+            } else {
+                emit network->connectionFailed(ssid, errorMessage);
+                network->updateNetworks();
+                network->updateActiveConnection();
+            }
+                }); // Close nested 2-second timer
+            }
+        }); // Close first 1-second timer
+        
         g_object_unref(ac);
+    } else {
+        qWarning() << "Connection activation returned null for" << ssid;
+        emit network->connectionFailed(ssid, "Unknown error");
     }
+    
+    // Refresh network state after connection attempt
+    network->updateNetworks();
+    network->updateActiveConnection();
+    
+    // Additional refresh to ensure NetworkManager state has settled
+    QTimer::singleShot(500, [network]() {
+        network->updateNetworks();
+        network->updateActiveConnection();
+    });
+
+    delete callbackData;
+}
+
+void Network::onConnectionAddedAndActivated(GObject *source, GAsyncResult *result, gpointer user_data) {
+    auto *callbackData = static_cast<ConnectionCallbackData*>(user_data);
+    auto *network = callbackData->network;
+    QString ssid = callbackData->ssid;
+    
+    auto *client = NM_CLIENT(source);
+    
+    // Clear connecting state regardless of result
+    if (network->m_connectingToSsid == ssid) {
+        network->m_connectingToSsid = "";
+        emit network->connectingToSsidChanged();
+    }
+    
+    GError *error = nullptr;
+    NMActiveConnection *ac = nm_client_add_and_activate_connection_finish(client, result, &error);
+    
+    if (error) {
+        qWarning() << "Connection add and activation failed for" << ssid << ":" << error->message;
+        emit network->connectionFailed(ssid, QString::fromUtf8(error->message));
+        g_error_free(error);
+    } else if (ac) {
+        // Use multiple verification checks to catch authentication failures quickly
+        // First check after 1 second to catch immediate auth failures
+        QTimer::singleShot(1000, [network, ssid]() {
+            if (network->m_wifiDevice) {
+                NMDeviceState state = nm_device_get_state(NM_DEVICE(network->m_wifiDevice));
+                NMDeviceStateReason reason = nm_device_get_state_reason(NM_DEVICE(network->m_wifiDevice));
+                
+                // Check for immediate auth failures - expanded detection including timeout
+                if (state == NM_DEVICE_STATE_FAILED || state == NM_DEVICE_STATE_NEED_AUTH ||
+                    state == NM_DEVICE_STATE_DISCONNECTED ||
+                    reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED ||
+                    reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                    
+                    QString errorMessage = "Incorrect password";
+                    if (reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                        errorMessage = "Connection timeout - likely incorrect password";
+                    }
+                    
+                    emit network->connectionFailed(ssid, errorMessage);
+                    network->updateNetworks();
+                    network->updateActiveConnection();
+                    return;
+                }
+                
+                // Check for immediate auth failures
+                if (state == NM_DEVICE_STATE_FAILED || state == NM_DEVICE_STATE_NEED_AUTH ||
+                    (state == NM_DEVICE_STATE_DISCONNECTED && 
+                     (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                      reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT))) {
+                    
+                    QString errorMessage = "Incorrect password";
+                    emit network->connectionFailed(ssid, errorMessage);
+                    network->updateNetworks();
+                    network->updateActiveConnection();
+                    return;
+                }
+                
+                // If still in progress, check again after 2 more seconds
+                QTimer::singleShot(2000, [network, ssid]() {
+            // Verify actual connection status and determine specific error
+            bool actuallyConnected = false;
+            QString errorMessage = "Connection failed";
+            
+            // Check device state and active access point
+            if (network->m_wifiDevice) {
+                NMDeviceState state = nm_device_get_state(NM_DEVICE(network->m_wifiDevice));
+                
+                if (state == NM_DEVICE_STATE_ACTIVATED) {
+                    NMAccessPoint *activeAp = nm_device_wifi_get_active_access_point(network->m_wifiDevice);
+                    if (activeAp) {
+                        GBytes *ssidBytes = nm_access_point_get_ssid(activeAp);
+                        if (ssidBytes) {
+                            gsize size;
+                            const char *ssidData = (const char *)g_bytes_get_data(ssidBytes, &size);
+                            QString activeSsid = QString::fromUtf8(ssidData, size);
+                            actuallyConnected = (activeSsid == ssid);
+                        }
+                    }
+                } else {
+                    // Get device state reason for more specific error detection
+                    NMDeviceStateReason reason = nm_device_get_state_reason(NM_DEVICE(network->m_wifiDevice));
+                    
+                    // Determine error based on device state and reason
+                    switch (state) {
+                        case NM_DEVICE_STATE_FAILED:
+                            // Check specific failure reasons
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Connection failed - network or device error";
+                            }
+                            break;
+                        case NM_DEVICE_STATE_NEED_AUTH:
+                            errorMessage = "Incorrect password";
+                            break;
+                        case NM_DEVICE_STATE_CONFIG:
+                            if (reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                                errorMessage = "Incorrect password or authentication timeout";
+                            } else {
+                                errorMessage = "Configuring connection - please wait";
+                            }
+                            break;
+                        case NM_DEVICE_STATE_IP_CONFIG:
+                            errorMessage = "Getting IP address - network may be congested";
+                            break;
+                        case NM_DEVICE_STATE_DISCONNECTED:
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Could not connect to network";
+                            }
+                            break;
+                        default:
+                            // For unknown states, check if it's auth-related
+                            if (reason == NM_DEVICE_STATE_REASON_NO_SECRETS ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_CONFIG_FAILED ||
+                                reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
+                                errorMessage = "Incorrect password";
+                            } else {
+                                errorMessage = "Authentication failed or connection timed out";
+                            }
+                    }
+                }
+            }
+            
+            // Fallback: check active connections
+            if (!actuallyConnected) {
+                const GPtrArray *activeConnections = nm_client_get_active_connections(network->m_client);
+                if (activeConnections) {
+                    for (guint i = 0; i < activeConnections->len; i++) {
+                        NMActiveConnection *activeConn = (NMActiveConnection *)g_ptr_array_index(activeConnections, i);
+                        const char *connSsid = nm_active_connection_get_id(activeConn);
+                        if (connSsid && QString::fromUtf8(connSsid) == ssid) {
+                            NMActiveConnectionState connState = nm_active_connection_get_state(activeConn);
+                            actuallyConnected = (connState == NM_ACTIVE_CONNECTION_STATE_ACTIVATED);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (actuallyConnected) {
+                emit network->connectionSucceeded(ssid);
+                network->updateNetworks();
+                network->updateActiveConnection();
+            } else {
+                emit network->connectionFailed(ssid, errorMessage);
+                network->updateNetworks();
+                network->updateActiveConnection();
+            }
+                }); // Close nested 2-second timer
+            }
+        }); // Close first 1-second timer
+        
+        g_object_unref(ac);
+    } else {
+        qWarning() << "Connection add and activation returned null for" << ssid;
+        emit network->connectionFailed(ssid, "Unknown error");
+    }
+    
+    // Ensure UI model is refreshed immediately after add+activate attempt
+    network->updateNetworks();
+    network->updateActiveConnection();
+
+    delete callbackData;
 }
 
 void Network::onConnectionDeactivated(GObject *source, GAsyncResult *result, gpointer user_data) {
@@ -498,13 +927,22 @@ void Network::updateNetworks() {
         }
     }
     
-    // Remove old networks
+    // Update existing networks and remove old ones
     QList<AccessPoint*> toRemove;
     for (auto *network : m_networks) {
         bool found = false;
-        for (auto *ap : bestAPs.values()) {
-            if (g_strcmp0(nm_object_get_path(NM_OBJECT(network->nmAccessPoint())),
-                         nm_object_get_path(NM_OBJECT(ap))) == 0) {
+        for (auto it = bestAPs.begin(); it != bestAPs.end(); ++it) {
+            if (network->ssid() == it.key()) {
+                // Network with same SSID found - check if it's the same AP or needs updating
+                NMAccessPoint *currentAp = network->nmAccessPoint();
+                NMAccessPoint *newAp = it.value();
+                
+                // Always update the network to use the newest access point data
+                // This ensures security and other properties are refreshed
+                if (currentAp != newAp) {
+                    network->updateAccessPoint(newAp);
+                }
+                
                 found = true;
                 break;
             }
@@ -567,8 +1005,11 @@ void Network::updateActiveConnection() {
         emit activeChanged();
     }
     
-    // Also update active status for all networks
+    // Also update active status for all networks, but only if their active state actually changed
     for (auto *network : m_networks) {
+        bool currentActive = network->active();
+        bool wasActive = (network == m_active);  // This is approximate, but better than always emitting
+        // Force a property check to ensure UI binding updates
         emit network->activeChanged();
     }
 }

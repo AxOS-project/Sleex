@@ -42,6 +42,7 @@ public:
     
     NMAccessPoint* nmAccessPoint() const { return m_ap; }
     void updateProperties();
+    void updateAccessPoint(NMAccessPoint *newAp);
     void setIsKnown(bool known);
 
 signals:
@@ -74,6 +75,7 @@ class Network : public QObject {
     Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
     Q_PROPERTY(bool ethernet READ ethernet NOTIFY ethernetChanged)
     Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged)
+    Q_PROPERTY(QString connectingToSsid READ connectingToSsid NOTIFY connectingToSsidChanged)
 
 public:
     explicit Network(QObject *parent = nullptr);
@@ -84,6 +86,7 @@ public:
     bool wifiEnabled() const { return m_wifiEnabled; }
     bool ethernet() const { return m_ethernet; }
     bool scanning() const { return m_scanning; }
+    QString connectingToSsid() const { return m_connectingToSsid; }
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
     Q_INVOKABLE void enableWifi(bool enabled);
@@ -92,6 +95,8 @@ public:
     Q_INVOKABLE void connectToNetwork(const QString &ssid, const QString &password);
     Q_INVOKABLE void disconnectFromNetwork();
     Q_INVOKABLE void forgetNetwork(const QString &ssid);
+    Q_INVOKABLE void updateNetworks();
+    Q_INVOKABLE void updateActiveConnection();
 
 signals:
     void networksChanged();
@@ -99,6 +104,9 @@ signals:
     void wifiEnabledChanged();
     void ethernetChanged();
     void scanningChanged();
+    void connectingToSsidChanged();
+    void connectionSucceeded(const QString &ssid);
+    void connectionFailed(const QString &ssid, const QString &error);
 
 private:
     static void onAccessPointAdded(NMDeviceWifi *device, NMAccessPoint *ap, gpointer user_data);
@@ -109,14 +117,13 @@ private:
     static void onActiveConnectionsChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
     static void onScanDone(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionActivated(GObject *source, GAsyncResult *result, gpointer user_data);
+    static void onConnectionAddedAndActivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionDeactivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionAdded(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onConnectionRemoved(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data);
     
-    void updateNetworks();
     void updateEthernetStatus();
-    void updateActiveConnection();
     void updateKnownNetworks();
     AccessPoint* findAccessPoint(NMAccessPoint *ap);
     NMDeviceWifi* getPrimaryWifiDevice();
@@ -130,6 +137,7 @@ private:
     bool m_wifiEnabled;
     bool m_ethernet;
     bool m_scanning;
+    QString m_connectingToSsid;
     
     gulong m_apAddedId;
     gulong m_apRemovedId;
