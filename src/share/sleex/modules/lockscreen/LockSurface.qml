@@ -40,7 +40,7 @@ MouseArea {
     Connections {
         target: context
         function onUnlockInProgressChanged() {
-            console.log("unlockInProgress changed to:", context.unlockInProgress);
+            //console.log("unlockInProgress changed to:", context.unlockInProgress);
             root.lastUnlockInProgress = context.unlockInProgress;
         }
     }
@@ -69,6 +69,15 @@ MouseArea {
                 duration: 400
                 easing.type: Easing.InCubic
             }
+
+            NumberAnimation {
+                target: clockWeather
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 300
+                easing.type: Easing.InCubic
+            }
             
             // Slide media controls down and out
             NumberAnimation {
@@ -77,6 +86,15 @@ MouseArea {
                 from: 20
                 to: -200
                 duration: 400
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: mediaControlsContainer
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 300
                 easing.type: Easing.InCubic
             }
             
@@ -89,6 +107,15 @@ MouseArea {
                 duration: 400
                 easing.type: Easing.InCubic
             }
+
+            NumberAnimation {
+                target: passwordBoxContainer
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 300
+                easing.type: Easing.InCubic
+            }
             
             // Fade out battery indicator
             NumberAnimation {
@@ -99,12 +126,30 @@ MouseArea {
                 duration: 300
                 easing.type: Easing.InCubic
             }
+
+            NumberAnimation {
+                target: tooltipText
+                property: "opacity"
+                from: tooltipText.opacity
+                to: 0
+                duration: 200
+                easing.type: Easing.InCubic
+            }
             
             // Fade out system controls
             NumberAnimation {
                 target: systemControls
                 property: "opacity"
                 from: systemControls.opacity
+                to: 0
+                duration: 200
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: tooltipText
+                property: "opacity"
+                from: tooltipText.opacity
                 to: 0
                 duration: 200
                 easing.type: Easing.InCubic
@@ -199,7 +244,6 @@ MouseArea {
 
     ColumnLayout {
         id: clockWeather
-        visible: Config.options.dashboard.enableWeather
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: -200
@@ -208,6 +252,7 @@ MouseArea {
         Component.onCompleted: {
             if (!unlocking) {
                 animIn.running = true
+                fadeInClockWeather.running = true
             }
         }
 
@@ -217,6 +262,16 @@ MouseArea {
             property: "anchors.topMargin"
             from: -200
             to: 40
+            duration: 600
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            id: fadeInClockWeather
+            target: clockWeather
+            property: "opacity"
+            from: 0
+            to: 1
             duration: 600
             easing.type: Easing.OutCubic
         }
@@ -251,8 +306,7 @@ MouseArea {
         RowLayout {
             spacing: 6
             Layout.alignment: Qt.AlignHCenter
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: weatherData
+            visible: Config.options.dashboard.enableWeather
 
             Text {
                 text: Weather.weatherCode ? materialSymbolForCode(Weather.weatherCode) : "cloud"
@@ -281,7 +335,23 @@ MouseArea {
         implicitHeight: 23
         borderless: true
         visible: UPower.displayDevice.isLaptopBattery
-        opacity: 1
+        opacity: 0
+
+        Component.onCompleted: {
+            if (!unlocking) {
+                batteryFadeInAnim.running = true
+            }
+        }
+
+        NumberAnimation {
+            id: batteryFadeInAnim
+            target: batteryIndicator
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 600
+            easing.type: Easing.OutCubic
+        }
     }
 
     // Hover trigger area (bottom right corner)
@@ -415,6 +485,7 @@ MouseArea {
         Component.onCompleted: {
             if (!unlocking) {
                 mediaAnimIn.running = true
+                fadeInMediaControls.running = true
             }
         }
 
@@ -424,6 +495,16 @@ MouseArea {
             property: "anchors.bottomMargin"
             from: -200
             to: 20
+            duration: 600
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            id: fadeInMediaControls
+            target: mediaControlsContainer
+            property: "opacity"
+            from: 0
+            to: 1
             duration: 600
             easing.type: Easing.OutCubic
         }
