@@ -17,7 +17,7 @@ depends=(
 	# Hyprland dependencies
 	'hyprutils' 'hyprpicker' 'hyprlang' 'hypridle' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
 	# QT/KDE dependencies
-	'bluedevil' 'gnome-keyring' 'networkmanager' 'plasma-nm' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
+	'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
 	# Microtex
 	"sleex-microtex-git"
 	# Portal
