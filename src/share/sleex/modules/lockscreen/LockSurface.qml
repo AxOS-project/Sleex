@@ -309,7 +309,8 @@ MouseArea {
             visible: Config.options.dashboard.enableWeather
 
             Text {
-                text: Weather.weatherCode ? materialSymbolForCode(Weather.weatherCode) : "cloud"
+                // text: Weather.weatherCode ? Weather.materialSymbolForCode(Weather.weatherCode) : "cloud"
+                text: "cloud"
                 font.family: "Material Symbols Outlined"
                 font.pixelSize: 28
                 color: Appearance.colors.colPrimary
