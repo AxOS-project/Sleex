@@ -27,6 +27,7 @@ Rectangle {
             spacing: 10
 
             Rectangle {
+                id: userInfoWidget
                 color: Appearance.colors.colLayer1
                 radius: Appearance.rounding.normal
                 Layout.fillWidth: true
@@ -35,6 +36,7 @@ Rectangle {
                 Column {
                     anchors.centerIn: parent
                     spacing: 10
+                    width: parent.width * 0.9
                 
                     Rectangle {
                         id: userAvatar
@@ -72,11 +74,13 @@ Rectangle {
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
-                    Text {
+                    StyledText {
                         text: Config.options.dashboard.userDesc
                         color: Appearance.colors.colOnLayer1
                         font.pixelSize: 20
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Qt.AlignHCenter
                     }
                 }
             }
