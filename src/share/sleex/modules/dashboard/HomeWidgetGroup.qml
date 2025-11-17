@@ -74,11 +74,13 @@ Rectangle {
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
-                    ScrollingText {
+                    StyledText {
                         text: Config.options.dashboard.userDesc
                         color: Appearance.colors.colOnLayer1
                         font.pixelSize: 20
                         width: parent.width
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Qt.AlignHCenter
                     }
                 }
             }
