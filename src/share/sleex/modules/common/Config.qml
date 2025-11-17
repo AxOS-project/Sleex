@@ -76,9 +76,12 @@ Singleton {
                 ]
             }
 
+            property JsonObject overlay: JsonObject {
+                property bool fullscreenIndicator: false
+            }
+
             property JsonObject appearance: JsonObject {
                 property bool transparency: false
-                property bool fullscreenIndicator: false
                 property int opacity: 50
                 property JsonObject palette: JsonObject {
                     property string type: "auto" // Allowed: auto, scheme-content, scheme-expressive, scheme-fidelity, scheme-fruit-salad, scheme-monochrome, scheme-neutral, scheme-rainbow, scheme-tonal-spot
