@@ -199,7 +199,7 @@ MouseArea {
 
     ColumnLayout {
         id: clockWeather
-        visible: true
+        visible: Config.options.dashboard.enableWeather
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: -200

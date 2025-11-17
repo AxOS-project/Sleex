@@ -20,7 +20,7 @@ Singleton {
     Timer {
         id: weatherTimer
         interval: 3600000 // 1 hour
-        running: true
+        running: Config.options.dashboard.enableWeather
         repeat: true
         onTriggered: updateWeather()
     }
