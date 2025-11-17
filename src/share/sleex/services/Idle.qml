@@ -11,26 +11,14 @@ Singleton {
     id: root
 
     property alias inhibit: idleInhibitor.enabled
-    inhibit: false
-
-    Connections {
-        target: Persistent
-        function onReadyChanged() {
-            if (!Persistent.isNewHyprlandInstance) {
-                root.inhibit = Persistent.states.idle.inhibit
-            } else {
-                Persistent.states.idle.inhibit = root.inhibit
-            }
-        }
-    }
 
     function toggleInhibit() {
-        root.inhibit = !root.inhibit
-        Persistent.states.idle.inhibit = root.inhibit
+        Persistent.states.idle.inhibit = !Persistent.states.idle.inhibit
     }
 
     IdleInhibitor {
         id: idleInhibitor
+        enabled: Persistent.states.idle.inhibit
         window: PanelWindow { // Inhibitor requires a "visible" surface
             // Actually not lol
             implicitWidth: 0
