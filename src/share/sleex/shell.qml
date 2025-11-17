@@ -35,8 +35,8 @@ ShellRoot {
     property bool enableDock: true
     property bool enableMediaControls: true
     property bool enableNotificationPopup: true
-    property bool enableOnScreenDisplayBrightness: Config.options.appearance.fullscreenIndicator
-    property bool enableOnScreenDisplayVolume: Config.options.appearance.fullscreenIndicator
+    property bool enableOnScreenDisplayBrightness: true
+    property bool enableOnScreenDisplayVolume: true
     property bool enableOverview: true
     property bool enablePolkit: true
     property bool enableReloadPopup: true
@@ -60,8 +60,8 @@ ShellRoot {
     LazyLoader { active: enableDock && Config.options.dock.enabled; component: Dock {} }
     LazyLoader { active: enableMediaControls; component: MediaControls {} }
     LazyLoader { active: enableNotificationPopup; component: NotificationPopup {} }
-    LazyLoader { active: enableOnScreenDisplayBrightness; component: OnScreenDisplayBrightness {} }
-    LazyLoader { active: enableOnScreenDisplayVolume; component: OnScreenDisplayVolume {} }
+    LazyLoader { active: enableOnScreenDisplayBrightness && Config.options.overlay.fullscreenIndicator; component: OnScreenDisplayBrightness {} }
+    LazyLoader { active: enableOnScreenDisplayVolume && Config.options.overlay.fullscreenIndicator; component: OnScreenDisplayVolume {} }
     LazyLoader { active: enableOverview; component: Overview {} }
     LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
