@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.21"
-pkgrel="2"
+pkgrel="3"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -15,7 +15,7 @@ depends=(
 	# Fonts & Themes
 	'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'kde-material-you-colors' 'kitty' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
 	# Hyprland dependencies
-	'hyprutils' 'hyprpicker' 'hyprlang' 'hypridle' 'hyprland-qt-support' 'hyprland-qtutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
+	'hyprutils' 'hyprpicker' 'hyprlang' 'hypridle' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
 	# QT/KDE dependencies
 	'bluedevil' 'gnome-keyring' 'networkmanager' 'plasma-nm' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
 	# Microtex
