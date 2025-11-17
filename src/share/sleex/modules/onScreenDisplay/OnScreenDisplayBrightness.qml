@@ -82,9 +82,9 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 Item {
                     id: osdValuesWrapper
-                    // Extra space for shadow
+                    // Include extra space for shadow around all sides
+                    implicitWidth: osdValues.implicitWidth + Appearance.sizes.elevationMargin * 2
                     implicitHeight: osdValues.implicitHeight + Appearance.sizes.elevationMargin * 2
-                    implicitWidth: osdValues.implicitWidth
                     clip: true
 
                     MouseArea {
