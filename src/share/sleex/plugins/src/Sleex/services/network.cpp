@@ -1191,6 +1191,9 @@ void Network::emitConnectionSucceededWithVerification(const QString &ssid) {
         verifyDelayedConnection(ssid);
     });
     
+    // Clear any auth error tracking for successful connections
+    m_authErrorEmitted.removeAll(ssid);
+    
     // Emit immediate success for UI responsiveness
     emit connectionSucceeded(ssid);
 }
@@ -1277,9 +1280,7 @@ void Network::onDeviceStateChanged(GObject *object, GParamSpec *pspec, gpointer 
             }
             
             if (!failedSsid.isEmpty()) {
-                emit self->connectionFailed(failedSsid, "Incorrect password");
-                self->updateNetworks();
-                self->updateActiveConnection();
+                self->emitConnectionFailedOnce(failedSsid, "Incorrect password", true);
             }
         }
     }
@@ -1294,6 +1295,31 @@ void Network::markConnectionFailed(const QString &ssid) {
 
 void Network::clearConnectionFailed(const QString &ssid) {
     m_failedConnections.removeAll(ssid);
+    m_authErrorEmitted.removeAll(ssid);  // Also clear auth error tracking
+}
+
+void Network::emitConnectionFailedOnce(const QString &ssid, const QString &message, bool isAuthError) {
+    // If this is an auth error and we've already emitted one for this SSID, skip
+    if (isAuthError && m_authErrorEmitted.contains(ssid)) {
+        return;
+    }
+    
+    // If we've already emitted an auth error for this SSID, don't emit generic errors
+    if (m_authErrorEmitted.contains(ssid) && !isAuthError) {
+        return;
+    }
+    
+    // Mark as failed and emit the error
+    markConnectionFailed(ssid);
+    emit connectionFailed(ssid, message);
+    
+    // If this is an auth error, track it to prevent future overrides
+    if (isAuthError) {
+        m_authErrorEmitted.append(ssid);
+    }
+    
+    updateNetworks();
+    updateActiveConnection();
 }
 
 bool Network::hasConnectionFailed(const QString &ssid) const {

@@ -340,17 +340,39 @@ ContentPage {
                                 }
                             }
 
-                            RippleButtonWithIcon {
+                            RippleButton {
+                                id: expandBtn
                                 visible: networkItem.modelData?.isSecure || false
-                                materialIcon: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
-                                mainText: ""
-                                enabled: !Network.hasConnectionFailed(networkItem.modelData.ssid)
-                                onClicked: {
-                                    networkItem.expanded = !networkItem.expanded;
+
+                                contentItem: Rectangle {
+                                    id: expandBtnBody
+                                    radius: Appearance.rounding.full
+                                    color: Appearance.colors.colLayer2
+                                    implicitWidth: height   // makes it a perfect circle
+
+                                    MaterialSymbol {
+                                        id: expandIcon
+
+                                        anchors.centerIn: parent
+                                        text: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
+                                        color: Appearance.m3colors.m3onSecondaryContainer
+                                        fill: 0
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: expandArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+
+                                    onClicked: networkItem.expanded = !networkItem.expanded
+
+                                    StyledToolTip {
+                                        extraVisibleCondition: expandArea.containsMouse
+                                        text: networkItem.expanded ? "Collapse" : "Expand"
+                                    }
                                 }
                             }
-
-
 
                             Item {
                                 Layout.fillWidth: false
@@ -562,7 +584,6 @@ ContentPage {
 
                                 // Forget button for known networks, separated at bottom
                                 RippleButtonWithIcon {
-                                    Layout.fillWidth: true
                                     Layout.topMargin: 8
                                     materialIcon: "delete"
                                     mainText: "Forget Network"

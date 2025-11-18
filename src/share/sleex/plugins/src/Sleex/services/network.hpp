@@ -94,6 +94,7 @@ public:
     // Internal methods to track connection failures
     void markConnectionFailed(const QString &ssid);
     Q_INVOKABLE void clearConnectionFailed(const QString &ssid);
+    void emitConnectionFailedOnce(const QString &ssid, const QString &message, bool isAuthError = false);
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
     Q_INVOKABLE void enableWifi(bool enabled);
@@ -154,6 +155,7 @@ private:
     bool m_scanning;
     QString m_connectingToSsid;
     QStringList m_failedConnections; // Track SSIDs with authentication failures
+    QStringList m_authErrorEmitted; // Track SSIDs that have already emitted auth errors
     
     gulong m_apAddedId;
     gulong m_apRemovedId;
