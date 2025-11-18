@@ -153,6 +153,7 @@ Singleton {
                 property string avatarPath: "file:///usr/share/sleex/assets/logo/1024px/white.png"
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
+                property real dashboardScale: 1.0
                 property string weatherLocation: ""
                 property string mediaPlayer: ""
                 property JsonObject calendar: JsonObject {
