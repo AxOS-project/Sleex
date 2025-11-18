@@ -29,6 +29,7 @@ ContentPage {
                 Config.options.appearance.opacity = value;
             }
         }
+
     }
 
     ContentSection {
@@ -140,74 +141,74 @@ ContentPage {
     }
 
     ContentSection {
-    title: "Dashboard"
-        
-    ConfigSpinBox {
-        text: "Scale"
-        value: Config.options.dashboard.dashboardScale * 100
-        from: 0
-        to: 200
-        stepSize: 5
-        onValueChanged: {
-            Config.options.dashboard.dashboardScale = value / 100;
-        }
-    }
-        
-    MaterialTextField {
-        id: ghUsername
-        Layout.fillWidth: true
-        placeholderText: "Github username"
-        text: Config.options.dashboard.ghUsername
-        wrapMode: TextEdit.Wrap
-        onTextChanged: {
-            Config.options.dashboard.ghUsername = text;
-        }
-    }
+        title: "Dashboard"
 
-    MaterialTextField {
-        id: avatarPath
-        Layout.fillWidth: true
-        placeholderText: "Avatar path"
-        text: Config.options.dashboard.avatarPath
-        onTextChanged: {
-            Config.options.dashboard.avatarPath = text;
+        ConfigSpinBox {
+            text: "Scale"
+            value: Config.options.dashboard.dashboardScale * 100
+            from: 0
+            to: 200
+            stepSize: 5
+            onValueChanged: {
+                Config.options.dashboard.dashboardScale = value / 100;
+            }
+        }
+
+        MaterialTextField {
+            id: ghUsername
+            Layout.fillWidth: true
+            placeholderText: "Github username"
+            text: Config.options.dashboard.ghUsername
+            wrapMode: TextEdit.Wrap
+            onTextChanged: {
+                Config.options.dashboard.ghUsername = text;
+            }
+        }
+
+        MaterialTextField {
+            id: avatarPath
+            Layout.fillWidth: true
+            placeholderText: "Avatar path"
+            text: Config.options.dashboard.avatarPath
+            onTextChanged: {
+                Config.options.dashboard.avatarPath = text;
+            }
+        }
+
+        MaterialTextField {
+            id: userDesc
+            Layout.fillWidth: true
+            placeholderText: "User description"
+            text: Config.options.dashboard.userDesc
+            onTextChanged: {
+                Config.options.dashboard.userDesc = text;
+            }
+        }
+
+        ContentSubsection {
+            title: "Optional features"
+            tooltip: "Affects performances.\nWill make dashboard load slower"
+
+            ConfigSwitch {
+                text: "Todo list"
+                checked: Config.options.dashboard.opt.enableTodo
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
+            }
+            ConfigSwitch {
+                text: "Calendar tab"
+                checked: Config.options.dashboard.opt.enableCalendar
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
+            }
+            ConfigSwitch {
+                text: "AI assistant"
+                checked: Config.options.dashboard.opt.enableAIAssistant
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
+            }
         }
     }
-
-    MaterialTextField {
-        id: userDesc
-        Layout.fillWidth: true
-        placeholderText: "User description"
-        text: Config.options.dashboard.userDesc
-        onTextChanged: {
-            Config.options.dashboard.userDesc = text;
-        }
-    }
-
-    ContentSubsection {
-        title: "Optional features"
-        tooltip: "Affects performances.\nWill make dashboard load slower"
-
-        ConfigSwitch {
-            text: "Todo list"
-            checked: Config.options.dashboard.opt.enableTodo
-            onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
-        }
-        ConfigSwitch {
-            text: "Calendar tab"
-            checked: Config.options.dashboard.opt.enableCalendar
-            onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
-        }
-        ConfigSwitch {
-            text: "AI assistant"
-            checked: Config.options.dashboard.opt.enableAIAssistant
-            onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
-        }
-    }
-}
 
     ContentSection {
         title: "Dock"
@@ -304,43 +305,62 @@ ContentPage {
                     text: "Show quotes"
                     checked: Config.options.background.enableQuote
                     onClicked: checked = !checked
-                    onCheckedChanged: Config.options.background.enableQuote = checked
-                }
-
-            }
-
-            StyledText {
-                text: "Clock mode"
-                color: Appearance.colors.colSubtext
-            }
-
-            ConfigSelectionArray {
-                currentValue: Config.options.background.clockMode
-                configOptionName: "background.clockMode"
-                onSelected: (newValue) => {
-                    Config.options.background.clockMode = newValue;
-                }
-                options: [
-                    {"value": "dark", "displayName": "Dark"},
-                    {"value": "light", "displayName": "Light"}
-                ]
-            }
-
-            StyledText {
-                text: "Clock Font"
-                color: Appearance.colors.colSubtext
-            }
-
-            StyledComboBox {
-                id: fontComboBox
-                model: Qt.fontFamilies()
-                currentIndex: model.indexOf(Config.options.background.clockFontFamily)
-
-                onCurrentIndexChanged: {
-                    const selectedFont = model[currentIndex]
-                    if (Config.options.background.clockFontFamily !== selectedFont) {
-                        Config.options.background.clockFontFamily = selectedFont
+                    onCheckedChanged: {
+                        Config.options.background.enableQuote = checked
+                        Quotes.refresh();    
                     }
+                }
+
+            }
+
+            ContentSubsection {
+                title: "Clock mode"
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.background.clockMode
+                    configOptionName: "background.clockMode"
+                    onSelected: (newValue) => {
+                        Config.options.background.clockMode = newValue;
+                    }
+                    options: [
+                        {"value": "dark", "displayName": "Dark"},
+                        {"value": "light", "displayName": "Light"}
+                    ]
+                }
+            }
+
+            ContentSubsection {
+                title: "Clock Font"
+
+                StyledComboBox {
+                    id: fontComboBox
+                    model: Qt.fontFamilies()
+                    currentIndex: model.indexOf(Config.options.background.clockFontFamily)
+
+                    onCurrentIndexChanged: {
+                        const selectedFont = model[currentIndex]
+                        if (Config.options.background.clockFontFamily !== selectedFont) {
+                            Config.options.background.clockFontFamily = selectedFont
+                        }
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: "Quote Source"
+                tooltip: "The local quotes are stored in /usr/share/sleex/assets/quotes.json.\nThese quotes are made by the AxOS community and are tech related."
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.background.quoteSource
+                    configOptionName: "background.quoteSource"
+                    onSelected: (newValue) => {
+                        Config.options.background.quoteSource = newValue;
+                        Quotes.refresh();
+                    }
+                    options: [
+                        {"value": 1, "displayName": "Online"},
+                        {"value": 0, "displayName": "Local"}
+                    ]
                 }
             }
         }

@@ -11,7 +11,6 @@ QuickToggleButton {
     }
 
     StyledToolTip {
-        text: "Keep system awake"
+        text: qsTr("Keep system awake")
     }
-
 }

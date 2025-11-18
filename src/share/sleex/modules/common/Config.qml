@@ -146,6 +146,7 @@ Singleton {
                 property string clockFontFamily: "Rubik"
                 property real clockSizeMultiplier: 1
                 property bool enableQuote: true
+                property int quoteSource: 0 // 0 for "local", 1 for "online"
             }
 
             property JsonObject dashboard: JsonObject {
@@ -153,7 +154,6 @@ Singleton {
                 property string avatarPath: "file:///usr/share/sleex/assets/logo/1024px/white.png"
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
-                property real dashboardScale: 1.0
                 property string weatherLocation: ""
                 property string mediaPlayer: ""
                 property JsonObject calendar: JsonObject {
