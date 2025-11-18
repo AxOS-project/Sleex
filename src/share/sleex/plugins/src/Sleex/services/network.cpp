@@ -587,9 +587,6 @@ void Network::onConnectionActivated(GObject *source, GAsyncResult *result, gpoin
                 NMDeviceState state = nm_device_get_state(NM_DEVICE(network->m_wifiDevice));
                 NMDeviceStateReason reason = nm_device_get_state_reason(NM_DEVICE(network->m_wifiDevice));
                 
-                // Debug logging to understand what state we're in
-                qWarning() << "1s check - SSID:" << ssid << "State:" << state << "Reason:" << reason;
-                
                 // Check for immediate auth failures - expanded detection
                 if (state == NM_DEVICE_STATE_FAILED || state == NM_DEVICE_STATE_NEED_AUTH ||
                     state == NM_DEVICE_STATE_DISCONNECTED ||
@@ -599,9 +596,6 @@ void Network::onConnectionActivated(GObject *source, GAsyncResult *result, gpoin
                     reason == NM_DEVICE_STATE_REASON_SUPPLICANT_TIMEOUT) {
                     
                     QString errorMessage = "Configuring connection - please wait";
-                    qWarning() << "Early auth failure detected for" << ssid << "- State:" << state << "Reason:" << reason;
-                    qWarning() << "Emitting connectionFailed for" << ssid << "with message:" << errorMessage;
-                    network->markConnectionFailed(ssid);
                     network->markConnectionFailed(ssid);
         emit network->connectionFailed(ssid, errorMessage);
                     network->updateNetworks();
@@ -1206,8 +1200,6 @@ void Network::verifyDelayedConnection(const QString &ssid) {
     bool stillConnected = false;
     QString errorMsg = "Authentication failed - incorrect password";
     
-    qWarning() << "5s verification check for" << ssid;
-    
     if (m_wifiDevice) {
         NMDeviceState state = nm_device_get_state(NM_DEVICE(m_wifiDevice));
         
@@ -1301,15 +1293,11 @@ void Network::markConnectionFailed(const QString &ssid) {
 }
 
 void Network::clearConnectionFailed(const QString &ssid) {
-    if (m_failedConnections.removeAll(ssid) > 0) {
-        qWarning() << "Cleared failed connection status for SSID:" << ssid;
-    }
+    m_failedConnections.removeAll(ssid);
 }
 
 bool Network::hasConnectionFailed(const QString &ssid) const {
-    bool result = m_failedConnections.contains(ssid);
-    qWarning() << "hasConnectionFailed called for" << ssid << "result:" << result << "failed list:" << m_failedConnections;
-    return result;
+    return m_failedConnections.contains(ssid);
 }
 
 } // namespace sleex::services

@@ -269,11 +269,8 @@ ContentPage {
                 readonly property bool loading: networkItem.isConnecting
 
                 property bool expanded: false
-                property bool expandedForPassword: false  // Track when we expand for password input
                 
-                onExpandedChanged: {
-                    console.log("DEBUG: expanded property changed to:", expanded, "for network:", modelData.ssid);
-                }
+
 
                 Layout.fillWidth: true
                 spacing: 10
@@ -349,7 +346,6 @@ ContentPage {
                                 mainText: ""
                                 enabled: !Network.hasConnectionFailed(networkItem.modelData.ssid)
                                 onClicked: {
-                                    console.log("DEBUG: RippleButtonWithIcon clicked for", networkItem.modelData.ssid, "- current expanded:", networkItem.expanded);
                                     networkItem.expanded = !networkItem.expanded;
                                 }
                             }
@@ -373,7 +369,6 @@ ContentPage {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: function(mouse) {
-                                        console.log("DEBUG: MouseArea onClicked - START for", networkItem.modelData.ssid);
                                         mouse.accepted = true;  // Prevent event propagation
                                         const isActive = networkItem.modelData?.active || false;
                                         const isSecure = networkItem.modelData?.isSecure || false;
@@ -391,25 +386,13 @@ ContentPage {
                                                 // Known secure network - if previous attempt failed, prompt for password
                                                 // otherwise try stored credentials
                                                 const hasFailed = Network.hasConnectionFailed(networkItem.modelData.ssid);
-                                                console.log("DEBUG: Network", networkItem.modelData.ssid, "isKnown:", isKnown, "hasFailed:", hasFailed);
                                                 if (hasFailed) {
-                                                    console.log("DEBUG: Showing password input for failed network:", networkItem.modelData.ssid);
                                                     // Show password input so user can re-enter credentials
-                                                    console.log("DEBUG: Setting expanded to true for", networkItem.modelData.ssid, "current expanded:", networkItem.expanded);
-                                                    // Use Qt.callLater to ensure expansion happens after any conflicting handlers
+                                                    // Expand to show password input for re-authentication
                                                     Qt.callLater(function() {
-                                                        console.log("DEBUG: Inside callLater - about to set expanded to true");
-                                                        networkItem.expandedForPassword = true;
                                                         networkItem.expanded = true;
-                                                        console.log("DEBUG: After callLater - expanded is now:", networkItem.expanded);
-                                                        
-                                                        // Add a small delay to check if something changes it back
-                                                        Qt.callLater(function() {
-                                                            console.log("DEBUG: Double check - expanded is still:", networkItem.expanded);
-                                                        });
                                                     });
                                                 } else {
-                                                    console.log("DEBUG: Auto-connecting to known network:", networkItem.modelData.ssid);
                                                     // Backend will handle security mismatches automatically
                                                     Network.connectToNetwork(networkItem.modelData.ssid, "");
                                                 }
@@ -462,27 +445,12 @@ ContentPage {
 
                                 StyledText { 
                                     text: "Password:" 
-                                    visible: networkItem.modelData.ssid === "NothingPhone(2a)" || ((networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid)))
-                                    
-                                    Component.onCompleted: {
-                                        console.log("DEBUG: Password label for", networkItem.modelData.ssid, "- isSecure:", networkItem.modelData?.isSecure, "isKnown:", networkItem.modelData?.isKnown, "hasConnectionFailed:", Network.hasConnectionFailed(networkItem.modelData.ssid), "visible:", visible);
-                                    }
+                                    visible: (networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid))
                                 }
                                 Rectangle {
                                     id: inputWrapper
-                                    visible: networkItem.modelData.ssid === "NothingPhone(2a)" || ((networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid)))
+                                    visible: (networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid))
                                     Layout.fillWidth: true
-                                    
-                                    Component.onCompleted: {
-                                        console.log("DEBUG: Input wrapper for", networkItem.modelData.ssid, "- visible:", visible);
-                                        console.log("DEBUG: Input wrapper - isSecure:", networkItem.modelData?.isSecure);
-                                        console.log("DEBUG: Input wrapper - isKnown:", networkItem.modelData?.isKnown);
-                                        console.log("DEBUG: Input wrapper - hasConnectionFailed:", Network.hasConnectionFailed(networkItem.modelData.ssid));
-                                    }
-                                    
-                                    onVisibleChanged: {
-                                        console.log("DEBUG: Input wrapper visibility changed to:", visible, "for", networkItem.modelData.ssid);
-                                    }
                                     radius: Appearance.rounding.small
                                     color: Appearance.colors.colLayer1
                                     height: passwdInput.height
