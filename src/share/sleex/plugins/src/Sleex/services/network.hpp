@@ -88,6 +88,13 @@ public:
     bool scanning() const { return m_scanning; }
     QString connectingToSsid() const { return m_connectingToSsid; }
     
+    // Check if a connection has authentication failure (callable from QML)
+    Q_INVOKABLE bool hasConnectionFailed(const QString &ssid) const;
+    
+    // Internal methods to track connection failures
+    void markConnectionFailed(const QString &ssid);
+    Q_INVOKABLE void clearConnectionFailed(const QString &ssid);
+    
     Q_INVOKABLE QString getNetworkIcon(int strength);
     Q_INVOKABLE void enableWifi(bool enabled);
     Q_INVOKABLE void toggleWifi();
@@ -98,6 +105,12 @@ public:
     Q_INVOKABLE void updateNetworks();
     Q_INVOKABLE void updateActiveConnection();
 
+private slots:
+    void verifyDelayedConnection(const QString &ssid);
+
+private:
+    void emitConnectionSucceededWithVerification(const QString &ssid);
+
 signals:
     void networksChanged();
     void activeChanged();
@@ -107,6 +120,7 @@ signals:
     void connectingToSsidChanged();
     void connectionSucceeded(const QString &ssid);
     void connectionFailed(const QString &ssid, const QString &error);
+    void passwordRequired(const QString &ssid);
 
 private:
     static void onAccessPointAdded(NMDeviceWifi *device, NMAccessPoint *ap, gpointer user_data);
@@ -121,6 +135,7 @@ private:
     static void onConnectionDeactivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionAdded(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onConnectionRemoved(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
+    static void onDeviceStateChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
     static void onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data);
     
     void updateEthernetStatus();
@@ -138,6 +153,7 @@ private:
     bool m_ethernet;
     bool m_scanning;
     QString m_connectingToSsid;
+    QStringList m_failedConnections; // Track SSIDs with authentication failures
     
     gulong m_apAddedId;
     gulong m_apRemovedId;
@@ -147,6 +163,7 @@ private:
     gulong m_activeConnectionsId;
     gulong m_connectionAddedId;
     gulong m_connectionRemovedId;
+    gulong m_deviceStateChangedId;
 };
 
 } // namespace sleex::services

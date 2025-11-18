@@ -70,6 +70,20 @@ ContentPage {
                 root.refreshTrigger++;
             });
         }
+        
+        function onPasswordRequired(ssid) {
+            // Security type changed - expand the network for password input
+            for (let i = 0; i < networkRepeater.count; i++) {
+                let item = networkRepeater.itemAt(i);
+                if (item && item.modelData && item.modelData.ssid === ssid) {
+                    item.expanded = true;
+                    break;
+                }
+            }
+            
+            // Also refresh the network list
+            root.refreshTrigger++;
+        }
     }
     
     // Timer to auto-hide connection errors
@@ -195,7 +209,7 @@ ContentPage {
 
             MaterialSymbol {
                 Layout.alignment: Qt.AlignHCenter
-                text: "wifi_off"
+                text: "signal_wifi_off"
                 font.pixelSize: 48
                 color: Appearance.colors.colOnLayer1
             }
@@ -209,44 +223,11 @@ ContentPage {
             }
         }
 
-        // Connection error display
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.showConnectionError ? (errorContent.contentHeight + 32) : 0
-            Layout.topMargin: -40
-            Layout.bottomMargin: root.showConnectionError ? 25 : 0
-            color: Appearance.colors.colLayer2
-            border.color: Appearance.m3colors.m3outline
-            border.width: 1
-            radius: Appearance.rounding.small
-            visible: root.showConnectionError && (Network.wifiEnabled || false)
-            opacity: root.showConnectionError ? 1 : 0
-            
-            Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
-            Behavior on Layout.bottomMargin { NumberAnimation { duration: 200 } }
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-            
-            StyledText {
-                id: errorContent
-                anchors.fill: parent
-                anchors.margins: 16
-                
-                text: "Failed to connect to \"" + root.errorSsid + "\"\n\n" + root.lastConnectionError
-                color: Appearance.colors.colOnLayer1
-                font.weight: 500
-                font.pixelSize: Appearance.font.pixelSize.small || 14
-                wrapMode: Text.WordWrap
-                verticalAlignment: Text.AlignVCenter
-                textFormat: Text.PlainText
-            }
-        }
-
         StyledTextArea {
             id: networkSearch
             Layout.fillWidth: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16
-            Layout.topMargin: root.showConnectionError ? 15 : 0
             placeholderText: "Search networks"
             visible: Network.wifiEnabled || false
         }
@@ -288,6 +269,11 @@ ContentPage {
                 readonly property bool loading: networkItem.isConnecting
 
                 property bool expanded: false
+                property bool expandedForPassword: false  // Track when we expand for password input
+                
+                onExpandedChanged: {
+                    console.log("DEBUG: expanded property changed to:", expanded, "for network:", modelData.ssid);
+                }
 
                 Layout.fillWidth: true
                 spacing: 10
@@ -345,51 +331,30 @@ ContentPage {
                                     color: Appearance.colors.colSubtext
                                     visible: !(networkItem.modelData?.isSecure || false)
                                 }
-                            }
 
-                            MaterialSymbol {
-                                visible: networkItem.modelData?.isSecure || false
-                                text: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
-                                font.pixelSize: Appearance.font.pixelSize.larger
-                                color: Appearance.colors.colOnSecondaryContainer
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onPressed: {
-                                        networkItem.expanded = !networkItem.expanded
-                                    }
-                                }
-                            }
-
-                            // Forget network button for known networks
-                            RippleButton {
-                                id: forgetNetworkBtn
-                                visible: networkItem.modelData?.isKnown || false
-                                implicitWidth: 32
-                                implicitHeight: 32
-                                buttonRadius: Appearance.rounding.full
-                                
-                                contentItem: MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "delete"
+                                // Connection error display for this network
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: "Failed to connect: " + root.lastConnectionError
+                                    font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.m3colors.m3error
-                                    iconSize: 16
-                                }
-                                
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        Network.forgetNetwork(networkItem.modelData.ssid);
-                                    }
-                                }
-
-                                StyledToolTip {
-                                    extraVisibleCondition: forgetNetworkBtn.hovered
-                                    text: "Forget this network"
+                                    wrapMode: Text.WordWrap
+                                    visible: root.showConnectionError && root.errorSsid === networkItem.modelData.ssid
                                 }
                             }
+
+                            RippleButtonWithIcon {
+                                visible: networkItem.modelData?.isSecure || false
+                                materialIcon: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
+                                mainText: ""
+                                enabled: !Network.hasConnectionFailed(networkItem.modelData.ssid)
+                                onClicked: {
+                                    console.log("DEBUG: RippleButtonWithIcon clicked for", networkItem.modelData.ssid, "- current expanded:", networkItem.expanded);
+                                    networkItem.expanded = !networkItem.expanded;
+                                }
+                            }
+
+
 
                             Item {
                                 Layout.fillWidth: false
@@ -407,7 +372,9 @@ ContentPage {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
+                                    onClicked: function(mouse) {
+                                        console.log("DEBUG: MouseArea onClicked - START for", networkItem.modelData.ssid);
+                                        mouse.accepted = true;  // Prevent event propagation
                                         const isActive = networkItem.modelData?.active || false;
                                         const isSecure = networkItem.modelData?.isSecure || false;
                                         const isKnown = networkItem.modelData?.isKnown || false;
@@ -420,8 +387,34 @@ ContentPage {
                                             if (!isSecure) {
                                                 // Open network - connect directly
                                                 Network.connectToNetwork(networkItem.modelData.ssid, "");
+                                            } else if (isKnown) {
+                                                // Known secure network - if previous attempt failed, prompt for password
+                                                // otherwise try stored credentials
+                                                const hasFailed = Network.hasConnectionFailed(networkItem.modelData.ssid);
+                                                console.log("DEBUG: Network", networkItem.modelData.ssid, "isKnown:", isKnown, "hasFailed:", hasFailed);
+                                                if (hasFailed) {
+                                                    console.log("DEBUG: Showing password input for failed network:", networkItem.modelData.ssid);
+                                                    // Show password input so user can re-enter credentials
+                                                    console.log("DEBUG: Setting expanded to true for", networkItem.modelData.ssid, "current expanded:", networkItem.expanded);
+                                                    // Use Qt.callLater to ensure expansion happens after any conflicting handlers
+                                                    Qt.callLater(function() {
+                                                        console.log("DEBUG: Inside callLater - about to set expanded to true");
+                                                        networkItem.expandedForPassword = true;
+                                                        networkItem.expanded = true;
+                                                        console.log("DEBUG: After callLater - expanded is now:", networkItem.expanded);
+                                                        
+                                                        // Add a small delay to check if something changes it back
+                                                        Qt.callLater(function() {
+                                                            console.log("DEBUG: Double check - expanded is still:", networkItem.expanded);
+                                                        });
+                                                    });
+                                                } else {
+                                                    console.log("DEBUG: Auto-connecting to known network:", networkItem.modelData.ssid);
+                                                    // Backend will handle security mismatches automatically
+                                                    Network.connectToNetwork(networkItem.modelData.ssid, "");
+                                                }
                                             } else {
-                                                // Secure network - expand for password input
+                                                // Unknown secure network - expand for password input
                                                 networkItem.expanded = true;
                                             }
                                         }
@@ -433,7 +426,7 @@ ContentPage {
                                         if (networkItem.modelData?.active) {
                                             return "Disconnect from network";
                                         } else if (networkItem.modelData?.isKnown) {
-                                            return "Connect to network";
+                                            return "Connect to known network";
                                         } else if (networkItem.modelData?.isSecure) {
                                             return "Click to enter password";
                                         } else {
@@ -469,12 +462,27 @@ ContentPage {
 
                                 StyledText { 
                                     text: "Password:" 
-                                    visible: networkItem.modelData?.isSecure || false
+                                    visible: networkItem.modelData.ssid === "NothingPhone(2a)" || ((networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid)))
+                                    
+                                    Component.onCompleted: {
+                                        console.log("DEBUG: Password label for", networkItem.modelData.ssid, "- isSecure:", networkItem.modelData?.isSecure, "isKnown:", networkItem.modelData?.isKnown, "hasConnectionFailed:", Network.hasConnectionFailed(networkItem.modelData.ssid), "visible:", visible);
+                                    }
                                 }
                                 Rectangle {
                                     id: inputWrapper
-                                    visible: networkItem.modelData?.isSecure || false
+                                    visible: networkItem.modelData.ssid === "NothingPhone(2a)" || ((networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid)))
                                     Layout.fillWidth: true
+                                    
+                                    Component.onCompleted: {
+                                        console.log("DEBUG: Input wrapper for", networkItem.modelData.ssid, "- visible:", visible);
+                                        console.log("DEBUG: Input wrapper - isSecure:", networkItem.modelData?.isSecure);
+                                        console.log("DEBUG: Input wrapper - isKnown:", networkItem.modelData?.isKnown);
+                                        console.log("DEBUG: Input wrapper - hasConnectionFailed:", Network.hasConnectionFailed(networkItem.modelData.ssid));
+                                    }
+                                    
+                                    onVisibleChanged: {
+                                        console.log("DEBUG: Input wrapper visibility changed to:", visible, "for", networkItem.modelData.ssid);
+                                    }
                                     radius: Appearance.rounding.small
                                     color: Appearance.colors.colLayer1
                                     height: passwdInput.height
@@ -579,42 +587,21 @@ ContentPage {
                                             }
                                         }
 
-                                        RippleButton { // Forget button (for all networks)
-                                            id: forgetButton
-                                            Layout.alignment: Qt.AlignTop
-                                            Layout.rightMargin: 5
-                                            implicitHeight: 40
-                                            buttonRadius: Appearance.rounding.small
-                                            visible: true
 
-                                            colBackground: "transparent"
-                                            colBackgroundHover: "transparent"
-                                            colBackgroundToggled: "transparent"
-                                            colBackgroundToggledHover: "transparent"
 
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    Network.forgetNetwork(networkItem.modelData.ssid);
-                                                    networkItem.expanded = false;
-                                                }
-                                            }
+                                    }
+                                }
 
-                                            contentItem: MaterialSymbol {
-                                                anchors.centerIn: parent
-                                                horizontalAlignment: Text.AlignHCenter
-                                                iconSize: Appearance.font.pixelSize.larger
-                                                color: Appearance.m3colors.m3error
-                                                text: "delete"
-                                            }
-
-                                            StyledToolTip {
-                                                text: "Forget this network"
-                                                visible: forgetButton.hovered
-                                            }
-                                        }
-
+                                // Forget button for known networks, separated at bottom
+                                RippleButtonWithIcon {
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: 8
+                                    materialIcon: "delete"
+                                    mainText: "Forget Network"
+                                    visible: networkItem.modelData?.isKnown || false
+                                    onClicked: {
+                                        Network.forgetNetwork(networkItem.modelData.ssid);
+                                        networkItem.expanded = false;
                                     }
                                 }
                             }
