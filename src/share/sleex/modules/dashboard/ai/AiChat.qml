@@ -149,7 +149,7 @@ Mowe uwu wem ipsum!
 ### Formatting
 
 - *Italic*, \`Monospace\`, **Bold**, [Link](https://example.com)
-- Sleex icon <img src="${Quickshell.shellPath("assets/logo/svg/white.svg")}" height="${Appearance.font.pixelSize.small}"/>
+- Sleex icon <img src="${'/usr/share/pixmaps/sleex/svg/white.svg'}" height="${Appearance.font.pixelSize.small}"/>
 
 ### Table
 

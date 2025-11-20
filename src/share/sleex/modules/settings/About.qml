@@ -89,7 +89,7 @@ ContentPage {
             Layout.bottomMargin: 10
             IconImage {
                implicitSize: 100
-               source: "file:///usr/share/sleex/assets/logo/svg/dark.svg"
+               source: "file:///usr/share/pixmaps/sleex/svg/dark.svg"
             }
             ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter

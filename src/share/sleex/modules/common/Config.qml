@@ -141,8 +141,8 @@ Singleton {
                 property real clockY: 0
                 property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
                 property bool showWatermark: true // Whether to show the watermark
-                property string wallpaperPath: "/usr/share/sleex/wallpapers/SleexOne.png"
-                property string wallpaperSelectorPath: "/usr/share/sleex/wallpapers/"
+                property string wallpaperPath: "/usr/share/backgrounds/sleex/SleexOne.png"
+                property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
                 property string clockFontFamily: "Rubik"
                 property real clockSizeMultiplier: 1
                 property bool enableQuote: true
@@ -152,7 +152,7 @@ Singleton {
             property JsonObject dashboard: JsonObject {
                 property real dashboardScale: 1.0 // Overall scale of the dashboard
                 property string ghUsername: "levraiardox"
-                property string avatarPath: "file:///usr/share/sleex/assets/logo/1024px/white.png"
+                property string avatarPath: "file:///usr/share/pixmaps/sleex/1024px/white.png"
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
                 property string weatherLocation: ""

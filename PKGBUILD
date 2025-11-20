@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.22"
-pkgrel="4"
+pkgrel="5"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -32,6 +32,8 @@ depends=(
 	'fuzzel' 'nm-connection-editor' 'quickshell-git' 'swww' 'translate-shell' 'wlogout'
 	# User config
 	"sleex-user-config"
+	# Artworks
+	"sleex-artworks"
 )
 optdepends=(
 	"hyprwayland-scanner: Wayland protocol scanner for Hyprland"
