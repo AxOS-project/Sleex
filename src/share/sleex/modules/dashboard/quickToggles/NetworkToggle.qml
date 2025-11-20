@@ -14,7 +14,7 @@ import Sleex.Services
 QuickToggleButton {
 
     toggled: Network.wifiEnabled
-    buttonIcon: Network.wifiEnabled ? Network.getNetworkIcon(Network.active?.strength ?? 0) : "signal_wifi_off"
+    buttonIcon: Network.getWifiIcon()
     onClicked: {
         Network.toggleWifi()
     }

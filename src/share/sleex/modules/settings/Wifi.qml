@@ -14,8 +14,88 @@ import Sleex.Services
 ContentPage {
     id: root
     forceWidth: true
+    
+    // Connection error tracking
+    property string lastConnectionError: ""
+    property string errorSsid: ""
+    property bool showConnectionError: false
+    
+    // UI refresh trigger
+    property int refreshTrigger: 0
+    
+    // Network connection result handlers
+    Connections {
+        target: Network
+        
+        function onConnectionSucceeded(ssid) {
+            // Clear any previous errors
+            root.showConnectionError = false;
+            root.lastConnectionError = "";
+            root.errorSsid = "";
+            
+            // Refresh UI to show updated connection state
+            root.refreshTrigger++;
+            
+            Qt.callLater(function() {
+                if (Network.updateNetworks) {
+                    Network.updateNetworks();
+                }
+                if (Network.updateActiveConnection) {
+                    Network.updateActiveConnection();
+                }
+                // Force ScriptModel re-evaluation
+                root.refreshTrigger++;
+            });
+        }
+        
+        function onConnectionFailed(ssid, error) {
+            root.lastConnectionError = error;
+            root.errorSsid = ssid;
+            root.showConnectionError = true;
+            
+            // Auto-hide error after 5 seconds
+            errorTimer.restart();
+            
+            // Refresh UI to show current state
+            root.refreshTrigger++;
+            
+            Qt.callLater(function() {
+                if (Network.updateNetworks) {
+                    Network.updateNetworks();
+                }
+                if (Network.updateActiveConnection) {
+                    Network.updateActiveConnection();
+                }
+                // Force ScriptModel re-evaluation
+                root.refreshTrigger++;
+            });
+        }
+        
+        function onPasswordRequired(ssid) {
+            // Security type changed - expand the network for password input
+            for (let i = 0; i < networkRepeater.count; i++) {
+                let item = networkRepeater.itemAt(i);
+                if (item && item.modelData && item.modelData.ssid === ssid) {
+                    item.expanded = true;
+                    break;
+                }
+            }
+            
+            // Also refresh the network list
+            root.refreshTrigger++;
+        }
+    }
+    
+    // Timer to auto-hide connection errors
+    Timer {
+        id: errorTimer
+        interval: 5000
+        onTriggered: {
+            root.showConnectionError = false;
+        }
+    }
 
-    property string connectingToSsid: ""
+
 
     // Rectangle {
     //     Layout.fillWidth: true
@@ -56,12 +136,14 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: Network.wifiEnabled
-                onCheckedChanged: {
-                    Network.enableWifi(checked)
+                checked: Network.wifiEnabled || false
+                onClicked: {
+                    const newState = !checked;
+                    // Toggle WiFi state
+                    Network.toggleWifi();
                 }
                 StyledToolTip {
-                    text: "Doesn't works idk why"
+                    text: Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
                 }
             }
         }
@@ -71,32 +153,92 @@ ContentPage {
         spacing: 10
 
         StyledText {
-            text: qsTr("%1 networks available").arg(Network.networks.length)
+            text: {
+                const networks = Network.networks;
+                let available = qsTr("%1 network%2 available").arg(networks.length).arg(networks.length === 1 ? "" : "s");
+                const connected = networks.filter(n => n.active).length;
+                if (connected > 0)
+                    available += qsTr(" (%1 connected)").arg(connected);
+                return available;
+            }
             color: Appearance.colors.colOnLayer0
             font.pixelSize: Appearance.font.pixelSize.huge
+        }
+
+        RippleButton {
+            id: discoverBtn
+
+            visible: Network.wifiEnabled || false
+
+            contentItem: Rectangle {
+                id: discoverBtnBody
+                radius: Appearance.rounding.full
+                color: (Network.scanning || false) ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                implicitWidth: height
+
+                MaterialSymbol {
+                    id: scanIcon
+
+                    anchors.centerIn: parent
+                    text: "refresh"
+                    color: (Network.scanning || false) ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
+                    fill: (Network.scanning || false) ? 1 : 0
+                }
+            }
+
+            MouseArea {
+                id: discoverArea
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: Network.rescanWifi()
+
+                StyledToolTip {
+                    extraVisibleCondition: discoverArea.containsMouse
+                    text: "Discover new networks"
+                }
+            }
         }
     }
 
     ContentSection {
 
-        Text {
-            text: "Wifi diabled"
-            color: Appearance.colors.colOnLayer1
-            font.pixelSize: 30
+        ColumnLayout {
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            visible: !Network.wifiEnabled
+            visible: !(Network.wifiEnabled || false)
+            spacing: 10
+
+            MaterialSymbol {
+                Layout.alignment: Qt.AlignHCenter
+                text: "signal_wifi_off"
+                font.pixelSize: 48
+                color: Appearance.colors.colOnLayer1
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Turn on WiFi to see available networks"
+                color: Appearance.colors.colOnLayer1
+                font.pixelSize: Appearance.font.pixelSize.large
+                horizontalAlignment: Text.AlignHCenter
+            }
         }
 
         StyledTextArea {
             id: networkSearch
             Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
             placeholderText: "Search networks"
-            visible: Network.wifiEnabled
+            visible: Network.wifiEnabled || false
         }
 
 
+
         Repeater {
+            id: networkRepeater
+            visible: Network.wifiEnabled || false
             model: ScriptModel {
+                id: networkModel
                 // values: [...Network.networks].sort((a, b) => {
                 //     if (a.active !== b.active)
                 //         return b.active - a.active;
@@ -104,6 +246,9 @@ ContentPage {
                 // }).slice(0, 8)
 
                 values: {
+                    // Force model re-evaluation when network state changes
+                    let trigger = root.refreshTrigger;
+                    
                     let networks = [...Network.networks].sort((a, b) => {
                         if (a.active !== b.active)
                             return b.active - a.active;
@@ -120,10 +265,12 @@ ContentPage {
                 id: networkItem
 
                 required property var modelData
-                readonly property bool isConnecting: root.connectingToSsid === modelData.ssid
+                readonly property bool isConnecting: Network.connectingToSsid === modelData.ssid
                 readonly property bool loading: networkItem.isConnecting
 
                 property bool expanded: false
+                
+
 
                 Layout.fillWidth: true
                 spacing: 10
@@ -155,7 +302,7 @@ ContentPage {
                                 }
 
                                 MaterialSymbol {
-                                    visible: networkItem.modelData.isSecure
+                                    visible: networkItem.modelData?.isSecure || false
                                     text: "lock"
                                     font.pixelSize: Appearance.font.pixelSize.larger
                                     color: Appearance.colors.colOnSecondaryContainer
@@ -173,55 +320,133 @@ ContentPage {
                                     font.weight: networkItem.modelData.active ? 500 : 400
                                     color: networkItem.modelData.active ? Appearance.m3colors.m3primary : Appearance.colors.colOnLayer1
                                 }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: "Open Network"
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Appearance.colors.colSubtext
+                                    visible: !(networkItem.modelData?.isSecure || false)
+                                }
+
+                                // Connection error display for this network
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: "Failed to connect: " + root.lastConnectionError
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Appearance.m3colors.m3error
+                                    wrapMode: Text.WordWrap
+                                    visible: root.showConnectionError && root.errorSsid === networkItem.modelData.ssid
+                                }
                             }
 
-                            MaterialSymbol {
-                                visible: networkItem.modelData.isSecure
-                                text: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
-                                font.pixelSize: Appearance.font.pixelSize.larger
-                                color: Appearance.colors.colOnSecondaryContainer
+                            RippleButton {
+                                id: expandBtn
+                                visible: networkItem.modelData?.isSecure || false
 
+                                contentItem: Rectangle {
+                                    id: expandBtnBody
+                                    radius: Appearance.rounding.full
+                                    color: Appearance.colors.colLayer2
+                                    implicitWidth: height   // makes it a perfect circle
+
+                                    MaterialSymbol {
+                                        id: expandIcon
+
+                                        anchors.centerIn: parent
+                                        text: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
+                                        color: Appearance.m3colors.m3onSecondaryContainer
+                                        fill: 0
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: expandArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+
+                                    onClicked: networkItem.expanded = !networkItem.expanded
+
+                                    StyledToolTip {
+                                        extraVisibleCondition: expandArea.containsMouse
+                                        text: networkItem.expanded ? "Collapse" : "Expand"
+                                    }
+                                }
+                            }
+
+                            Item {
+                                Layout.fillWidth: false
+                                Layout.preferredWidth: toggleSwitch.width
+                                Layout.preferredHeight: toggleSwitch.height
+                                
+                                StyledSwitch {
+                                    id: toggleSwitch
+                                    anchors.centerIn: parent
+                                    scale: 0.80
+                                    checked: networkItem.modelData?.active || false
+                                    enabled: false  // Make it visual-only
+                                }
+                                
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onPressed: {
-                                        networkItem.expanded = !networkItem.expanded
+                                    onClicked: function(mouse) {
+                                        mouse.accepted = true;  // Prevent event propagation
+                                        const isActive = networkItem.modelData?.active || false;
+                                        const isSecure = networkItem.modelData?.isSecure || false;
+                                        const isKnown = networkItem.modelData?.isKnown || false;
+                                        
+                                        if (isActive) {
+                                            // Currently connected - disconnect
+                                            Network.disconnectFromNetwork();
+                                        } else {
+                                            // Not connected - try to connect
+                                            if (!isSecure) {
+                                                // Open network - connect directly
+                                                Network.connectToNetwork(networkItem.modelData.ssid, "");
+                                            } else if (isKnown) {
+                                                // Known secure network - if previous attempt failed, prompt for password
+                                                // otherwise try stored credentials
+                                                const hasFailed = Network.hasConnectionFailed(networkItem.modelData.ssid);
+                                                if (hasFailed) {
+                                                    // Show password input so user can re-enter credentials
+                                                    // Expand to show password input for re-authentication
+                                                    Qt.callLater(function() {
+                                                        networkItem.expanded = true;
+                                                    });
+                                                } else {
+                                                    // Backend will handle security mismatches automatically
+                                                    Network.connectToNetwork(networkItem.modelData.ssid, "");
+                                                }
+                                            } else {
+                                                // Unknown secure network - expand for password input
+                                                networkItem.expanded = true;
+                                            }
+                                        }
                                     }
                                 }
-                            }
-
-                            StyledSwitch {
-                                id: toggleSwitch
-                                scale: 0.80
-                                Layout.fillWidth: false
-                                checked: networkItem.modelData.active
-                                enabled: networkItem.modelData.isKnown
-                                onClicked: {
-                                    if (!checked) {
-                                        Network.disconnectFromNetwork();
-                                    } else {
-                                        root.connectingToSsid = networkItem.modelData.ssid;
-                                        Network.connectToNetwork(networkItem.modelData.ssid, "");
-                                        networkItem.expanded = false
-                                    }
-                                }
-                                MouseArea {
-                                    id: toggleSwitchArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                }
+                                
                                 StyledToolTip {
-                                    text: "Unlock first. Expand to enter password."
-                                    visible: !networkItem.modelData.isKnown
-                                    extraVisibleCondition: toggleSwitchArea.containsMouse
+                                    text: {
+                                        if (networkItem.modelData?.active) {
+                                            return "Disconnect from network";
+                                        } else if (networkItem.modelData?.isKnown) {
+                                            return "Connect to known network";
+                                        } else if (networkItem.modelData?.isSecure) {
+                                            return "Click to enter password";
+                                        } else {
+                                            return "Click to connect to open network";
+                                        }
+                                    }
+                                    visible: parent.containsMouse || false
                                 }
-                            }
+                            } // Close Item container
                         }
 
                         Rectangle {
                             id: dropDownBox
                             Layout.fillWidth: true
-                            height: networkItem.expanded ? 140 : 0
+                            height: networkItem.expanded ? dropDownContent.implicitHeight + 16 : 0
                             color: "transparent"
                             opacity: networkItem.expanded ? 1 : 0
                             visible: height > 0
@@ -230,6 +455,7 @@ ContentPage {
                             Behavior on opacity { NumberAnimation { duration: 150 } }
 
                             ColumnLayout {
+                                id: dropDownContent
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 spacing: 4
@@ -237,52 +463,15 @@ ContentPage {
                                 StyledText { text: "Frequence: " + networkItem.modelData.frequency }
                                 StyledText { text: "Security: " + networkItem.modelData.security }
 
-                                RowLayout {
-                                    id: actions
-                                    visible: networkItem.modelData.isKnown
 
-                                    RippleButton {
-                                        id: forgetBtn
-
-                                        colBackgroundHover: "transparent"
-                                        
-                                        contentItem: Rectangle {
-                                            id: forgetBtnBody
-                                            radius: Appearance.rounding.full
-                                            color: Appearance.colors.colLayer0
-                                            height: 5
-
-                                            MaterialSymbol {
-                                                id: forgetIcon
-
-                                                anchors.centerIn: parent
-                                                text: "delete"
-                                                color: Appearance.colors.colOnLayer0
-                                            }
-
-                                        }
-
-                                        MouseArea {
-                                            id: forgetArea
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: Network.forgetNetwork(networkItem.modelData.ssid);
-
-                                            StyledToolTip {
-                                                extraVisibleCondition: forgetArea.containsMouse
-                                                text: "Forget network"
-                                            }
-                                        }
-                                    }
-                                }
 
                                 StyledText { 
                                     text: "Password:" 
-                                    visible: !networkItem.modelData.isKnown
+                                    visible: (networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid))
                                 }
                                 Rectangle {
                                     id: inputWrapper
-                                    visible: !networkItem.modelData.isKnown
+                                    visible: (networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid))
                                     Layout.fillWidth: true
                                     radius: Appearance.rounding.small
                                     color: Appearance.colors.colLayer1
@@ -388,6 +577,20 @@ ContentPage {
                                             }
                                         }
 
+
+
+                                    }
+                                }
+
+                                // Forget button for known networks, separated at bottom
+                                RippleButtonWithIcon {
+                                    Layout.topMargin: 8
+                                    materialIcon: "delete"
+                                    mainText: "Forget Network"
+                                    visible: networkItem.modelData?.isKnown || false
+                                    onClicked: {
+                                        Network.forgetNetwork(networkItem.modelData.ssid);
+                                        networkItem.expanded = false;
                                     }
                                 }
                             }

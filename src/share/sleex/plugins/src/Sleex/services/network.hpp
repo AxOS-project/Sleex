@@ -27,6 +27,7 @@ class AccessPoint : public QObject {
     Q_PROPERTY(bool active READ active NOTIFY activeChanged)
     Q_PROPERTY(bool isSecure READ isSecure NOTIFY isSecureChanged)
     Q_PROPERTY(bool isKnown READ isKnown NOTIFY isKnownChanged)
+    Q_PROPERTY(QString security READ security NOTIFY securityChanged)
 
 public:
     explicit AccessPoint(NMAccessPoint *ap, NMDeviceWifi *device, QObject *parent = nullptr);
@@ -39,9 +40,11 @@ public:
     bool active() const;
     bool isSecure() const { return m_isSecure; }
     bool isKnown() const { return m_isKnown; }
+    QString security() const { return m_security; }
     
     NMAccessPoint* nmAccessPoint() const { return m_ap; }
     void updateProperties();
+    void updateAccessPoint(NMAccessPoint *newAp);
     void setIsKnown(bool known);
 
 signals:
@@ -52,6 +55,7 @@ signals:
     void activeChanged();
     void isSecureChanged();
     void isKnownChanged();
+    void securityChanged();
 
 private:
     NMAccessPoint *m_ap;
@@ -62,6 +66,7 @@ private:
     int m_frequency;
     bool m_isSecure;
     bool m_isKnown;
+    QString m_security;
     gulong m_strengthChangedId;
 };
 
@@ -74,6 +79,7 @@ class Network : public QObject {
     Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
     Q_PROPERTY(bool ethernet READ ethernet NOTIFY ethernetChanged)
     Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged)
+    Q_PROPERTY(QString connectingToSsid READ connectingToSsid NOTIFY connectingToSsidChanged)
 
 public:
     explicit Network(QObject *parent = nullptr);
@@ -84,14 +90,32 @@ public:
     bool wifiEnabled() const { return m_wifiEnabled; }
     bool ethernet() const { return m_ethernet; }
     bool scanning() const { return m_scanning; }
+    QString connectingToSsid() const { return m_connectingToSsid; }
+    
+    // Check if a connection has authentication failure (callable from QML)
+    Q_INVOKABLE bool hasConnectionFailed(const QString &ssid) const;
+    
+    // Internal methods to track connection failures
+    void markConnectionFailed(const QString &ssid);
+    Q_INVOKABLE void clearConnectionFailed(const QString &ssid);
+    void emitConnectionFailedOnce(const QString &ssid, const QString &message, bool isAuthError = false);
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
+    Q_INVOKABLE QString getWifiIcon(); // Helper to get appropriate WiFi icon for UI
     Q_INVOKABLE void enableWifi(bool enabled);
     Q_INVOKABLE void toggleWifi();
     Q_INVOKABLE void rescanWifi();
     Q_INVOKABLE void connectToNetwork(const QString &ssid, const QString &password);
     Q_INVOKABLE void disconnectFromNetwork();
     Q_INVOKABLE void forgetNetwork(const QString &ssid);
+    Q_INVOKABLE void updateNetworks();
+    Q_INVOKABLE void updateActiveConnection();
+
+private slots:
+    void verifyDelayedConnection(const QString &ssid);
+
+private:
+    void emitConnectionSucceededWithVerification(const QString &ssid);
 
 signals:
     void networksChanged();
@@ -99,6 +123,10 @@ signals:
     void wifiEnabledChanged();
     void ethernetChanged();
     void scanningChanged();
+    void connectingToSsidChanged();
+    void connectionSucceeded(const QString &ssid);
+    void connectionFailed(const QString &ssid, const QString &error);
+    void passwordRequired(const QString &ssid);
 
 private:
     static void onAccessPointAdded(NMDeviceWifi *device, NMAccessPoint *ap, gpointer user_data);
@@ -109,14 +137,14 @@ private:
     static void onActiveConnectionsChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
     static void onScanDone(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionActivated(GObject *source, GAsyncResult *result, gpointer user_data);
+    static void onConnectionAddedAndActivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionDeactivated(GObject *source, GAsyncResult *result, gpointer user_data);
     static void onConnectionAdded(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onConnectionRemoved(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
+    static void onDeviceStateChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
     static void onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data);
     
-    void updateNetworks();
     void updateEthernetStatus();
-    void updateActiveConnection();
     void updateKnownNetworks();
     AccessPoint* findAccessPoint(NMAccessPoint *ap);
     NMDeviceWifi* getPrimaryWifiDevice();
@@ -130,6 +158,9 @@ private:
     bool m_wifiEnabled;
     bool m_ethernet;
     bool m_scanning;
+    QString m_connectingToSsid;
+    QStringList m_failedConnections; // Track SSIDs with authentication failures
+    QStringList m_authErrorEmitted; // Track SSIDs that have already emitted auth errors
     
     gulong m_apAddedId;
     gulong m_apRemovedId;
@@ -139,6 +170,7 @@ private:
     gulong m_activeConnectionsId;
     gulong m_connectionAddedId;
     gulong m_connectionRemovedId;
+    gulong m_deviceStateChangedId;
 };
 
 } // namespace sleex::services
