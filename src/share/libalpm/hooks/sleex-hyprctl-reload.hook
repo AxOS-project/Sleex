@@ -1,0 +1,12 @@
+## Copyright (C) 2025 Ardox
+
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = sleex
+
+[Action]
+Description = reloading hyprctl configuration
+When = PostTransaction
+Exec = /usr/bin/hyprctl reload

@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.22"
-pkgrel="2"
+pkgrel="3"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -74,4 +74,7 @@ package() {
 
     mkdir -p "$pkgdir/usr/share/wayland-sessions"
     cp -r "$srcdir/share/wayland-sessions/"* "$pkgdir/usr/share/wayland-sessions/"
+
+	mkdir -p "$pkgdir/usr/libalpm/hooks"
+	cp -r "$srcdir/share/libalpm/hooks/"* "$pkgdir/usr/libalpm/hooks/"
 }
