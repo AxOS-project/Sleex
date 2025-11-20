@@ -27,6 +27,7 @@ class AccessPoint : public QObject {
     Q_PROPERTY(bool active READ active NOTIFY activeChanged)
     Q_PROPERTY(bool isSecure READ isSecure NOTIFY isSecureChanged)
     Q_PROPERTY(bool isKnown READ isKnown NOTIFY isKnownChanged)
+    Q_PROPERTY(QString security READ security NOTIFY securityChanged)
 
 public:
     explicit AccessPoint(NMAccessPoint *ap, NMDeviceWifi *device, QObject *parent = nullptr);
@@ -39,6 +40,7 @@ public:
     bool active() const;
     bool isSecure() const { return m_isSecure; }
     bool isKnown() const { return m_isKnown; }
+    QString security() const { return m_security; }
     
     NMAccessPoint* nmAccessPoint() const { return m_ap; }
     void updateProperties();
@@ -53,6 +55,7 @@ signals:
     void activeChanged();
     void isSecureChanged();
     void isKnownChanged();
+    void securityChanged();
 
 private:
     NMAccessPoint *m_ap;
@@ -63,6 +66,7 @@ private:
     int m_frequency;
     bool m_isSecure;
     bool m_isKnown;
+    QString m_security;
     gulong m_strengthChangedId;
 };
 
@@ -97,6 +101,7 @@ public:
     void emitConnectionFailedOnce(const QString &ssid, const QString &message, bool isAuthError = false);
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
+    Q_INVOKABLE QString getWifiIcon(); // Helper to get appropriate WiFi icon for UI
     Q_INVOKABLE void enableWifi(bool enabled);
     Q_INVOKABLE void toggleWifi();
     Q_INVOKABLE void rescanWifi();

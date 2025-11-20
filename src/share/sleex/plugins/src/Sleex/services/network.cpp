@@ -106,6 +106,24 @@ void AccessPoint::updateProperties() {
                        wpaFlags != NM_802_11_AP_SEC_NONE || 
                        rsnFlags != NM_802_11_AP_SEC_NONE;
     
+    // Determine security type string
+    QString newSecurity = "Open";
+    if (newIsSecure) {
+        if (rsnFlags & (NM_802_11_AP_SEC_KEY_MGMT_PSK | NM_802_11_AP_SEC_KEY_MGMT_SAE)) {
+            if (rsnFlags & NM_802_11_AP_SEC_KEY_MGMT_SAE) {
+                newSecurity = "WPA3";
+            } else {
+                newSecurity = "WPA2";
+            }
+        } else if (wpaFlags & NM_802_11_AP_SEC_KEY_MGMT_PSK) {
+            newSecurity = "WPA";
+        } else if (flags & NM_802_11_AP_FLAGS_PRIVACY) {
+            newSecurity = "WEP";
+        } else {
+            newSecurity = "Secured";
+        }
+    }
+    
     if (m_isSecure != newIsSecure) {
         // Handle security changes by removing incompatible connection profiles
         Network* networkService = qobject_cast<Network*>(parent());
@@ -120,6 +138,11 @@ void AccessPoint::updateProperties() {
         
         m_isSecure = newIsSecure;
         emit isSecureChanged();
+    }
+    
+    if (m_security != newSecurity) {
+        m_security = newSecurity;
+        emit securityChanged();
     }
 }
 
@@ -232,6 +255,7 @@ Network::~Network() {
 QString Network::getNetworkIcon(int strength) {
     const GPtrArray *devices = nm_client_get_devices(m_client);
 
+    // First pass: Check for activated devices
     for (guint i = 0; i < devices->len; ++i) {
         NMDevice *device = NM_DEVICE(g_ptr_array_index(devices, i));
         NMDeviceType type = nm_device_get_device_type(device);
@@ -270,8 +294,54 @@ QString Network::getNetworkIcon(int strength) {
         }
     }
 
-    // Fallback if no active device found
+    // Second pass: If WiFi is enabled but not connected, show signal strength for available networks
+    if (m_wifiEnabled) {
+        for (guint i = 0; i < devices->len; ++i) {
+            NMDevice *device = NM_DEVICE(g_ptr_array_index(devices, i));
+            NMDeviceType type = nm_device_get_device_type(device);
+
+            if (type == NM_DEVICE_TYPE_WIFI) {
+                // WiFi is enabled but not connected - show signal strength based on available networks
+                switch (strength) {
+                    case 80 ... 100:
+                        return "signal_wifi_4_bar";
+                    case 60 ... 79:
+                        return "network_wifi_3_bar";
+                    case 40 ... 59:
+                        return "network_wifi_2_bar";
+                    case 20 ... 39:
+                        return "network_wifi_1_bar";
+                    default:
+                        return "signal_wifi_0_bar";
+                }
+            }
+        }
+    }
+
+    // Fallback if no active device found and WiFi is disabled
     return "signal_wifi_off";
+}
+
+QString Network::getWifiIcon() {
+    if (!m_wifiEnabled) {
+        return "signal_wifi_off";
+    }
+    
+    // If connected, use the active network's strength
+    if (m_active && m_active->active()) {
+        return getNetworkIcon(m_active->strength());
+    }
+    
+    // If WiFi enabled but not connected, find the strongest available network for icon
+    int maxStrength = 0;
+    for (const auto* network : m_networks) {
+        if (network->strength() > maxStrength) {
+            maxStrength = network->strength();
+        }
+    }
+    
+    // Use the strongest available network strength, or 0 if no networks
+    return getNetworkIcon(maxStrength);
 }
 
 void Network::enableWifi(bool enabled) {

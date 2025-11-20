@@ -538,7 +538,7 @@ Scope {
                                     }
                                     MaterialSymbol {
                                         Layout.rightMargin: indicatorsRowLayout.realSpacing
-                                        text: Network.wifiEnabled ? Network.getNetworkIcon(Network.active?.strength ?? 0) : "signal_wifi_off"
+                                        text: Network.getWifiIcon()
                                         iconSize: Appearance.font.pixelSize.larger
                                         color: rightSidebarButton.colText
 				                    }
