@@ -102,6 +102,10 @@ ContentPage {
 
     ContentSection {
         title: "Power"
+        
+        ContentSubsectionLabel {
+        text: "Battery Alerts"
+        }
 
         ConfigRow {
             visible: UPower.displayDevice.isLaptopBattery
@@ -128,6 +132,75 @@ ContentPage {
                 }
             }
         }
+        
+        ContentSubsectionLabel {
+        text: "Timeout"
+        }
+
+        ConfigRow {
+            uniform: true
+            ConfigSpinBox {
+                text: "Illuminance"
+                value: Config.options.timeout.illuminance / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.illuminance = value * 1000;
+                }
+            }
+            ConfigSpinBox {
+                text: "System Lock"
+                value: Config.options.timeout.lock / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.lock = value * 1000;
+                }
+            }
+        }
+
+        ConfigRow {
+            uniform: true
+            ConfigSpinBox {
+                text: "Standby"
+                value: Config.options.timeout.standby / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.standby = value * 1000;
+                }
+            }
+            
+            ConfigSpinBox {
+                text: "Suspension"
+                value: Config.options.timeout.suspend / 1000
+                from: 5
+                to: 18000
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.timeout.suspend = value * 1000;
+                }
+            }
+        }
+        
+        ConfigSwitch {
+            id: root
+            text: "Keep system awake"
+            checked: Idle.inhibit
+
+            onClicked: {
+                checked = !checked
+                Idle.toggleInhibit()
+            }
+
+            onCheckedChanged: {
+                Idle.inhibit = checked
+            }
+        }
+        
         ContentSubsectionLabel {
             text: "Power profile"
         }
