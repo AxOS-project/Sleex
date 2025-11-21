@@ -171,6 +171,11 @@ Scope {
                     Canvas {
                         anchors.fill: parent
                         z: 1
+
+                        property color bgColor: Appearance.colors.colLayer0
+
+                        onBgColorChanged: requestPaint()
+
                         onPaint: {
                             var ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
@@ -183,7 +188,13 @@ Scope {
                             ctx.quadraticCurveTo(0, height, 0, height - middleBg.bottomRadius);
                             ctx.lineTo(0, 0);
                             ctx.closePath();
-                            ctx.fillStyle = Appearance.colors.colLayer0;
+                            
+                            // Build an explicit rgba() color string from the QML color components so alpha is preserved
+                            var cr = Math.round(bgColor.r * 255);
+                            var cg = Math.round(bgColor.g * 255);
+                            var cb = Math.round(bgColor.b * 255);
+                            var ca = bgColor.a;
+                            ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
                             ctx.fill();
                         }
                     }

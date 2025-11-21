@@ -10,7 +10,7 @@ Item {
     id: root
     property bool borderless: Config.options.bar.borderless
     property bool showDate: Config.options.bar.verbose
-    implicitWidth: rowLayout.implicitWidth
+    implicitWidth: rowLayout.implicitWidth + 30
     implicitHeight: 32
 
     // Helper function to get upcoming todos
