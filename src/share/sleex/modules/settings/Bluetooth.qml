@@ -12,7 +12,6 @@ import qs.modules.common.widgets
 ContentPage {
     forceWidth: true
 
-
     function getDeviceIcon(modelData) {
         const icon = modelData?.icon ?? "";
 
@@ -32,6 +31,92 @@ ContentPage {
         }
     }
 
+    Timer {
+        id: refreshTimer
+        interval: 8000
+    }
+
+    property var pairedDevices: []
+
+    Process {
+        id: pairedDevicesFetcher
+        command: ["bluetoothctl", "devices", "Paired"]
+        stdout: SplitParser {
+            onRead: data => {
+                const parts = data.split(" ");
+                if (parts.length >= 2 && parts[0] === "Device") {
+                    const addr = parts[1];
+                    if (!pairedDevices.includes(addr)) {
+                        const newPaired = [...pairedDevices, addr];
+                        pairedDevices = newPaired;
+                    }
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        pairedDevicesFetcher.running = true;
+
+        const devices = Bluetooth.devices.values;
+        const bonded = [];
+        for (let i = 0; i < devices.length; i++) {
+            if (devices[i].bonded) {
+                bonded.push(devices[i].address);
+            }
+        }
+        
+        if (bonded.length > 0) {
+            const current = [...pairedDevices];
+            for (let i = 0; i < bonded.length; i++) {
+                if (!current.includes(bonded[i])) {
+                    current.push(bonded[i]);
+                }
+            }
+            pairedDevices = current;
+        }
+    }
+
+    function unpairDevice(address) {
+        const newPaired = pairedDevices.filter(a => a !== address);
+        pairedDevices = newPaired;
+
+        Quickshell.execDetached([
+            "bash", "-c", 
+            `bluetoothctl remove ${address}`
+        ]);
+        
+        if (Bluetooth.defaultAdapter && !Bluetooth.defaultAdapter.discovering) {
+             Bluetooth.defaultAdapter.discovering = true;
+        }
+
+        refreshTimer.start();
+    }
+
+    function connectDevice(address) {
+        if (pairedDevices.includes(address)) {
+            Quickshell.execDetached([
+                "bash", "-c", 
+                `bluetoothctl connect ${address}`
+            ]);
+        } else {
+            const newPaired = [...pairedDevices, address];
+            pairedDevices = newPaired;
+
+            Quickshell.execDetached([
+                "bash", "-c", 
+                `bluetoothctl pair ${address} && bluetoothctl trust ${address} && bluetoothctl connect ${address}`
+            ]);
+        }
+    }
+
+    function disconnectDevice(address) {
+        Quickshell.execDetached([
+            "bash", "-c", 
+            `bluetoothctl disconnect ${address}`
+        ]);
+    }
+
 
     ContentSection {
         title: "Bluetooth settings"
@@ -43,7 +128,7 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: Config.options.bar.showTitle
+                checked: Bluetooth.defaultAdapter?.enabled ?? false
                 onClicked: checked = !checked;
                 onCheckedChanged: {
                     if (Bluetooth.defaultAdapter)
@@ -53,7 +138,7 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Discoverable"
-                checked: Bluetooth.defaultAdapter.discoverable
+                checked: Bluetooth.defaultAdapter?.discoverable ?? false
                 onClicked: checked = !checked;
                 onCheckedChanged: {
                     if (Bluetooth.defaultAdapter)
@@ -79,36 +164,71 @@ ContentPage {
             font.pixelSize: Appearance.font.pixelSize.huge
         }
 
-        RippleButton {
-            id: discoverBtn
+        RowLayout {
+            spacing: 10
+            
+            RippleButton {
+                id: discoverBtn
 
-            visible: Bluetooth.adapters.values.length > 0
+                visible: Bluetooth.adapters.values.length > 0
 
-            contentItem: Rectangle {
-                id: discoverBtnBody
-                radius: Appearance.rounding.full
-                color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
-                implicitWidth: height
+                contentItem: Rectangle {
+                    id: discoverBtnBody
+                    radius: Appearance.rounding.full
+                    color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                    implicitWidth: height
 
-                MaterialSymbol {
-                    id: scanIcon
+                    MaterialSymbol {
+                        id: scanIcon
 
-                    anchors.centerIn: parent
-                    text: "bluetooth_searching"
-                    color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
-                    fill: Bluetooth.defaultAdapter?.discovering ? 1 : 0
+                        anchors.centerIn: parent
+                        text: "bluetooth_searching"
+                        color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
+                        fill: Bluetooth.defaultAdapter?.discovering ? 1 : 0
+                    }
+                }
+
+                MouseArea {
+                    id: discoverArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        if (Bluetooth.defaultAdapter) {
+                            Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering;
+                        }
+                    }
+
+                    StyledToolTip {
+                        extraVisibleCondition: discoverArea.containsMouse
+                        text: "Discover new devices"
+                    }
                 }
             }
 
-            MouseArea {
-                id: discoverArea
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering
+            RippleButton {
+                id: refreshBtn
+                visible: Bluetooth.adapters.values.length > 0
+                width: 40
+                height: 40
 
-                StyledToolTip {
-                    extraVisibleCondition: discoverArea.containsMouse
-                    text: "Discover new devices"
+                contentItem: MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "refresh"
+                    color: Appearance.colors.colOnLayer2
+                }
+
+                MouseArea {
+                    id: refreshArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        refreshTimer.restart();
+                    }
+
+                    StyledToolTip {
+                        extraVisibleCondition: refreshArea.containsMouse
+                        text: "Refresh device list"
+                    }
                 }
             }
         }
@@ -135,7 +255,12 @@ ContentPage {
         Repeater {
             model: ScriptModel {
                 values: {
+                    // Only show devices if Bluetooth is enabled
+                    if (!Bluetooth.defaultAdapter?.enabled) {
+                        return [];
+                    }
                     let devices = [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.bonded - a.bonded));
+                    
                     if (deviceSearch.text.trim() !== "") {
                         devices = devices.filter(d => d.name.toLowerCase().includes(deviceSearch.text.toLowerCase()) || d.address.toLowerCase().includes(deviceSearch.text.toLowerCase()));
                     }
@@ -185,9 +310,53 @@ ContentPage {
                                 color: Appearance.colors.colOnSecondaryContainer
                             }
                             StyledText {
-                                text: device.modelData.address + (device.modelData.connected ? qsTr(" (Connected)") : device.modelData.bonded ? qsTr(" (Paired)") : "")
+                                text: device.modelData.address + (device.modelData.connected ? qsTr(" (Connected)") : (pairedDevices.includes(device.modelData.address) ? qsTr(" (Paired)") : qsTr(" (Available)")))
                                 font.pixelSize: Appearance.font.pixelSize.small
                                 color: Appearance.colors.colSubtext
+                            }
+                        }
+
+                        RippleButton {
+                            id: forgetButton
+                            visible: pairedDevices.includes(device.modelData.address)
+                            
+                            width: 40
+                            height: 40
+                            buttonRadius: Appearance.rounding.normal
+                            colBackground: "transparent"
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHigh
+                            hoverEnabled: true
+                            
+                            property bool processing: false
+                            
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: forgetButton.processing ? "hourglass_empty" : "link_off"
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: forgetButton.hovered ? Appearance.colors.colOnSurface : Appearance.colors.colOnSurfaceVariant
+                            }
+                            
+                            onClicked: {
+                                if (forgetButton.processing) return;
+                                
+                                forgetButton.processing = true;
+                                unpairDevice(device.modelData.address);
+                                
+                                // Reset processing state after a delay
+                                Qt.callLater(() => {
+                                    processingTimer.start();
+                                });
+                            }
+                            
+                            Timer {
+                                id: processingTimer
+                                interval: 5000
+                                onTriggered: forgetButton.processing = false
+                            }
+                            
+                            StyledToolTip {
+                                extraVisibleCondition: forgetButton.hovered
+                                text: forgetButton.processing ? "Removing device..." : "Forget device"
                             }
                         }
 
@@ -195,22 +364,13 @@ ContentPage {
                             scale: 0.80
                             Layout.fillWidth: false
                             checked: device.modelData.connected
-                            onClicked: device.modelData.connected = !device.modelData.connected
-                        }
-                    }
-                }
-
-
-                Loader {
-                    asynchronous: true
-                    active: device.modelData.bonded
-                    sourceComponent: Item {
-                        implicitWidth: connectBtn.implicitWidth
-                        implicitHeight: connectBtn.implicitHeight
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "delete"
+                            onClicked: {
+                                if (checked) {
+                                    connectDevice(device.modelData.address);
+                                } else {
+                                    disconnectDevice(device.modelData.address);
+                                }
+                            }
                         }
                     }
                 }
