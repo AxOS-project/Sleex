@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file alias="/qt/qml/Sleex/Services">/usr/share/sleex/qml/Sleex/Services</file>
-
-  </qresource>
-</RCC>

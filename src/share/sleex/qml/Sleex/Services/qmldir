@@ -1,8 +1,0 @@
-module Sleex.Services
-linktarget sleex-servicesplugin
-optional plugin sleex-servicesplugin
-classname Sleex_ServicesPlugin
-typeinfo sleex-services.qmltypes
-depends Qt::Bluetooth
-prefer :/qt/qml/Sleex/Services/
-
