@@ -77,6 +77,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
+        Idle.init();
     }
 
     minimumWidth: 600

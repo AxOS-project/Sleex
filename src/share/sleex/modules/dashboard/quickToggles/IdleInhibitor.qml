@@ -4,10 +4,10 @@ import qs.services
 
 QuickToggleButton {
     id: root
-    toggled: Persistent.states.idle.inhibit
+    toggled: !Idle.hypnos.enabled
     buttonIcon: "coffee"
     onClicked: {
-        Idle.toggleInhibit()
+        Idle.hypnos.enabled = !Idle.hypnos.enabled;
     }
 
     StyledToolTip {

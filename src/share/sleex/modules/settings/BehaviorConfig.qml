@@ -145,6 +145,133 @@ ContentPage {
         }
     }
 
+    ContentSection {
+        title: "Idle daemon"
+
+        ConfigSwitch {
+            text: "Enable idle actions"
+            checked: Idle.hypnos.enabled
+            onClicked: checked = !checked;
+            onCheckedChanged: {
+                Idle.hypnos.enabled = checked;
+            }
+        }
+
+        ContentSubsection {
+            title: "Dim screen"
+            tooltip: "Decrease the screen brightness after the specified timeout."
+            
+            ConfigRow {
+                spacing: 10
+                Layout.fillWidth: true
+
+                ConfigSwitch {
+                    text: "Enable dimming"
+                    checked: Idle.hypnos.rules.dim.enabled
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.dim.enabled = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    text: "Only on battery power"
+                    checked: Idle.hypnos.rules.dim.on_battery
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.dim.on_battery = checked;
+                    }
+                }
+            }
+
+            ConfigSpinBox {
+                text: "Timeout (seconds)"
+                value: Idle.hypnos.rules.dim.timeout
+                from: 10
+                to: 3600
+                stepSize: 1
+                onValueChanged: {
+                    Idle.hypnos.rules.dim.timeout = value;
+                }
+            }
+        }
+
+        ContentSubsection {
+            title: "Lock screen"
+            tooltip: "Lock the session after the specified timeout."
+
+            ConfigRow {
+                spacing: 10
+                Layout.fillWidth: true
+
+                ConfigSwitch {
+                    text: "Enable locking"
+                    checked: Idle.hypnos.rules.lock.enabled
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.lock.enabled = checked;
+                    }
+                }
+                ConfigSwitch {
+                    text: "Only on battery power"
+                    checked: Idle.hypnos.rules.lock.on_battery
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.lock.on_battery = checked;
+                    }
+                }
+            }
+
+            ConfigSpinBox {
+                text: "Timeout (seconds)"
+                value: Idle.hypnos.rules.lock.timeout
+                from: 10
+                to: 3600
+                stepSize: 1
+                onValueChanged: {
+                    Idle.hypnos.rules.lock.timeout = value;
+                }
+            }
+        }    
+
+        ContentSubsection {
+            title: "Suspend system"
+            tooltip: "Suspend the system after the specified timeout."
+
+            ConfigRow {
+                spacing: 10
+                Layout.fillWidth: true
+                
+                ConfigSwitch {
+                    text: "Enable suspend"
+                    checked: Idle.hypnos.rules.suspend.enabled
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.suspend.enabled = checked;
+                    }
+                }
+                ConfigSwitch {
+                    text: "Only on battery power"
+                    checked: Idle.hypnos.rules.suspend.on_battery
+                    onClicked: checked = !checked;
+                    onCheckedChanged: {
+                        Idle.hypnos.rules.suspend.on_battery = checked;
+                    }
+                }
+            }
+            
+            ConfigSpinBox {
+                text: "Timeout (seconds)"
+                value: Idle.hypnos.rules.suspend.timeout
+                from: 10
+                to: 3600
+                stepSize: 1
+                onValueChanged: {
+                    Idle.hypnos.rules.suspend.timeout = value;
+                }
+            }
+        }      
+    }
 
     ContentSection {
         title: "AI"

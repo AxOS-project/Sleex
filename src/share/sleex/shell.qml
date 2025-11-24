@@ -52,6 +52,8 @@ ShellRoot {
         MaterialThemeLoader.reapplyTheme()
         FirstRunExperience.load()
         Cliphist.refresh()
+        Idle.init();
+        nightLight.load()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }
