@@ -72,7 +72,7 @@ package() {
     cd "$srcdir/share/sleex"
     cmake --install build --prefix "$pkgdir/"
     rm -rf build
-    cp -r "$srcdir/share/sleex/" "$pkgdir/usr/share/"
+	rsync -av --exclude='.qmlls.ini' --exclude='.qt/' --exclude='.rcc/' --exclude='.vscode' --exclude='build/' --exclude='CMakeFiles/' --exclude='CMakeCache.txt' --exclude='cmake_install.cmake' --exclude='Makefile' --exclude='qml/' "$srcdir/share/sleex/" "$pkgdir/usr/share/sleex/"
 
     mkdir -p "$pkgdir/usr/share/wayland-sessions"
     cp -r "$srcdir/share/wayland-sessions/"* "$pkgdir/usr/share/wayland-sessions/"
