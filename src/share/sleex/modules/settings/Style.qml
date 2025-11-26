@@ -24,31 +24,6 @@ ContentPage {
             LightDarkPreferenceButton { dark: true }
         }
 
-        // StyledText {
-        //     text: "Material palette"
-        //     color: Appearance.colors.colSubtext
-        // }
-
-        // ConfigSelectionArray {
-        //     currentValue: Config.options.appearance.palette.type
-        //     configOptionName: "appearance.palette.type"
-        //     onSelected: (newValue) => {
-        //         Config.options.appearance.palette.type = newValue;
-        //         Hyprland.dispatch(`exec ${Directories.wallpaperSwitchScriptPath} --noswitch --type ${newValue}`)
-        //     }
-        //     options: [
-        //         {"value": "auto", "displayName": "Auto"},
-        //         {"value": "scheme-content", "displayName": "Content"},
-        //         {"value": "scheme-expressive", "displayName": "Expressive"},
-        //         {"value": "scheme-fidelity", "displayName": "Fidelity"},
-        //         {"value": "scheme-fruit-salad", "displayName": "Fruit Salad"},
-        //         {"value": "scheme-monochrome", "displayName": "Monochrome"},
-        //         {"value": "scheme-neutral", "displayName": "Neutral"},
-        //         {"value": "scheme-rainbow", "displayName": "Rainbow"},
-        //         {"value": "scheme-tonal-spot", "displayName": "Tonal Spot"}
-        //     ]
-        // }
-
         StyledText {
             text: "Material Palette"
             color: Appearance.colors.colSubtext
@@ -98,7 +73,49 @@ ContentPage {
                 const selectedValue = valueMap[model[currentIndex]]
                 if (Config.options.appearance.palette.type !== selectedValue) {
                     Config.options.appearance.palette.type = selectedValue
-                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--type", `${selectedValue}`])
+                    if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--type", `${selectedValue}`])
+                    else Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`])
+                }
+            }
+        }
+
+        ConfigSwitch {
+            id: staticColorsSwitch
+            text: "Static colors"
+            onClicked: checked = !checked;
+            checked: Config.options.appearance.palette.useStaticColors
+            onCheckedChanged: {
+                Config.options.appearance.palette.useStaticColors = checked;
+                if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, `--noswitch`, "--type", `${Config.options.appearance.palette.type}`])
+                // else Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`])
+            }
+            StyledToolTip {
+                text: "Use a static accent color instead of extracting colors from wallpaper"   
+            }
+        }
+        
+
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 10
+            visible: Config.options.appearance.palette.useStaticColors && Config.loaded
+
+            Repeater {
+                model: ["#3584E4", "#2190A4", "#3A944A", "#C88800", "#ED5B00", "#E62D42", "#D56199", "#9141AC", "#6F8396"] // Static colors
+                delegate: Rectangle {
+                    width: 30
+                    height: 30
+                    radius: Appearance.rounding.small
+                    color: modelData
+                    border.color: Appearance.colors.colPrimary
+                    border.width: Config.options.appearance.palette.accentColorHex === modelData ? 2 : 0
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            Config.options.appearance.palette.accentColorHex = modelData;
+                            Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${modelData}`])
+                        }
+                    }
                 }
             }
         }

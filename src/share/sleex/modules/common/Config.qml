@@ -8,6 +8,7 @@ Singleton {
     id: root
     property string filePath: Directories.shellConfigPath
     property alias options: configOptionsJsonAdapter
+    property alias loaded: configOptionsFileView.loaded
 
     function setNestedValue(nestedKey, value) {
         let keys = nestedKey.split(".");
@@ -40,6 +41,7 @@ Singleton {
     }
 
     FileView {
+        id: configOptionsFileView
         path: root.filePath
 
         watchChanges: true
@@ -81,6 +83,8 @@ Singleton {
                 property int opacity: 50
                 property JsonObject palette: JsonObject {
                     property string type: "auto" // Allowed: auto, scheme-content, scheme-expressive, scheme-fidelity, scheme-fruit-salad, scheme-monochrome, scheme-neutral, scheme-rainbow, scheme-tonal-spot
+                    property bool useStaticColors: false
+                    property string accentColorHex: "#9141AC"
                 }
             }
 

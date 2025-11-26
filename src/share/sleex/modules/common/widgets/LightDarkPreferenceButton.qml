@@ -20,7 +20,8 @@ GroupButton {
     colBackground: Appearance.colors.colLayer2
     toggled: Appearance.m3colors.darkmode === dark
     onClicked: {
-        Quickshell.execDetached([`${Directories.wallpaperSwitchScriptPath}`, "--mode", `${dark ? "dark" : "light"}`, "--noswitch"])
+        if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached([`${Directories.wallpaperSwitchScriptPath}`, "--mode", `${dark ? "dark" : "light"}`, "--noswitch"])
+        else Quickshell.execDetached([`${Directories.wallpaperSwitchScriptPath}`, "--mode", `${dark ? "dark" : "light"}`, "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`])
     }
     contentItem: Item {
         anchors.centerIn: parent

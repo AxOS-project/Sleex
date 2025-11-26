@@ -32,13 +32,15 @@ Item { // Wrapper
         {
             action: "dark",
             execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch"]);
+                if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch"]);
+                else Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "dark", "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`]);
             }
         },
         {
             action: "light",
             execute: () => {
-                Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "light", "--noswitch"]);
+                if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "light", "--noswitch"]);
+                else Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", "light", "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`]);
             }
         },
         {
