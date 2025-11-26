@@ -12,10 +12,13 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 
+import Sleex.Services
+
 Rectangle {
     id: root
     color: "transparent"
-    
+
+    property bool connected: Network.networks.filter(n => n.active).length > 0    
 
     RowLayout {
         id: mainCols
@@ -124,7 +127,8 @@ Rectangle {
                     spacing: 10
 
                     Text {
-                        text: Github.contribution_number || qsTr("Loading...")
+                        visible: root.connected
+                        text: root.connected ? Github.contribution_number || qsTr("Loading...") : qsTr("--")
                         color: Appearance.colors.colPrimary
                         font.pixelSize: 60
                         font.bold: true
@@ -132,14 +136,24 @@ Rectangle {
                     }
 
                     Text {
-                        text: ` contributions in the last year`
+                        text: root.connected ? qsTr("contributions in the last year") : "No network connection"
                         color: Appearance.colors.colOnLayer1
                         font.pixelSize: 20
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 
-                    GhCalendar {}
-                    
+                    Loader {
+                        active: root.connected
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        sourceComponent: GhCalendar {}
+                    }
+
+                    Loader {
+                        active: !root.connected
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        sourceComponent: GhCalendarNoNet {}
+                    }
+
                     Text {
                         text: `@${Github.author}`
                         color: Appearance.colors.colOnLayer1
@@ -209,10 +223,19 @@ Rectangle {
                 }
 
                 Loader {
-                    active: Config.options.dashboard.enableWeather
+                    active: Config.options.dashboard.enableWeather && root.connected
                     anchors.fill: parent
                     sourceComponent: Weather {
                         id: weatherWidget
+                        anchors.fill: parent
+                    }
+                }
+
+                Loader {
+                    active: Config.options.dashboard.enableWeather && !root.connected
+                    anchors.fill: parent
+                    sourceComponent: WeatherNoNet {
+                        id: weatherWidgetNoNet
                         anchors.fill: parent
                     }
                 }
