@@ -78,6 +78,10 @@ Singleton {
                 ]
             }
 
+            property JsonObject overlay: JsonObject {
+                property bool fullscreenIndicator: false
+            }
+
             property JsonObject appearance: JsonObject {
                 property bool transparency: false
                 property int opacity: 50

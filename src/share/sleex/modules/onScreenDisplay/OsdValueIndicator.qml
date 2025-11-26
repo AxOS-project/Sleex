@@ -8,6 +8,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 // import Qt5Compat.GraphicalEffects
+import Quickshell.Hyprland
 
 Item {
     id: root
@@ -20,6 +21,8 @@ Item {
     property real valueIndicatorVerticalPadding: 9
     property real valueIndicatorLeftPadding: 10
     property real valueIndicatorRightPadding: 20 // An icon is circle ish, a column isn't, hence the extra padding
+
+    visible: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.hasFullscreen
 
     Layout.margins: Appearance.sizes.elevationMargin
     implicitWidth: Appearance.sizes.osdWidth
@@ -86,6 +89,7 @@ Item {
                         color: Appearance.colors.colOnLayer0
                         font.pixelSize: Appearance.font.pixelSize.small
                         Layout.fillWidth: false
+                        Layout.leftMargin: 75
                         text: Math.round(root.value * 100)
                     }
                 }
