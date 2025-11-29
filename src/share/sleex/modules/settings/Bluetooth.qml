@@ -8,6 +8,7 @@ import Quickshell.Bluetooth
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import Sleex.Services
 
 ContentPage {
     forceWidth: true
@@ -34,87 +35,24 @@ ContentPage {
     Timer {
         id: refreshTimer
         interval: 8000
-    }
-
-    property var pairedDevices: []
-
-    Process {
-        id: pairedDevicesFetcher
-        command: ["bluetoothctl", "devices", "Paired"]
-        stdout: SplitParser {
-            onRead: data => {
-                const parts = data.split(" ");
-                if (parts.length >= 2 && parts[0] === "Device") {
-                    const addr = parts[1];
-                    if (!pairedDevices.includes(addr)) {
-                        const newPaired = [...pairedDevices, addr];
-                        pairedDevices = newPaired;
-                    }
-                }
-            }
-        }
-    }
-
-    Component.onCompleted: {
-        pairedDevicesFetcher.running = true;
-
-        const devices = Bluetooth.devices.values;
-        const bonded = [];
-        for (let i = 0; i < devices.length; i++) {
-            if (devices[i].bonded) {
-                bonded.push(devices[i].address);
-            }
-        }
-        
-        if (bonded.length > 0) {
-            const current = [...pairedDevices];
-            for (let i = 0; i < bonded.length; i++) {
-                if (!current.includes(bonded[i])) {
-                    current.push(bonded[i]);
-                }
-            }
-            pairedDevices = current;
-        }
+        onTriggered: BluetoothService.refreshPairedDevices()
     }
 
     function unpairDevice(address) {
-        const newPaired = pairedDevices.filter(a => a !== address);
-        pairedDevices = newPaired;
-
-        Quickshell.execDetached([
-            "bash", "-c", 
-            `bluetoothctl remove ${address}`
-        ]);
-        
-        if (Bluetooth.defaultAdapter && !Bluetooth.defaultAdapter.discovering) {
-             Bluetooth.defaultAdapter.discovering = true;
-        }
-
+        BluetoothService.unpairDevice(address);
         refreshTimer.start();
     }
 
-    function connectDevice(address) {
-        if (pairedDevices.includes(address)) {
-            Quickshell.execDetached([
-                "bash", "-c", 
-                `bluetoothctl connect ${address}`
-            ]);
+    function connectDevice(device) {
+        if (device.paired) {
+            BluetoothService.connectDevice(device.address);
         } else {
-            const newPaired = [...pairedDevices, address];
-            pairedDevices = newPaired;
-
-            Quickshell.execDetached([
-                "bash", "-c", 
-                `bluetoothctl pair ${address} && bluetoothctl trust ${address} && bluetoothctl connect ${address}`
-            ]);
+            BluetoothService.pairDevice(device.address);
         }
     }
 
     function disconnectDevice(address) {
-        Quickshell.execDetached([
-            "bash", "-c", 
-            `bluetoothctl disconnect ${address}`
-        ]);
+        BluetoothService.disconnectDevice(address);
     }
 
 
@@ -128,11 +66,10 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: Bluetooth.defaultAdapter?.enabled ?? false
+                checked: BluetoothService.bluetoothEnabled
                 onClicked: checked = !checked;
                 onCheckedChanged: {
-                    if (Bluetooth.defaultAdapter)
-                        Bluetooth.defaultAdapter.enabled = checked;
+                    BluetoothService.bluetoothEnabled = checked;
                 }
             }
 
@@ -153,7 +90,7 @@ ContentPage {
 
         StyledText {
             text: {
-                const devices = Bluetooth.devices.values;
+                const devices = BluetoothService.devices;
                 let available = qsTr("%1 device%2 available").arg(devices.length).arg(devices.length === 1 ? "" : "s");
                 const connected = devices.filter(d => d.connected).length;
                 if (connected > 0)
@@ -175,7 +112,7 @@ ContentPage {
                 contentItem: Rectangle {
                     id: discoverBtnBody
                     radius: Appearance.rounding.full
-                    color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                    color: BluetoothService.discovering ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
                     implicitWidth: height
 
                     MaterialSymbol {
@@ -183,8 +120,8 @@ ContentPage {
 
                         anchors.centerIn: parent
                         text: "bluetooth_searching"
-                        color: Bluetooth.defaultAdapter?.discovering ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
-                        fill: Bluetooth.defaultAdapter?.discovering ? 1 : 0
+                        color: BluetoothService.discovering ? Appearance.m3colors.m3onSecondary : Appearance.m3colors.m3onSecondaryContainer
+                        fill: BluetoothService.discovering ? 1 : 0
                     }
                 }
 
@@ -193,9 +130,7 @@ ContentPage {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
-                        if (Bluetooth.defaultAdapter) {
-                            Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering;
-                        }
+                        BluetoothService.discovering = !BluetoothService.discovering;
                     }
 
                     StyledToolTip {
@@ -222,6 +157,7 @@ ContentPage {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
+                        BluetoothService.refreshPairedDevices();
                         refreshTimer.restart();
                     }
 
@@ -256,10 +192,10 @@ ContentPage {
             model: ScriptModel {
                 values: {
                     // Only show devices if Bluetooth is enabled
-                    if (!Bluetooth.defaultAdapter?.enabled) {
+                    if (!BluetoothService.bluetoothEnabled) {
                         return [];
                     }
-                    let devices = [...Bluetooth.devices.values].sort((a, b) => (b.connected - a.connected) || (b.bonded - a.bonded));
+                    let devices = [...BluetoothService.devices].sort((a, b) => (b.connected - a.connected) || (b.paired - a.paired));
                     
                     if (deviceSearch.text.trim() !== "") {
                         devices = devices.filter(d => d.name.toLowerCase().includes(deviceSearch.text.toLowerCase()) || d.address.toLowerCase().includes(deviceSearch.text.toLowerCase()));
@@ -271,8 +207,8 @@ ContentPage {
             RowLayout {
                 id: device
 
-                required property BluetoothDevice modelData
-                readonly property bool loading: modelData.state === BluetoothDeviceState.Connecting || modelData.state === BluetoothDeviceState.Disconnecting
+                required property var modelData
+                readonly property bool loading: false // Placeholder if needed
 
                 Layout.fillWidth: true
                 spacing: 10
@@ -294,7 +230,7 @@ ContentPage {
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
-                                text: getDeviceIcon(device.modelData)
+                                text: device.modelData.icon
                                 font.pixelSize: Appearance.font.pixelSize.title
                                 color: Appearance.colors.colOnSecondaryContainer
                             }
@@ -310,7 +246,7 @@ ContentPage {
                                 color: Appearance.colors.colOnSecondaryContainer
                             }
                             StyledText {
-                                text: device.modelData.address + (device.modelData.connected ? qsTr(" (Connected)") : (pairedDevices.includes(device.modelData.address) ? qsTr(" (Paired)") : qsTr(" (Available)")))
+                                text: device.modelData.address + (device.modelData.connected ? qsTr(" (Connected)") : (device.modelData.paired ? qsTr(" (Paired)") : qsTr(" (Available)")))
                                 font.pixelSize: Appearance.font.pixelSize.small
                                 color: Appearance.colors.colSubtext
                             }
@@ -318,7 +254,7 @@ ContentPage {
 
                         RippleButton {
                             id: forgetButton
-                            visible: pairedDevices.includes(device.modelData.address)
+                            visible: device.modelData.paired
                             
                             width: 40
                             height: 40
@@ -366,10 +302,12 @@ ContentPage {
                             checked: device.modelData.connected
                             onClicked: {
                                 if (checked) {
-                                    connectDevice(device.modelData.address);
+                                    connectDevice(device.modelData);
                                 } else {
                                     disconnectDevice(device.modelData.address);
                                 }
+                                // Restore binding to ensure switch reflects actual state
+                                checked = Qt.binding(function() { return device.modelData.connected; });
                             }
                         }
                     }
