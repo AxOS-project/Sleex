@@ -8,3 +8,5 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 qml/
+meta_types/
+qmltypes/
