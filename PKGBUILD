@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.24"
-pkgrel="2"
+pkgrel="3"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -9,7 +9,7 @@ depends=(
 	# Backlight
 	'hyprsunset' 'geoclue' 'brightnessctl' 'ddcutil'
 	# Basic
-	"axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors"
+	"axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors" "qt5ct" "qt6ct"
 	# Cursor
 	"sleex-bibata-modern-classic-bin"
 	# Fonts & Themes
