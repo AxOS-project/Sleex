@@ -48,6 +48,11 @@ if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
     fi
 fi
 
+# Check if XDG_USER_DIRS is set up
+if [ ! -f ~/.config/user-dirs.dirs ]; then
+    xdg-user-dirs-update --force # Force create user dirs
+fi
+
 
 # Start Hyprland with the Sleex config
 Hyprland -c /etc/sleex/hyprland.conf
