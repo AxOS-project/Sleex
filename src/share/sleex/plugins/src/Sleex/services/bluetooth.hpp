@@ -5,6 +5,12 @@
 #include <QtBluetooth/QBluetoothDeviceDiscoveryAgent>
 #include <QtQml/qqml.h>
 
+// I Added this headers
+#include <QTimer>
+#include <QHash>
+#include <QtBluetooth/QBluetoothDeviceInfo>
+#include <QtBluetooth/QBluetoothAddress>
+
 class BluetoothService : public QObject {
     Q_OBJECT
     QML_SINGLETON
@@ -35,7 +41,12 @@ signals:
     void bluetoothDeviceAddressChanged();
 
 private:
+    void scanForDevices();
+    void updateConnectionState(const QBluetoothAddress &&address, bool connected);
+
     QBluetoothLocalDevice *m_localDevice = nullptr;
+    QBluetoothDeviceDiscoveryAgent *m_discoveryAgent = nullptr;
+    QHash<QBluetoothAddress, QBluetoothDeviceInfo> m_pairedDevices;
     bool m_available = false;
     bool m_enabled = false;
     bool m_connected = false;
