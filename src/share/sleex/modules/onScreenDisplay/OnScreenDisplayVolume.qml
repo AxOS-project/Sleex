@@ -81,7 +81,7 @@ Scope {
                 top: true
                 right: true
             }
-            
+
             mask: Region {
                 item: osdValuesWrapper
             }
@@ -95,9 +95,9 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 Item {
                     id: osdValuesWrapper
-                    // Extra space for shadow
+                    // Include extra space for shadow around all sides
+                    implicitWidth: contentColumnLayout.implicitWidth + Appearance.sizes.elevationMargin * 2
                     implicitHeight: contentColumnLayout.implicitHeight + Appearance.sizes.elevationMargin * 2
-                    implicitWidth: contentColumnLayout.implicitWidth
                     clip: true
 
                     MouseArea {
@@ -147,6 +147,7 @@ Scope {
                                 RowLayout {
                                     id: protectionMessageRowLayout
                                     anchors.centerIn: parent
+                                    spacing: 5
                                     MaterialSymbol {
                                         id: protectionMessageIcon
                                         text: "dangerous"
@@ -184,21 +185,16 @@ Scope {
             showOsdValues = !showOsdValues
         }
 	}
+
     GlobalShortcut {
         name: "osdVolumeTrigger"
         description: qsTr("Triggers volume OSD on press")
-
-        onPressed: {
-            root.triggerOsd()
-        }
+        onPressed: root.triggerOsd()
     }
+
     GlobalShortcut {
         name: "osdVolumeHide"
         description: qsTr("Hides volume OSD on press")
-
-        onPressed: {
-            root.showOsdValues = false
-        }
+        onPressed: root.showOsdValues = false
     }
-
 }
