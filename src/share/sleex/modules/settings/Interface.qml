@@ -93,6 +93,14 @@ ContentPage {
 
         }
 
+        ConfigSwitch {
+            text: "Animate media OSD"
+            checked: Config.options.bar.audioOsdAnimateMedia
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.bar.audioOsdAnimateMedia = checked;
+            StyledToolTip { text: "Enable wavy effect on the volume OSD when media is playing." }
+        }
+
         ContentSubsection {
             title: "Workspaces"
             tooltip: "Tip: Hide icons for the\n classic Sleex experience"
