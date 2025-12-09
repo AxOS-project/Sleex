@@ -12,6 +12,8 @@ import Quickshell.Hyprland
 Scope {
     id: notificationPopup
 
+    property string position: Config.options?.notifications?.position ?? "top-right"
+
     PanelWindow {
         id: root
         visible: (Notifications.popupList.length > 0)
@@ -21,9 +23,31 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         exclusiveZone: 0
 
-        anchors {
-            top: true
-            bottom: true
+        anchors: {
+            switch (notificationPopup.position) {
+            case "top-left":
+                return {
+                    top: true,
+                    left: true,
+                    bottom: true,
+                }
+            case "top-center":
+                return {
+                    top: true,
+                    bottom: true,
+                }
+            case "top-right":
+                return {
+                    top: true,
+                    right: true,
+                    bottom: true,
+                }
+            default:
+                return {
+                    top: true,
+                    right: true
+                }
+            }
         }
 
         mask: Region {

@@ -136,7 +136,6 @@ Singleton {
                     property bool invertPinnedItems: true // Makes the below a whitelist for the tray and blacklist for the pinned area
                     property list<string> pinnedItems: [ ]
                 }
-                property bool audioOsdAnimateMedia: true
             }
 
             property JsonObject background: JsonObject {
@@ -198,6 +197,10 @@ Singleton {
 
             property JsonObject osd: JsonObject {
                 property int timeout: 1000
+            }
+
+            property JsonObject notifications: JsonObject {
+                property string position: "top-right" // top-left, top-center, top-right, bottom not supported
             }
 
             property JsonObject overview: JsonObject {

@@ -93,14 +93,6 @@ ContentPage {
 
         }
 
-        ConfigSwitch {
-            text: "Animate media OSD"
-            checked: Config.options.bar.audioOsdAnimateMedia
-            onClicked: checked = !checked;
-            onCheckedChanged: Config.options.bar.audioOsdAnimateMedia = checked;
-            StyledToolTip { text: "Enable wavy effect on the volume OSD when media is playing." }
-        }
-
         ContentSubsection {
             title: "Workspaces"
             tooltip: "Tip: Hide icons for the\n classic Sleex experience"
@@ -371,6 +363,23 @@ ContentPage {
                     ]
                 }
             }
+        }
+    }
+
+    ContentSection {
+        title: "Notifications"
+
+        ConfigSelectionArray {
+            currentValue: Config.options.notifications.position
+            configOptionName: "notifications.position"
+            onSelected: (newValue) => {
+                Config.options.notifications.position = newValue;
+            }
+            options: [
+                {"value": "top-left", "displayName": "Top Left"},
+                {"value": "top-center", "displayName": "Top Center"},
+                {"value": "top-right", "displayName": "Top Right"},
+            ]
         }
     }
 
