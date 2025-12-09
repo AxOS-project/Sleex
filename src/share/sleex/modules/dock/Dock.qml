@@ -10,7 +10,6 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope { // Scope
     id: root
@@ -27,7 +26,7 @@ Scope { // Scope
             property bool reveal: root.pinned
                 || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse)
                 || dockApps.requestDockShow
-                || (!ToplevelManager.activeToplevel?.activated)
+                || (ToplevelManager.toplevels?.length === 0)
 
             anchors {
                 bottom: true
