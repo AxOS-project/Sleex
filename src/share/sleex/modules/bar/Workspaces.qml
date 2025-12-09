@@ -81,9 +81,9 @@ Item {
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0)
-                Fhtc.dispatch("focus-workspace", ["+1"]);
+                Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-next-workspace"]);
             else if (event.angleDelta.y > 0)
-                Fhtc.dispatch("focus-workspace", ["-1"]);
+                Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-previous-workspace"]);
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -191,8 +191,9 @@ Item {
                     property int workspaceId: workspace?.id ?? -1
                     Layout.fillHeight: true
                     onPressed: {
-                        // Use index + 1 for focus-workspace command (1-based)
-                        Fhtc.dispatch("focus-workspace", [(index + 1).toString()]);
+                        if (button.workspaceId >= 0) {
+                            Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-workspace", `${button.workspaceId}`]);
+                        }
                     }
                     width: workspaceButtonWidth
                     
