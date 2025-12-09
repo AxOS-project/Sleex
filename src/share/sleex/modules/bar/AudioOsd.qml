@@ -63,11 +63,8 @@ Revealer {
             }
 
             StyledProgressBar {
-                sperm: MprisController.isPlaying && Config.options.bar.audioOsdAnimateMedia
-                animateSperm: true
-                spermFrequency: 4
                 value: Audio.sink?.audio.volume ?? 0
-            }
+            }        
         }
     }
 }
