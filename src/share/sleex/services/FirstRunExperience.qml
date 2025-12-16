@@ -19,6 +19,7 @@ Singleton {
     }
 
     function handleFirstRun() {
+        Quickshell.execDetached(["bash", "-c", `hypnos install && hypnos enable && hypnos start`])
         Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} ${root.defaultWallpaperPath} --mode dark`])
         Quickshell.execDetached(['bash', '-c', `sleep 0.5; notify-send '${root.welcomeNotifTitle}' '${root.welcomeNotifBody}' -a 'Sleex' &`])
         //Quickshell.reload(true)

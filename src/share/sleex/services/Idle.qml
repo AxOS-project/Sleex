@@ -1,39 +1,81 @@
+pragma Singleton
+pragma ComponentBehavior: Bound
 import qs.modules.common
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
-pragma Singleton
+import Quickshell.Io
 
-/**
- * A nice wrapper for date and time strings.
- */
 Singleton {
     id: root
+    property alias hypnos: hypnosJsonAdapter
+    property string fileDir: Directories.shellConfig
+    property string fileName: "hypnos.json"
+    property string filePath: `${root.fileDir}/${root.fileName}`
+    property bool ready: false
+    property int readWriteTimer: 50
 
-    property alias inhibit: idleInhibitor.enabled
-
-    function toggleInhibit() {
-        Persistent.states.idle.inhibit = !Persistent.states.idle.inhibit
+    Timer {
+        id: fileReloadTimer
+        interval: root.readWriteTimer
+        repeat: false
+        onTriggered: {
+            hypnosFileView.reload();
+        }
     }
 
-    IdleInhibitor {
-        id: idleInhibitor
-        enabled: Persistent.states.idle.inhibit
-        window: PanelWindow { // Inhibitor requires a "visible" surface
-            // Actually not lol
-            implicitWidth: 0
-            implicitHeight: 0
-            color: "transparent"
-            // Just in case...
-            anchors {
-                right: true
-                bottom: true
-            }
-            // Make it not interactable
-            mask: Region {
-                item: null
+    Timer {
+        id: fileWriteTimer
+        interval: root.readWriteTimer
+        repeat: false
+        onTriggered: {
+            hypnosFileView.writeAdapter();
+        }
+    }
+
+    function init() {
+        hypnosFileView.reload();
+    }
+
+
+    FileView {
+        id: hypnosFileView
+        path: root.filePath
+
+        watchChanges: true
+        onFileChanged: fileReloadTimer.restart()
+        onAdapterUpdated: fileWriteTimer.restart()
+        onLoaded: root.ready = true
+        onLoadFailed: error => {
+            console.log("Failed to load Hypnos settings file:", error);
+            if (error == FileViewError.FileNotFound) {
+                writeAdapter();
             }
         }
-    }    
 
+        adapter: JsonAdapter {
+            id: hypnosJsonAdapter
+            property bool enabled: true
+            property JsonObject rules: JsonObject {
+                property JsonObject dim: JsonObject {
+                    property int timeout: 60
+                    property string actions: "brightnessctl -s set 10"
+                    property string restore: "brightnessctl -r"
+                    property bool on_battery: true
+                    property bool enabled: true
+                }
+                property JsonObject lock: JsonObject {
+                    property int timeout: 120
+                    property string actions: "loginctl lock-session"
+                    property bool on_battery: false
+                    property bool enabled: true
+                }
+                property JsonObject suspend: JsonObject {
+                    property int timeout: 300
+                    property string actions: "systemctl suspend"
+                    property bool on_battery: true
+                    property bool enabled: true
+                }
+            }
+        }
+    }
 }
