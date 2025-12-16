@@ -154,6 +154,15 @@ MouseArea {
                 duration: 200
                 easing.type: Easing.InCubic
             }
+
+            NumberAnimation {
+                target: scrim
+                property: "opacity"
+                from: scrim.opacity
+                to: 0
+                duration: 300
+                easing.type: Easing.InCubic
+            }
         }
         
         // Call the actual unlock after animations complete
@@ -243,9 +252,27 @@ MouseArea {
     }
 
     Rectangle {
+        id: scrim
         visible: Config.options.lockscreen.enableScrim
         anchors.fill: backgroundImage
-        color: Appearance.colors.colScrim
+        color: "black"
+        opacity: 0
+
+        Component.onCompleted: {
+            if (!unlocking) {
+                scrimFadeInAnim.start()
+            }
+        }
+
+        NumberAnimation {
+            id: scrimFadeInAnim
+            target: scrim
+            property: "opacity"
+            from: 0
+            to: 0.6
+            duration: 600
+            easing.type: Easing.OutCubic
+        }
     }
 
     ColumnLayout {
