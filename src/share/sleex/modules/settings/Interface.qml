@@ -384,6 +384,17 @@ ContentPage {
     }
 
     ContentSection {
+        title: "Lock Screen"
+
+        ConfigSwitch {
+            text: "Scrim background"
+            checked: Config.options.lockscreen.enableScrim
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
+        }
+    }
+
+    ContentSection {
         title: "Calendar"
 
         ContentSubsection {

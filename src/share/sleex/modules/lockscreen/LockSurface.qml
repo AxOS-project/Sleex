@@ -242,6 +242,12 @@ MouseArea {
         }
     }
 
+    Rectangle {
+        visible: Config.options.lockscreen.enableScrim
+        anchors.fill: backgroundImage
+        color: Appearance.colors.colScrim
+    }
+
     ColumnLayout {
         id: clockWeather
         anchors.top: parent.top

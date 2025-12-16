@@ -199,6 +199,10 @@ Singleton {
                 property int timeout: 1000
             }
 
+            property JsonObject lockscreen: JsonObject {
+                property bool enableScrim: true
+            }
+
             property JsonObject notifications: JsonObject {
                 property string position: "top-right" // top-left, top-center, top-right, bottom not supported
             }
