@@ -19,6 +19,14 @@ ContentPage {
             onCheckedChanged: Config.options.appearance.transparency = checked;
         }
 
+        ConfigSwitch {
+            text: "Fullscreen Value Indicators"
+            checked: Config.options.appearance.fullscreenIndicator
+            onClicked: checked = !checked;
+            StyledToolTip { text: "Show brightness/volume indicators while in fullscreen." }
+            onCheckedChanged: Config.options.appearance.fullscreenIndicator = checked;
+        }
+
         ConfigSpinBox {
             text: "Opacity"
             value: Config.options.appearance.opacity
