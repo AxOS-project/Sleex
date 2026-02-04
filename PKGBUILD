@@ -1,6 +1,6 @@
 pkgname="sleex"
-pkgver="1.24"
-pkgrel="3"
+pkgver="1.25"
+pkgrel="5"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(

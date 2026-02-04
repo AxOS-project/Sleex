@@ -55,4 +55,4 @@ fi
 
 
 # Start Hyprland with the Sleex config
-Hyprland -c /etc/sleex/hyprland.conf
+start-hyprland -- --config /etc/sleex/hyprland.conf

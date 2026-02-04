@@ -77,7 +77,7 @@ ComboBox {
     popup: Popup {
         y: comboBox.height
         width: comboBox.width
-        implicitHeight: contentItem.implicitHeight
+        // implicitHeight: contentItem.implicitHeight + 30
 
         background: Rectangle {
             color: Appearance.m3colors.m3surface
