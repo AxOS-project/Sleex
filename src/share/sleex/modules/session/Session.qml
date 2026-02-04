@@ -207,22 +207,22 @@ Scope {
         }
     }
 
-    GlobalShortcut {
-        name: "sessionToggle"
-        description: qsTr("Toggles session screen on press")
+    // GlobalShortcut {
+    //     name: "sessionToggle"
+    //     description: qsTr("Toggles session screen on press")
 
-        onPressed: {
-            sessionLoader.active = !sessionLoader.active;
-        }
-    }
+    //     onPressed: {
+    //         sessionLoader.active = !sessionLoader.active;
+    //     }
+    // }
 
-    GlobalShortcut {
-        name: "sessionOpen"
-        description: qsTr("Opens session screen on press")
+    // GlobalShortcut {
+    //     name: "sessionOpen"
+    //     description: qsTr("Opens session screen on press")
 
-        onPressed: {
-            sessionLoader.active = true;
-        }
-    }
+    //     onPressed: {
+    //         sessionLoader.active = true;
+    //     }
+    // }
 
 }

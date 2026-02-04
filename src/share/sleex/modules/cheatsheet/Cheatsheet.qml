@@ -135,31 +135,31 @@ Scope { // Scope
         }
     }
 
-    GlobalShortcut {
-        name: "cheatsheetToggle"
-        description: qsTr("Toggles cheatsheet on press")
+    // GlobalShortcut {
+    //     name: "cheatsheetToggle"
+    //     description: qsTr("Toggles cheatsheet on press")
 
-        onPressed: {
-            cheatsheetLoader.active = !cheatsheetLoader.active;
-        }
-    }
+    //     onPressed: {
+    //         cheatsheetLoader.active = !cheatsheetLoader.active;
+    //     }
+    // }
 
-    GlobalShortcut {
-        name: "cheatsheetOpen"
-        description: qsTr("Opens cheatsheet on press")
+    // GlobalShortcut {
+    //     name: "cheatsheetOpen"
+    //     description: qsTr("Opens cheatsheet on press")
 
-        onPressed: {
-            cheatsheetLoader.active = true;
-        }
-    }
+    //     onPressed: {
+    //         cheatsheetLoader.active = true;
+    //     }
+    // }
 
-    GlobalShortcut {
-        name: "cheatsheetClose"
-        description: qsTr("Closes cheatsheet on press")
+    // GlobalShortcut {
+    //     name: "cheatsheetClose"
+    //     description: qsTr("Closes cheatsheet on press")
 
-        onPressed: {
-            cheatsheetLoader.active = false;
-        }
-    }
+    //     onPressed: {
+    //         cheatsheetLoader.active = false;
+    //     }
+    // }
 
 }

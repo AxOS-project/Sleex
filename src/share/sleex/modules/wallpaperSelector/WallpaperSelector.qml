@@ -173,29 +173,29 @@ Scope {
         }
     }
 
-    GlobalShortcut {
-        name: "wppselectorToggle"
-        description: qsTr("Toggles wallpaper selector on press")
+    // GlobalShortcut {
+    //     name: "wppselectorToggle"
+    //     description: qsTr("Toggles wallpaper selector on press")
 
-        onPressed: {
-            GlobalStates.wppselectorOpen = !GlobalStates.wppselectorOpen;
-        }
-    }
-    GlobalShortcut {
-        name: "wppselectorOpen"
-        description: qsTr("Opens wallpaper selector on press")
+    //     onPressed: {
+    //         GlobalStates.wppselectorOpen = !GlobalStates.wppselectorOpen;
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "wppselectorOpen"
+    //     description: qsTr("Opens wallpaper selector on press")
 
-        onPressed: {
-            GlobalStates.wppselectorOpen = true;
-        }
-    }
-    GlobalShortcut {
-        name: "wppselectorClose"
-        description: qsTr("Closes wallpaper selector on press")
+    //     onPressed: {
+    //         GlobalStates.wppselectorOpen = true;
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "wppselectorClose"
+    //     description: qsTr("Closes wallpaper selector on press")
 
-        onPressed: {
-            GlobalStates.wppselectorOpen = false;
-        }
-    }
+    //     onPressed: {
+    //         GlobalStates.wppselectorOpen = false;
+    //     }
+    // }
 
 }

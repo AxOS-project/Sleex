@@ -41,18 +41,18 @@ Singleton {
         }
     }
 
-    GlobalShortcut {
-        name: "workspaceNumber"
-        description: qsTr("Hold to show workspace numbers, release to show icons")
+    // GlobalShortcut {
+    //     name: "workspaceNumber"
+    //     description: qsTr("Hold to show workspace numbers, release to show icons")
 
-        onPressed: {
-            workspaceShowNumbersTimer.start()
-        }
-        onReleased: {
-            workspaceShowNumbersTimer.stop()
-            workspaceShowNumbers = false
-        }
-    }
+    //     onPressed: {
+    //         workspaceShowNumbersTimer.start()
+    //     }
+    //     onReleased: {
+    //         workspaceShowNumbersTimer.stop()
+    //         workspaceShowNumbers = false
+    //     }
+    // }
 
     IpcHandler {
 		target: "zoom"
@@ -74,13 +74,13 @@ Singleton {
             root.screenLocked = true;
         }
     }
-    GlobalShortcut {
-        name: "lockScreen"
-        description: qsTr("Lock screen (obviously)")
+    // GlobalShortcut {
+    //     name: "lockScreen"
+    //     description: qsTr("Lock screen (obviously)")
 
-        onPressed: {
-            root.screenLocked = true;
-        }
-    }
+    //     onPressed: {
+    //         root.screenLocked = true;
+    //     }
+    // }
 
 }
