@@ -16,13 +16,11 @@ void Workspaces::dispatch(const QString &command, const QVariant &args)
     cmd["command"] = command;
     cmd["args"] = args;
     
-    // Envoi via le socket de requête géré par Ipc
     m_ipc->sendRequest(cmd);
 }
 
 void Workspaces::handleEvent(const QVariant &eventVar)
 {
-    // Conversion de l'événement reçu (QVariant/JSON)
     QVariantMap event = eventVar.toMap();
     QString type = event.value("event").toString();
     QVariant data = event.value("data");
@@ -33,7 +31,6 @@ void Workspaces::handleEvent(const QVariant &eventVar)
     }
     else if (type == "focused-window-changed") {
         QVariantMap dataMap = data.toMap();
-        // Vérification si l'ID est null/undefined
         QVariant idVar = dataMap.value("id");
         
         if (idVar.isNull() || !idVar.isValid()) {
@@ -58,7 +55,6 @@ void Workspaces::handleEvent(const QVariant &eventVar)
         m_windows.insert(QString::number(id), win);
         emit windowsChanged();
         
-        // Si c'est la fenêtre active qui a changé, on met à jour focusedWindow
         if (id == m_focusedWindowId) {
             m_focusedWindow = win;
             emit focusedWindowChanged();
@@ -68,7 +64,6 @@ void Workspaces::handleEvent(const QVariant &eventVar)
         m_workspaces = data.toMap();
         emit workspacesChanged();
         
-        // Rafraîchir l'activeWorkspace au cas où ses données auraient changé
         if (m_activeWorkspaceId != -1) {
             m_activeWorkspace = m_workspaces.value(QString::number(m_activeWorkspaceId));
             emit activeWorkspaceChanged();
