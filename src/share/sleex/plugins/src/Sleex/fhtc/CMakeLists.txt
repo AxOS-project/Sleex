@@ -12,5 +12,4 @@ target_link_libraries(sleex-fhtc
         Qt6::Core
         Qt6::Qml
         Qt6::Network
-        Qt6::Json
 )
