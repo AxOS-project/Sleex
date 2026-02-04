@@ -34,7 +34,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: Fhtc.activeWindowTitle !== "" ? Fhtc.activeWindowTitle : `${qsTr("Workspace")} ${Fhtc.activeWorkspace.id + 1}`
+            text: Fhtc.activeWindowTitle !== "" ? Fhtc.activeWindowTitle : `${qsTr("Workspace")} ${Fhtc.activeWorkspaceId + 1}`
         }
 
     }
