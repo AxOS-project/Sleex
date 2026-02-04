@@ -1,124 +1,112 @@
 #include "workspaces.hpp"
-#include <QQmlEngine>
-#include <QJSEngine>
+#include <QDebug>
 
-Workspaces::Workspaces(QObject *parent)
-    : QObject(parent), m_ipc(nullptr), m_activeWorkspaceId(-1)
+Workspaces::Workspaces(QObject *parent) : QObject(parent)
 {
-}
-
-void Workspaces::classBegin()
-{
-    // this "hook" is called by the QML engine after instantiation.
-    // It's the best moment to get the Ipc singleton instance.
-    QQmlEngine *engine = qmlEngine(this);
-    if (!engine) {
-        qWarning() << "Workspaces: Unable to find the QML engine.";
-        return;
-    }
-
-    // Qt 6.2+
-    m_ipc = engine->singletonInstance<Ipc*>("Sleex.Fhtc", "Ipc");
-
-    if (!m_ipc) {
-        qWarning() << "Workspaces: Cannot find the 'Ipc' singleton.";
-        qWarning() << "Make sure 'Ipc' is imported and used in QML (e.g., Ipc.subscribe())";
-        return;
-    }
-
-    connect(m_ipc, &Ipc::newEvent, this, &Workspaces::handleNewEvent);
-    connect(m_ipc, &Ipc::requestResponse, this, &Workspaces::handleRequestResponse);
-    connect(m_ipc, &Ipc::subscribed, this, &Workspaces::requestInitialState);
+    m_ipc = new Ipc(this);
     
-    // If Ipc is already 'subscribed', request the state
-    requestInitialState();
-}
-
-
-QVariantMap Workspaces::workspaces() const { return m_workspaces; }
-QVariantMap Workspaces::space() const { return m_space; }
-int Workspaces::activeWorkspaceId() const { return m_activeWorkspaceId; }
-
-QVariant Workspaces::activeWorkspace() const
-{
-    return m_workspaces.value(QString::number(m_activeWorkspaceId));
-}
-
-
-void Workspaces::requestInitialState()
-{
-    if (!m_ipc) return;
+    connect(m_ipc, &Ipc::newEvent, this, &Workspaces::handleEvent);
     
-    m_ipc->sendRequest(QVariantMap{{"workspaces", QVariant()}});
-    m_ipc->sendRequest(QVariantMap{{"space", QVariant()}});
-    m_ipc->sendRequest(QVariantMap{{"focused-workspace", QVariant()}});
+    m_ipc->subscribe();
 }
 
-void Workspaces::handleNewEvent(const QVariant &event)
+void Workspaces::dispatch(const QString &command, const QVariant &args)
 {
-    QVariantMap eventMap = event.toMap();
-    QString type = eventMap.value("event").toString();
-    if (type.isEmpty()) return;
+    QVariantMap cmd;
+    cmd["command"] = command;
+    cmd["args"] = args;
+    
+    // Envoi via le socket de requête géré par Ipc
+    m_ipc->sendRequest(cmd);
+}
 
-    QVariant data = eventMap.value("data");
-    bool changed = false;
+void Workspaces::handleEvent(const QVariant &eventVar)
+{
+    // Conversion de l'événement reçu (QVariant/JSON)
+    QVariantMap event = eventVar.toMap();
+    QString type = event.value("event").toString();
+    QVariant data = event.value("data");
 
-    if (type == "workspaces") {
+    if (type == "windows") {
+        m_windows = data.toMap();
+        emit windowsChanged();
+    }
+    else if (type == "focused-window-changed") {
+        QVariantMap dataMap = data.toMap();
+        // Vérification si l'ID est null/undefined
+        QVariant idVar = dataMap.value("id");
+        
+        if (idVar.isNull() || !idVar.isValid()) {
+            m_focusedWindowId = -1;
+            m_focusedWindow = QVariant();
+        } else {
+            m_focusedWindowId = idVar.toInt();
+            m_focusedWindow = m_windows.value(QString::number(m_focusedWindowId));
+        }
+        emit focusedWindowIdChanged();
+        emit focusedWindowChanged();
+    }
+    else if (type == "window-closed") {
+        int id = data.toMap().value("id").toInt();
+        m_windows.remove(QString::number(id));
+        emit windowsChanged();
+    }
+    else if (type == "window-changed") {
+        QVariantMap win = data.toMap();
+        int id = win.value("id").toInt();
+        
+        m_windows.insert(QString::number(id), win);
+        emit windowsChanged();
+        
+        // Si c'est la fenêtre active qui a changé, on met à jour focusedWindow
+        if (id == m_focusedWindowId) {
+            m_focusedWindow = win;
+            emit focusedWindowChanged();
+        }
+    }
+    else if (type == "workspaces") {
         m_workspaces = data.toMap();
         emit workspacesChanged();
-        changed = true;
-    } else if (type == "workspace-changed") {
-        QVariantMap wsMap = data.toMap();
-        QString id = wsMap.value("id").toString();
-        m_workspaces.insert(id, wsMap);
-        emit workspacesChanged(); 
-        changed = true;
-    } else if (type == "workspace-removed") { 
-        QString id = data.toMap().value("id").toString();
-        if (m_workspaces.remove(id)) {
-            emit workspacesChanged();
-            changed = true;
-        }
-    } else if (type == "active-workspace-changed") { 
-        int id = data.toMap().value("id").toInt();
-        if (m_activeWorkspaceId != id) {
-            m_activeWorkspaceId = id;
+        
+        // Rafraîchir l'activeWorkspace au cas où ses données auraient changé
+        if (m_activeWorkspaceId != -1) {
+            m_activeWorkspace = m_workspaces.value(QString::number(m_activeWorkspaceId));
             emit activeWorkspaceChanged();
         }
-    } else if (type == "space") {
-        m_space = data.toMap();
-        emit spaceChanged();
     }
-    
-    if (changed) {
+    else if (type == "active-workspace-changed") {
+        QVariantMap dataMap = data.toMap();
+        QVariant idVar = dataMap.value("id");
+        
+        if (idVar.isNull() || !idVar.isValid()) {
+            m_activeWorkspaceId = -1;
+            m_activeWorkspace = QVariant();
+        } else {
+            m_activeWorkspaceId = idVar.toInt();
+            m_activeWorkspace = m_workspaces.value(QString::number(m_activeWorkspaceId));
+        }
+        emit activeWorkspaceIdChanged();
         emit activeWorkspaceChanged();
     }
-}
-
-void Workspaces::handleRequestResponse(const QVariant &response)
-{
-    QVariantMap resMap = response.toMap();
-
-    if (resMap.contains("workspaces")) {
-        m_workspaces = resMap.value("workspaces").toMap();
+    else if (type == "workspace-changed") {
+        QVariantMap ws = data.toMap();
+        int id = ws.value("id").toInt();
+        
+        m_workspaces.insert(QString::number(id), ws);
         emit workspacesChanged();
-        emit activeWorkspaceChanged();
-    }
-
-    if (resMap.contains("space")) {
-        m_space = resMap.value("space").toMap();
-        emit spaceChanged();
-    }
-
-    if (resMap.contains("workspace")) {
-        QVariant ws = resMap.value("workspace");
-        int newId = -1;
-        if (ws.isValid() && !ws.isNull()) {
-            newId = ws.toMap().value("id").toInt();
-        }
-        if (m_activeWorkspaceId != newId) {
-            m_activeWorkspaceId = newId;
+        
+        if (id == m_activeWorkspaceId) {
+            m_activeWorkspace = ws;
             emit activeWorkspaceChanged();
         }
+    }
+    else if (type == "workspace-removed") {
+        int id = data.toMap().value("id").toInt();
+        m_workspaces.remove(QString::number(id));
+        emit workspacesChanged();
+    }
+    else if (type == "space") {
+        m_space = data;
+        emit spaceChanged();
     }
 }

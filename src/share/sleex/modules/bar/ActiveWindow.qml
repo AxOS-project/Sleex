@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Item {
     id: root
@@ -26,7 +27,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             elide: Text.ElideRight
-            text: Fhtc.activeWindowAppId !== "" ? Fhtc.activeWindowAppId : qsTr("Desktop")
+            text: Fhtc.focusedWindow['app-id'] !== "" ? Fhtc.focusedWindow['app-id'] : qsTr("Desktop")
         }
 
         StyledText {
@@ -34,7 +35,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: Fhtc.activeWindowTitle !== "" ? Fhtc.activeWindowTitle : `${qsTr("Workspace")} ${Fhtc.activeWorkspaceId + 1}`
+            text: Fhtc.focusedWindow.title !== "" ? Fhtc.focusedWindow.title : `${qsTr("Workspace")} ${Fhtc.activeWorkspaceId + 1}`
         }
 
     }

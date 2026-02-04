@@ -11,6 +11,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
+import Sleex.Fhtc
 
 Item {
     required property var bar
