@@ -27,7 +27,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             elide: Text.ElideRight
-            text: Fhtc.focusedWindow['app-id'] !== "" ? Fhtc.focusedWindow['app-id'] : qsTr("Desktop")
+            text: Fhtc.focusedWindow !== undefined ? Fhtc.focusedWindow['app-id'] : qsTr("Desktop")
         }
 
         StyledText {
@@ -35,7 +35,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: Fhtc.focusedWindow.title !== "" ? Fhtc.focusedWindow.title : `${qsTr("Workspace")} ${Fhtc.activeWorkspaceId + 1}`
+            text: Fhtc.focusedWindow !== undefined ? Fhtc.focusedWindow.title : `${qsTr("Workspace")} ${Fhtc.activeWorkspaceId + 1}`
         }
 
     }
