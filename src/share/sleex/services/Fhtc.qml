@@ -28,6 +28,9 @@ Singleton {
     property int activeWorkspaceId: -1
     property var activeWorkspace: null
 
+    property string activeWindowTitle: focusedWindow != null ? focusedWindow.title : ""
+    property string activeWindowAppId: focusedWindow != null ? focusedWindow["app-id"] : ""
+
     Socket {
         id: subscribeSocket
         path: root.socketPath

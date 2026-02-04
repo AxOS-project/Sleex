@@ -1,5 +1,6 @@
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.services
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Wayland
@@ -9,7 +10,6 @@ Item {
     id: root
     required property var bar
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
 
     implicitWidth: colLayout.implicitWidth
 
@@ -26,7 +26,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.appId : qsTr("Desktop")
+            text: Fhtc.activeWindowAppId !== "" ? Fhtc.activeWindowAppId : qsTr("Desktop")
         }
 
         StyledText {
@@ -34,7 +34,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.title : `${qsTr("Workspace")} ${monitor.activeWorkspace?.id}`
+            text: Fhtc.activeWindowTitle !== "" ? Fhtc.activeWindowTitle : `${qsTr("Workspace")} ${Fhtc.activeWorkspace.id + 1}`
         }
 
     }
