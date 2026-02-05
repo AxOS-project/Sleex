@@ -10,7 +10,7 @@
 class Ipc : public QObject
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(Ipc)
+    QML_NAMED_ELEMENT(FhtcIpc)
     QML_SINGLETON
 
 public:
@@ -27,6 +27,7 @@ public slots:
     void subscribe();
     void sendRequest(const QVariant &request);
     void sendAction(const QVariant &action);
+    void dispatch(const QString &name, const QVariantMap &args = {});
 
 private slots:
     void onRequestConnected();

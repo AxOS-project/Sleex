@@ -34,7 +34,6 @@ Ipc::~Ipc()
     // Sockets are automatically destroyed because 'this' is their parent
 }
 
-// --- Public slots ---
 
 void Ipc::subscribe()
 {
@@ -45,9 +44,23 @@ void Ipc::subscribe()
     }
 }
 
+void Ipc::dispatch(const QString &name, const QVariantMap &args)
+{
+    if (!args.isEmpty() || name.contains("workspace")) { 
+        QVariantMap actionBody;
+        actionBody.insert(name, args);
+        sendAction(actionBody);
+    } 
+    else {
+        sendAction(name);
+    }
+}
+
 void Ipc::sendRequest(const QVariant &request)
 {
     if (m_socketPath.isEmpty()) return;
+
+    // qDebug() << "Ipc: Queuing request:" << request;
 
     m_pendingRequests.enqueue(request);
     if (m_requestSocket->state() == QLocalSocket::UnconnectedState) {
@@ -67,7 +80,6 @@ void Ipc::sendAction(const QVariant &action)
     sendRequest(request);
 }
 
-// --- Private slots: Request socket ---
 
 void Ipc::onRequestConnected()
 {
@@ -86,6 +98,8 @@ void Ipc::onRequestReadyRead()
     // We do not loop, we just wait for a complete line.
     QVariant response = parseLine(m_requestBuffer);
     if (!response.isNull()) {
+        // qDebug() << "Ipc: Received response:" << response;
+
         emit requestResponse(response);
 
         // If there are other requests, send them
@@ -108,12 +122,11 @@ void Ipc::onRequestDisconnected()
 {
     qDebug() << "Ipc: Request socket disconnected.";
     if (!m_requestBuffer.isEmpty()) {
-        qWarning() << "Ipc (Request): DDisconnected with data in buffer:" << m_requestBuffer;
+        qWarning() << "Ipc (Request): Disconnected with data in buffer:" << m_requestBuffer;
         m_requestBuffer.clear();
     }
 }
 
-// --- Private slots: Event socket ---
 
 void Ipc::onEventConnected()
 {

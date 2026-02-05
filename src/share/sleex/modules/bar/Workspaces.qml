@@ -81,10 +81,11 @@ Item {
     // Scroll to switch workspaces
     WheelHandler {
         onWheel: (event) => {
-            if (event.angleDelta.y < 0)
-                Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-next-workspace"]);
-            else if (event.angleDelta.y > 0)
-                Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-previous-workspace"]);
+            if (event.angleDelta.y < 0) {
+                FhtcIpc.dispatch("focus-next-workspace", { "output": null });
+            } else if (event.angleDelta.y > 0) {
+                FhtcIpc.dispatch("focus-previous-workspace", { "output": null });
+            }
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -193,7 +194,7 @@ Item {
                     Layout.fillHeight: true
                     onPressed: {
                         if (button.workspaceId >= 0) {
-                            Quickshell.execDetached(["fht-compositor", "ipc", "action", "focus-workspace", `${button.workspaceId}`]);
+                            FhtcIpc.dispatch("focus-workspace-by-index", { "workspace_idx": button.workspaceId });
                         }
                     }
                     width: workspaceButtonWidth
