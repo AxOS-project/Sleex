@@ -9,7 +9,7 @@
 class Workspaces : public QObject
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(Fhtc)
+    QML_NAMED_ELEMENT(FhtcWorkspaces)
     QML_SINGLETON
 
     Q_PROPERTY(QVariantMap windows READ windows NOTIFY windowsChanged)
