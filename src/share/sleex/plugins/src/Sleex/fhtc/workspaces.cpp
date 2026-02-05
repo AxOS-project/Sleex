@@ -10,15 +10,6 @@ Workspaces::Workspaces(QObject *parent) : QObject(parent)
     m_ipc->subscribe();
 }
 
-void Workspaces::dispatch(const QString &command, const QVariant &args)
-{
-    QVariantMap cmd;
-    cmd["command"] = command;
-    cmd["args"] = args;
-    
-    m_ipc->sendRequest(cmd);
-}
-
 void Workspaces::handleEvent(const QVariant &eventVar)
 {
     QVariantMap event = eventVar.toMap();
@@ -99,9 +90,5 @@ void Workspaces::handleEvent(const QVariant &eventVar)
         int id = data.toMap().value("id").toInt();
         m_workspaces.remove(QString::number(id));
         emit workspacesChanged();
-    }
-    else if (type == "space") {
-        m_space = data;
-        emit spaceChanged();
     }
 }
