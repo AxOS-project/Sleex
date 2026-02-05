@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: overviewScope
@@ -20,14 +21,14 @@ Scope {
             id: root
             required property var modelData
             property string searchingText: ""
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            required property ShellScreen screen
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
             screen: modelData
             visible: GlobalStates.overviewOpen && monitorIsFocused
 
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
-            // WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
             color: "transparent"
 
             mask: Region {
@@ -98,7 +99,7 @@ Scope {
                 }
 
                 Keys.onPressed: (event) => {
-                    if (eçvent.key === Qt.Key_Escape) {
+                    if (event.key === Qt.Key_Escape) {
                         GlobalStates.overviewOpen = false;
                     } else if (event.key === Qt.Key_Left) {
                         if (!root.searchingText) Hyprland.dispatch("workspace -1");
