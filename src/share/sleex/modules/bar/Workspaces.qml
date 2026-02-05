@@ -16,22 +16,22 @@ import Sleex.Fhtc
 Item {
     required property var bar
     property bool borderless: Config.options.bar.borderless
-    readonly property var activeWindow: Fhtc.focusedWindow
+    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
     readonly property string screenName: bar.screen?.name ?? ""
     
     // Get workspaces for this screen only, sorted by ID
     readonly property var screenWorkspaces: {
-        return Object.values(Fhtc.workspaces)
+        return Object.values(FhtcWorkspaces.workspaces)
             .filter(ws => ws.output === screenName)
             .sort((a, b) => a.id - b.id);
     }
     
     // Active workspace index within this screen (0-based)
     readonly property int activeWorkspaceIndex: {
-        if (!Fhtc.activeWorkspace) return -1;
-        if (Fhtc.activeWorkspace.output !== screenName) return -1;
+        if (!FhtcWorkspaces.activeWorkspace) return -1;
+        if (FhtcWorkspaces.activeWorkspace.output !== screenName) return -1;
         // Find the index of the active workspace in our sorted screen workspaces
-        const idx = screenWorkspaces.findIndex(ws => ws.id === Fhtc.activeWorkspace.id);
+        const idx = screenWorkspaces.findIndex(ws => ws.id === FhtcWorkspaces.activeWorkspace.id);
         // Return -1 if the workspace is beyond the shown limit
         if (idx >= Config.options.bar.workspaces.shown) return -1;
         return idx;
@@ -62,7 +62,7 @@ Item {
 
     // Listen for changes in Fhtc.workspaces and windows
     Connections {
-        target: Fhtc
+        target: FhtcWorkspaces
         function onWorkspacesChanged() {
             updateWorkspaceOccupied();
         }
@@ -207,7 +207,7 @@ Item {
                         property var biggestWindow: {
                             if (!button.workspace || !button.workspace.windows || button.workspace.windows.length === 0) return null;
                             const windowIds = button.workspace.windows;
-                            const windowsInThisWorkspace = windowIds.map(id => Fhtc.windows[id]).filter(w => w != null);
+                            const windowsInThisWorkspace = windowIds.map(id => FhtcWorkspaces.windows[id]).filter(w => w != null);
                             return windowsInThisWorkspace.reduce((maxWin, win) => {
                                 const maxArea = (maxWin?.size?.[0] ?? 0) * (maxWin?.size?.[1] ?? 0)
                                 const winArea = (win?.size?.[0] ?? 0) * (win?.size?.[1] ?? 0)
