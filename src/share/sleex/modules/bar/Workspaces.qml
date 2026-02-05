@@ -82,9 +82,9 @@ Item {
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0) {
-                FhtcIpc.dispatch("focus-next-workspace", { "output": null });
+                FhtcIpc.dispatch("focus-next-workspace", {});
             } else if (event.angleDelta.y > 0) {
-                FhtcIpc.dispatch("focus-previous-workspace", { "output": null });
+                FhtcIpc.dispatch("focus-previous-workspace", {});
             }
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
