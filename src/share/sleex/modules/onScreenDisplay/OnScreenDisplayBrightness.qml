@@ -132,21 +132,21 @@ Scope {
         }
 	}
 
-    GlobalShortcut {
-        name: "osdBrightnessTrigger"
-        description: qsTr("Triggers brightness OSD on press")
+    // GlobalShortcut {
+    //     name: "osdBrightnessTrigger"
+    //     description: qsTr("Triggers brightness OSD on press")
 
-        onPressed: {
-            root.triggerOsd()
-        }
-    }
-    GlobalShortcut {
-        name: "osdBrightnessHide"
-        description: qsTr("Hides brightness OSD on press")
+    //     onPressed: {
+    //         root.triggerOsd()
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "osdBrightnessHide"
+    //     description: qsTr("Hides brightness OSD on press")
 
-        onPressed: {
-            root.showOsdValues = false
-        }
-    }
+    //     onPressed: {
+    //         root.showOsdValues = false
+    //     }
+    // }
 
 }

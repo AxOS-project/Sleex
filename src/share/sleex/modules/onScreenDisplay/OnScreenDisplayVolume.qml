@@ -184,21 +184,21 @@ Scope {
             showOsdValues = !showOsdValues
         }
 	}
-    GlobalShortcut {
-        name: "osdVolumeTrigger"
-        description: qsTr("Triggers volume OSD on press")
+    // GlobalShortcut {
+    //     name: "osdVolumeTrigger"
+    //     description: qsTr("Triggers volume OSD on press")
 
-        onPressed: {
-            root.triggerOsd()
-        }
-    }
-    GlobalShortcut {
-        name: "osdVolumeHide"
-        description: qsTr("Hides volume OSD on press")
+    //     onPressed: {
+    //         root.triggerOsd()
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "osdVolumeHide"
+    //     description: qsTr("Hides volume OSD on press")
 
-        onPressed: {
-            root.showOsdValues = false
-        }
-    }
+    //     onPressed: {
+    //         root.showOsdValues = false
+    //     }
+    // }
 
 }

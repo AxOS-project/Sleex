@@ -208,25 +208,25 @@ Scope {
         }
     }
 
-    GlobalShortcut {
-        name: "dashboardToggle"
-        description: qsTr("Toggles dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
-            if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
-        }
-    }
-    GlobalShortcut {
-        name: "dashboardOpen"
-        description: qsTr("Opens dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = true;
-            Notifications.timeoutAll();
-        }
-    }
-    GlobalShortcut {
-        name: "dashboardClose"
-        description: qsTr("Closes dashboard on press")
-        onPressed: { GlobalStates.dashboardOpen = false; }
-    }
+    // GlobalShortcut {
+    //     name: "dashboardToggle"
+    //     description: qsTr("Toggles dashboard on press")
+    //     onPressed: {
+    //         GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
+    //         if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "dashboardOpen"
+    //     description: qsTr("Opens dashboard on press")
+    //     onPressed: {
+    //         GlobalStates.dashboardOpen = true;
+    //         Notifications.timeoutAll();
+    //     }
+    // }
+    // GlobalShortcut {
+    //     name: "dashboardClose"
+    //     description: qsTr("Closes dashboard on press")
+    //     onPressed: { GlobalStates.dashboardOpen = false; }
+    // }
 }

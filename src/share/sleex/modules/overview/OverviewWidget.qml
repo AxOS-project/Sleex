@@ -11,15 +11,16 @@ import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Item {
     id: root
     required property var panelWindow
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
+    readonly property var monitor: FhtcMonitors.activeMonitor
     readonly property var toplevels: ToplevelManager.toplevels
     readonly property int workspacesShown: Config.options.overview.numOfRows * Config.options.overview.numOfCols
-    readonly property int workspaceGroup: Math.floor((monitor.activeWorkspace?.id - 1) / workspacesShown)
-    property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+    readonly property int workspaceGroup: Math.floor((monitor["active-workspace-idx"] - 1) / workspacesShown)
+    property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
     property var windows: HyprlandData.windowList
     property var windowByAddress: HyprlandData.windowByAddress
     property var windowAddresses: HyprlandData.addresses
@@ -113,7 +114,7 @@ Item {
                                     if (root.draggingTargetWorkspace === -1) {
                                         // Hyprland.dispatch(`exec qs ipc call overview close`)
                                         GlobalStates.overviewOpen = false
-                                        Hyprland.dispatch(`workspace ${workspaceValue}`)
+                                        Fhtc.dispatch(`workspace ${workspaceValue}`)
                                     }
                                 }
                             }
@@ -213,7 +214,7 @@ Item {
                             window.Drag.active = false
                             root.draggingFromWorkspace = -1
                             if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                                Hyprland.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${window.windowData?.address}`)
+                                Fhtc.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${window.windowData?.address}`)
                                 updateWindowPosition.restart()
                             }
                             else {

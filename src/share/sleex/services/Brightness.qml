@@ -145,15 +145,15 @@ Singleton {
         }
     }
 
-    GlobalShortcut {
-        name: "brightnessIncrease"
-        description: qsTr("Increase brightness")
-        onPressed: root.increaseBrightness()
-    }
+    // GlobalShortcut {
+    //     name: "brightnessIncrease"
+    //     description: qsTr("Increase brightness")
+    //     onPressed: root.increaseBrightness()
+    // }
 
-    GlobalShortcut {
-        name: "brightnessDecrease"
-        description: qsTr("Decrease brightness")
-        onPressed: root.decreaseBrightness()
-    }
+    // GlobalShortcut {
+    //     name: "brightnessDecrease"
+    //     description: qsTr("Decrease brightness")
+    //     onPressed: root.decreaseBrightness()
+    // }
 }
