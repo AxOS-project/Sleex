@@ -7,7 +7,7 @@ from materialyoucolor.quantize import QuantizeCelebi
 from materialyoucolor.score.score import Score
 from materialyoucolor.hct import Hct
 from materialyoucolor.dynamiccolor.material_dynamic_colors import MaterialDynamicColors
-from materialyoucolor.utils.color_utils import (rgba_from_argb, argb_from_rgb, argb_from_rgba)
+from materialyoucolor.utils.color_utils import (rgba_from_argb, argb_from_rgb)
 from materialyoucolor.utils.math_utils import (sanitize_degrees_double, difference_degrees, rotation_direction)
 
 parser = argparse.ArgumentParser(description='Color generation script')
@@ -32,7 +32,7 @@ argb_to_hex = lambda argb: "#{:02X}{:02X}{:02X}".format(*map(round, rgba_from_ar
 hex_to_argb = lambda hex_code: argb_from_rgb(int(hex_code[1:3], 16), int(hex_code[3:5], 16), int(hex_code[5:], 16))
 display_color = lambda rgba : "\x1B[38;2;{};{};{}m{}\x1B[0m".format(rgba[0], rgba[1], rgba[2], "\x1b[7m   \x1b[7m")
 
-def calculate_optimal_size (width: int, height: int, bitmap_size: int) -> (int, int):
+def calculate_optimal_size (width: int, height: int, bitmap_size: int) -> (int, int): # type: ignore
     image_area = width * height;
     bitmap_area = bitmap_size ** 2
     scale = math.sqrt(bitmap_area/image_area) if image_area > bitmap_area else 1
@@ -73,7 +73,7 @@ if args.path is not None:
     wsize_new, hsize_new = calculate_optimal_size(wsize, hsize, args.size)
     if wsize_new < wsize or hsize_new < hsize:
         image = image.resize((wsize_new, hsize_new), Image.Resampling.BICUBIC)
-    colors = QuantizeCelebi(list(image.getdata()), 128)
+    colors = QuantizeCelebi(list(image.get_flattened_data()), 128)
     argb = Score.score(colors)[0]
 
     if args.cache is not None:
@@ -113,10 +113,11 @@ scheme = Scheme(hct, darkmode, 0.0)
 material_colors = {}
 term_colors = {}
 
-for color in vars(MaterialDynamicColors).keys():
-    color_name = getattr(MaterialDynamicColors, color)
-    if hasattr(color_name, "get_hct"):
-        rgba = color_name.get_hct(scheme).to_rgba()
+dynamic_colors = MaterialDynamicColors()
+for color in [c for c in dir(dynamic_colors) if not c.startswith('_')]:
+    color_obj = getattr(dynamic_colors, color)
+    if hasattr(color_obj, "get_hct"):
+        rgba = color_obj.get_hct(scheme).to_rgba()
         material_colors[color] = rgba_to_hex(rgba)
 
 # Extended material
@@ -138,14 +139,19 @@ if args.termscheme is not None:
     term_source_colors = json.loads(json_termscheme)['dark' if darkmode else 'light']
 
     primary_color_argb = scheme.primary_palette.get_hct(40).to_int()
+
+    #for material_color_name, material_color_code in material_colors.items():
+        #print(f"{material_color_name.ljust(32)} : {display_color(rgba_from_argb(hex_to_argb(material_color_code)))}  {material_color_code}")
+
     for color, val in term_source_colors.items():
         if(args.scheme == 'monochrome') :
             term_colors[color] = val
             continue
+        #print(f"{color.ljust(6)} : {display_color(rgba_from_argb(hex_to_argb(val)))} {val} --> ", end="\n")
         if args.blend_bg_fg and color == "term0":
-            harmonized = boost_chroma_tone(hex_to_argb(material_colors['surfaceContainerLow']), 1.2, 0.95)
+            harmonized = boost_chroma_tone(hex_to_argb(material_colors.get('surfaceContainerLow', material_colors['surface'])), 1.2, 0.95)
         elif args.blend_bg_fg and color == "term15":
-            harmonized = boost_chroma_tone(hex_to_argb(material_colors['onSurface']), 3, 1)
+            harmonized = boost_chroma_tone(hex_to_argb(material_colors.get('onSurface', material_colors['onBackground'])), 3, 1)
         else:
             harmonized = harmonize(hex_to_argb(val), primary_color_argb, args.harmonize_threshold, args.harmony)
             harmonized = boost_chroma_tone(harmonized, 1, 1 + (args.term_fg_boost * (1 if darkmode else -1)))
