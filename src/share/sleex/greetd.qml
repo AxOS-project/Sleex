@@ -356,8 +356,8 @@ ShellRoot {
                                 id: deComboBox
                                 Layout.fillWidth: true
                                 model: root.detectedDEs
-                                currentIndex: root.selectedDE
-
+                                currentIndex: root.detectedDEs.includes("Sleex") ? root.detectedDEs.indexOf("Sleex") : 0
+                                
                                 onCurrentIndexChanged: {
                                     root.selectedDE = deComboBox.currentIndex
                                 }
