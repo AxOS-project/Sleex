@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import Quickshell
 import Quickshell.Services.UPower
 import qs.services
 import qs.modules.common
@@ -9,611 +10,383 @@ import qs.modules.common.functions
 import qs.modules.bar
 import qs.modules.mediaControls
 
-MouseArea {
+FocusScope {
     id: root
-    required property LockContext context
-    property bool active: false
-    property bool showInputField: active || context.currentText.length > 0
+    required property var context
+    
     property bool unlocking: false
-    property bool lastUnlockInProgress: false
-
-    function forceFieldFocus() {
-        passwordBox.forceActiveFocus();
-    }
-
-    Component.onCompleted: {
-        forceFieldFocus();
-        context.animate.connect(() => unlockAnimationSequence.start())
-
-    }
-
-    // Monitor unlock progress to detect when unlock starts/ends
-    onLastUnlockInProgressChanged: {
-        if (lastUnlockInProgress && !context.unlockInProgress) {
-            // Unlock just finished - start animation
-            unlocking = true;
-            unlockAnimationSequence.start();
-        }
-    }
-
-    // Watch for unlock progress changes
-    Connections {
-        target: context
-        function onUnlockInProgressChanged() {
-            //console.log("unlockInProgress changed to:", context.unlockInProgress);
-            root.lastUnlockInProgress = context.unlockInProgress;
-        }
-    }
-
-    // Unlock animation sequence
-    SequentialAnimation {
-        id: unlockAnimationSequence
-        
-        ParallelAnimation {
-            // Fade out background
-            NumberAnimation {
-                target: backgroundImage
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-            
-            // Slide clock/weather up and out
-            NumberAnimation {
-                target: clockWeather
-                property: "anchors.topMargin"
-                from: 40
-                to: -200
-                duration: 400
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: clockWeather
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-            
-            // Slide media controls down and out
-            NumberAnimation {
-                target: mediaControlsContainer
-                property: "anchors.bottomMargin"
-                from: 20
-                to: -200
-                duration: 400
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: mediaControlsContainer
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-            
-            // Slide password box down and out
-            NumberAnimation {
-                target: passwordBoxContainer
-                property: "anchors.bottomMargin"
-                from: 20
-                to: -100
-                duration: 400
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: passwordBoxContainer
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-            
-            // Fade out battery indicator
-            NumberAnimation {
-                target: batteryIndicator
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: tooltipText
-                property: "opacity"
-                from: tooltipText.opacity
-                to: 0
-                duration: 200
-                easing.type: Easing.InCubic
-            }
-            
-            // Fade out system controls
-            NumberAnimation {
-                target: systemControls
-                property: "opacity"
-                from: systemControls.opacity
-                to: 0
-                duration: 200
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: tooltipText
-                property: "opacity"
-                from: tooltipText.opacity
-                to: 0
-                duration: 200
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: scrim
-                property: "opacity"
-                from: scrim.opacity
-                to: 0
-                duration: 300
-                easing.type: Easing.InCubic
-            }
-        }
-        
-        // Call the actual unlock after animations complete
-        ScriptAction {
-            script: {
-                root.context.unlocked();
-                root.unlocking = false; // Reset unlocking state
-            }
-        }
-    }
-
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) {
-            root.context.currentText = ""
-        } 
-        forceFieldFocus()
-    }
-
-    hoverEnabled: true
-    acceptedButtons: Qt.LeftButton
-    onPressed: (mouse) => {
-        forceFieldFocus();
-    }
-    onPositionChanged: (mouse) => {
-        forceFieldFocus();
-    }
+    property bool wrongPassword: context.showFailure
+    property bool visualsReady: false
 
     anchors.fill: parent
+    focus: true 
 
-    // // Test button - remove this after testing
-    // Rectangle {
-    //     anchors.top: parent.top
-    //     anchors.left: parent.left
-    //     anchors.margins: 20
-    //     width: 120
-    //     height: 40
-    //     color: "red"
-    //     radius: 5
-    //     z: 1000
-        
-    //     MouseArea {
-    //         anchors.fill: parent
-    //         onClicked: {
-    //             root.context.unlocked();
-    //         }
-    //     }
-        
-    //     Text {
-    //         anchors.centerIn: parent
-    //         text: "Help, I'm stuck!"
-    //         color: "white"
-    //         font.pixelSize: 12
-    //     }
-    // }
+    Component.onCompleted: {
+        visualsReady = true;
+        passwordInput.forceActiveFocus();
+    }
 
-    // Background
+    Keys.onEscapePressed: context.currentText = ""
+    Keys.onPressed: (event) => passwordInput.forceActiveFocus()
+    
+    Connections {
+        target: context
+        function onAnimate() { 
+            root.unlocking = true
+            unlockSequence.start() 
+        }
+        function onUnlockInProgressChanged() {
+            if (!context.unlockInProgress && root.unlocking) {
+                unlockSequence.start() 
+            }
+        }
+    }
+
+    // Wallpaper & Scrim
     Image {
-        id: backgroundImage
+        id: wallpaper
         anchors.fill: parent
         source: Config.options.background.wallpaperPath
         fillMode: Image.PreserveAspectCrop
-        z: -1
-        opacity: 0
-
-        Component.onCompleted: {
-            if (!unlocking) {
-                fadeInAnim.start()
+        
+        opacity: root.visualsReady ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 600
+                easing.type: Easing.OutCubic 
             }
-        }
-
-        NumberAnimation {
-            id: fadeInAnim
-            target: backgroundImage
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 600
-            easing.type: Easing.OutCubic
         }
 
         GaussianBlur {
             anchors.fill: parent
-            source: backgroundImage
+            source: wallpaper
             radius: 15
             opacity: parent.opacity
         }
-    }
-
-    Rectangle {
-        id: scrim
-        visible: Config.options.lockscreen.enableScrim
-        anchors.fill: backgroundImage
-        color: "black"
-        opacity: 0
-
-        Component.onCompleted: {
-            if (!unlocking) {
-                scrimFadeInAnim.start()
-            }
-        }
-
-        NumberAnimation {
-            id: scrimFadeInAnim
-            target: scrim
-            property: "opacity"
-            from: 0
-            to: 0.6
-            duration: 600
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    ColumnLayout {
-        id: clockWeather
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: -200
-        spacing: 8
-
-        Component.onCompleted: {
-            if (!unlocking) {
-                animIn.running = true
-                fadeInClockWeather.running = true
-            }
-        }
-
-        NumberAnimation {
-            id: animIn
-            target: clockWeather
-            property: "anchors.topMargin"
-            from: -200
-            to: 40
-            duration: 600
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            id: fadeInClockWeather
-            target: clockWeather
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 600
-            easing.type: Easing.OutCubic
-        }
-        
-        // Clock
-        StyledText {
-            id: timeText
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
-            font.pixelSize: 95
-            color: Appearance.colors.colPrimary
-            style: Text.Raised
-            styleColor: Appearance.colors.colShadow
-            text: DateTime.time
-        }
-        StyledText {
-            id: dateText
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
-            font.pixelSize: 25
-            color: Appearance.colors.colPrimary
-            style: Text.Raised
-            styleColor: Appearance.colors.colShadow
-            text: DateTime.date
-        }
-
-        // Weather info
-        RowLayout {
-            spacing: 6
-            Layout.alignment: Qt.AlignHCenter
-            visible: Config.options.dashboard.enableWeather
-
-            Text {
-                // text: Weather.weatherCode ? Weather.materialSymbolForCode(Weather.weatherCode) : "cloud"
-                text: "cloud"
-                font.family: "Material Symbols Outlined"
-                font.pixelSize: 28
-                color: Appearance.colors.colPrimary
-                verticalAlignment: Text.AlignVCenter
-            }
-            Text {
-                text: Weather.temperature || qsTr("--")
-                font.pixelSize: 18
-                color: Appearance.colors.colPrimary
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-    }
-
-    // Battery indicator
-    BatteryIndicator {
-        id: batteryIndicator
-        Layout.alignment: Qt.AlignTop | Qt.AlignRight
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 10
-        implicitWidth: 75
-        implicitHeight: 23
-        borderless: true
-        visible: UPower.displayDevice.isLaptopBattery
-        opacity: 0
-
-        Component.onCompleted: {
-            if (!unlocking) {
-                batteryFadeInAnim.running = true
-            }
-        }
-
-        NumberAnimation {
-            id: batteryFadeInAnim
-            target: batteryIndicator
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 600
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    // Hover trigger area (bottom right corner)
-    Rectangle {
-        id: hoverTrigger
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        width: 80
-        height: 200
-        color: "transparent"
         
         MouseArea {
-            id: triggerArea
             anchors.fill: parent
-            hoverEnabled: true
-            
-            // System control buttons (bottom right)
-            ColumnLayout {
-                id: systemControls
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: 32
-                spacing: 12
-                
-                opacity: triggerArea.containsMouse ? 1 : 0
-                visible: opacity > 0
-                
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutCubic
-                    }
-                }
-                
-                // Shutdown
-                Rectangle {
-                    width: 48
-                    height: 48
-                    radius: 24
-                    color: shutdownArea.containsMouse ? "#53ffb3ab" : "transparent"
-                    border.color: Appearance.m3colors.m3error
-                    border.width: 1
-                    
-                    MouseArea {
-                        id: shutdownArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            Qt.createQmlObject('import Quickshell.Io; Process { command: ["shutdown", "-h", "now"]; running: true }', lock);
-                        }
-                    }
-                    
-                    Text {
-                        anchors.centerIn: parent
-                        text: "power_settings_new"
-                        font.family: "Material Symbols Outlined"
-                        font.pixelSize: 24
-                        color: Appearance.m3colors.m3error
-                    }
-                }
-                
-                // Reboot
-                Rectangle {
-                    width: 48
-                    height: 48
-                    radius: 24
-                    color: rebootArea.containsMouse ? "#3ed1e8d5" : "transparent"
-                    border.color: "#ffD1E8D5"
-                    border.width: 1
-                    
-                    MouseArea {
-                        id: rebootArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            Qt.createQmlObject('import Quickshell.Io; Process { command: ["reboot"]; running: true }', lock);
-                        }
-                    }
-                    
-                    Text {
-                        anchors.centerIn: parent
-                        text: "refresh"
-                        font.family: "Material Symbols Outlined"
-                        font.pixelSize: 24
-                        color: "#ffD1E8D5"
-                    }
-                }
-                
-                // Logout
-                Rectangle {
-                    width: 48
-                    height: 48
-                    radius: 24
-                    color: logoutArea.containsMouse ? "#4e6d98d5" : "transparent"
-                    border.color: "#6d99cd"
-                    border.width: 1
-                    
-                    MouseArea {
-                        id: logoutArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            Qt.createQmlObject('import Quickshell.Io; Process { command: ["loginctl", "terminate-user", "' + Quickshell.env("USER") + '"]; running: true }', lock);
-                        }
-                    }
-                    
-                    Text {
-                        anchors.centerIn: parent
-                        text: "exit_to_app"
-                        font.family: "Material Symbols Outlined"
-                        font.pixelSize: 24
-                        color: "#6d99cd"
-                    }
-                }
-            }
-        }
-    }
-    
-    // Media controls
-    MediaControls {
-        id: mediaControlsContainer
-        implicitHeight: 150
-        implicitWidth: 450
-        visible: MprisController.activePlayer
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: passwordBoxContainer.top
-            bottomMargin: -200
-        }
-
-        Component.onCompleted: {
-            if (!unlocking) {
-                mediaAnimIn.running = true
-                fadeInMediaControls.running = true
-            }
-        }
-
-        NumberAnimation {
-            id: mediaAnimIn
-            target: mediaControlsContainer
-            property: "anchors.bottomMargin"
-            from: -200
-            to: 20
-            duration: 600
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            id: fadeInMediaControls
-            target: mediaControlsContainer
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 600
-            easing.type: Easing.OutCubic
+            onClicked: passwordInput.forceActiveFocus()
         }
     }
 
-    // Tooltips text
-    StyledText {
-        id: tooltipText
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: mediaControlsContainer.top
-        anchors.bottomMargin: 20
-        visible: !root.showInputField
-        text: qsTr("Enter password to unlock")
-        color: Appearance.colors.colSubtext
-        font.pixelSize: 14
-        opacity: root.showInputField ? 0 : 1
-        
+    Rectangle {
+            id: scrim
+            anchors.fill: wallpaper
+            color: "black"
+            opacity: (root.visualsReady && Config.options.lockscreen.enableScrim) ? 0.6 : 0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 800
+                }
+            }
+        }
+
+    // Main content
+    Item {
+        id: uiLayer
+        anchors.fill: parent
+        opacity: root.unlocking ? 0 : 1
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutCubic
+                duration: 300 
+                easing.type: Easing.InCubic
+            }
+        }
+
+        // Clock & Weather
+        ColumnLayout {
+            id: clockWidget
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: root.unlocking ? -200 : (root.visualsReady ? 40 : -200)
+            spacing: 8
+            
+            Behavior on anchors.topMargin {
+                NumberAnimation {
+                    duration: 400
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
+                font.pixelSize: 95
+                color: Appearance.colors.colPrimary
+                style: Text.Raised
+                styleColor: Appearance.colors.colShadow
+                text: DateTime.time
+            }
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                font.family: Config.options.background.clockFontFamily ?? "Sans Serif"
+                font.pixelSize: 25
+                color: Appearance.colors.colPrimary
+                style: Text.Raised
+                styleColor: Appearance.colors.colShadow
+                text: DateTime.date
+            }
+            
+            // Weather
+            RowLayout {
+                visible: Config.options.dashboard.enableWeather
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 6
+                Text {
+                    text: "cloud" 
+                    font.family: "Material Symbols Outlined"
+                    font.pixelSize: 28
+                    color: Appearance.colors.colPrimary
+                }
+                Text {
+                    text: Weather.temperature || qsTr("--")
+                    font.pixelSize: 18
+                    color: Appearance.colors.colPrimary
+                }
+            }
+        }
+
+        // Battery
+        BatteryIndicator {
+            anchors {
+                top: parent.top
+                right: parent.right
+                margins: 10
+            }
+            visible: UPower.displayDevice.isLaptopBattery
+            opacity: root.unlocking ? 0 : (root.visualsReady ? 1 : 0)
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 600
+                }
+            }
+        }
+
+        // Media Controls
+        MediaControls {
+            id: mediaWidget
+            visible: MprisController.activePlayer
+            anchors {
+                centerIn: parent
+                bottom: passwordContainer.top
+            }
+            opacity: root.unlocking ? 0 : (root.visualsReady ? 1 : 0)
+            
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 600
+                }
+            }
+        }
+
+        // Unlock Bar
+        RowLayout {
+            id: bottomBar
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: root.unlocking ? -150 : (root.visualsReady ? 50 : -150)
+            spacing: 15
+            
+            Behavior on anchors.bottomMargin {
+                NumberAnimation {
+                    duration: 400
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Rectangle {
+                id: passwordContainer
+                Layout.preferredWidth: 400
+                Layout.preferredHeight: 70
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colLayer0
+
+                RowLayout {
+                    id: passwordRow
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    // Shake Animation
+                    property int shakeOffset: 0
+                    anchors.horizontalCenterOffset: shakeOffset
+                    
+                    SequentialAnimation {
+                        id: shakeAnim
+                        running: root.wrongPassword
+                        loops: 1
+                        NumberAnimation { target: passwordRow; property: "shakeOffset"; to: -10; duration: 50 }
+                        NumberAnimation { target: passwordRow; property: "shakeOffset"; to: 10; duration: 50 }
+                        NumberAnimation { target: passwordRow; property: "shakeOffset"; to: -5; duration: 50 }
+                        NumberAnimation { target: passwordRow; property: "shakeOffset"; to: 5; duration: 50 }
+                        NumberAnimation { target: passwordRow; property: "shakeOffset"; to: 0; duration: 50 }
+                    }
+
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        enabled: !context.unlockInProgress && !root.unlocking
+
+                        MaterialSymbol {
+                            text: passwordInput.echoMode === TextInput.Password ? "visibility" : "visibility_off"
+                            iconSize: 20
+                            color: Appearance.colors.colOnLayer0
+                            anchors.centerIn: parent
+                        }
+
+                        onClicked: passwordInput.echoMode = passwordInput.echoMode === TextInput.Password ? TextInput.Normal : TextInput.Password
+                    }
+
+                    Rectangle {
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        color: Appearance.colors.colLayer2
+                        radius: Appearance.rounding.full
+                        clip: true
+                        border.color: root.wrongPassword ? Appearance.colors.colError : "transparent"
+                        border.width: 1
+
+                        // // Left fade gradient
+                        // Rectangle {
+                        //     width: 25
+                        //     anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                        //     gradient: Gradient {
+                        //         orientation: Gradient.Horizontal
+                        //         GradientStop { position: 0.0; color: Appearance.colors.colLayer2 }
+                        //         GradientStop { position: 1.0; color: "transparent" }
+                        //     }
+                        // }
+
+                        // // Right fade gradient
+                        // Rectangle {
+                        //     width: 25
+                        //     anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+                        //     gradient: Gradient {
+                        //         orientation: Gradient.Horizontal
+                        //         GradientStop { position: 0.0; color: "transparent" }
+                        //         GradientStop { position: 1.0; color: Appearance.colors.colLayer2 }
+                        //     }
+                        // }
+
+                        StyledTextInput {
+                            id: passwordInput
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            horizontalAlignment: TextInput.AlignHCenter
+                            verticalAlignment: TextInput.AlignVCenter
+                            focus: true
+                            
+                            color: Appearance.colors.colOnLayer2
+                            font.pixelSize: 15
+                            
+                            echoMode: TextInput.Password
+                            inputMethodHints: Qt.ImhSensitiveData
+                            enabled: !context.unlockInProgress && !root.unlocking
+
+                            text: context.currentText
+                            onTextChanged: context.currentText = text
+                            onAccepted: if (!root.unlocking) context.tryUnlock()
+                            
+                            StyledText {
+                                anchors.centerIn: parent
+                                text: qsTr("Enter password")
+                                color: Appearance.colors.colSubtext
+                                font.pixelSize: 15
+                                visible: parent.text.length === 0
+                            }
+                        }
+                    }
+
+                    RippleButton {
+                        colBackground: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryContainer
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        enabled: !context.unlockInProgress && !root.unlocking
+
+                        MaterialSymbol {
+                            text: "arrow_forward"
+                            iconSize: 24
+                            color: Appearance.colors.colOnPrimary
+                            anchors.centerIn: parent
+                        }
+                        onClicked: context.tryUnlock()
+                    }
+                }
+            }
+
+            // System Controls
+            Rectangle {
+                id: sysControls
+                Layout.preferredHeight: 70
+                Layout.preferredWidth: (height - 20) * 3 + 10 + 20 // height - margins * number of buttons + spacing + container margins (maths sucks)
+                color: Appearance.colors.colLayer0
+                radius: Appearance.rounding.full
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 5
+
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "bedtime"
+                            iconSize: 20; anchors.centerIn: parent
+                            color: Appearance.colors.colOnLayer0
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "suspend"])
+                    }
+                    
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        colBackgroundHover: Appearance.colors.colErrorContainer
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "power_settings_new"
+                            iconSize: 20; anchors.centerIn: parent
+                            color: Appearance.colors.colOnLayer0
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                    }
+                    
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "restart_alt"
+                            iconSize: 20; anchors.centerIn: parent
+                            color: Appearance.colors.colOnLayer0
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "reboot"])
+                    }
+                }
             }
         }
     }
 
-    // Password entry
-    Rectangle {
-        id: passwordBoxContainer
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
-            bottomMargin: root.showInputField ? 20 : -height
-        }
-        Behavior on anchors.bottomMargin {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
-        }
-        radius: Appearance.rounding.full
-        color: Appearance.m3colors.m3surfaceContainer
-        implicitWidth: 200
-        implicitHeight: 50
-
-        StyledTextInput {
-            id: passwordBox
-
-            anchors {
-                fill: parent
-                margins: 10
-            }
-            clip: true
-            horizontalAlignment: TextInput.AlignHCenter
-            verticalAlignment: TextInput.AlignVCenter
-            focus: true
-            onFocusChanged: root.forceFieldFocus();
-            color: Appearance.colors.colOnLayer2
-            font {
-                pixelSize: 15
-            }
-
-            // Password
-            enabled: !root.context.unlockInProgress && !unlocking
-            echoMode: TextInput.Password
-            inputMethodHints: Qt.ImhSensitiveData
-
-            // Synchronizing (across monitors) and unlocking
-            onTextChanged: root.context.currentText = this.text
-            onAccepted: {
-                if (!unlocking) {
-                    root.context.tryUnlock();
-                }
-            }
-            Connections {
-                target: root.context
-                function onCurrentTextChanged() {
-                    passwordBox.text = root.context.currentText;
-                }
+    SequentialAnimation {
+        id: unlockSequence
+        
+        NumberAnimation { target: scrim; property: "opacity"; to: 0; duration: 200 }
+        NumberAnimation { target: wallpaper; property: "opacity"; to: 0; duration: 200; easing.type: Easing.OutCubic }
+        NumberAnimation { target: uiLayer; property: "opacity"; to: 0; duration: 100; easing.type: Easing.InCubic }
+        
+        ScriptAction {
+            script: {
+                context.unlocked()
+                root.unlocking = false
             }
         }
     }

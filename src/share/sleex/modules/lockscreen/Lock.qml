@@ -6,12 +6,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope {
 	id: root
-	// This stores all the information shared between the lock surfaces on each screen.
-	// https://github.com/quickshell-mirror/quickshell-examples/tree/master/lockscreen
 	LockContext {
 		id: lockContext
 
@@ -44,29 +41,6 @@ Scope {
                     context: lockContext
                 }
             }
-		}
-	}
-
-	// Blur layer hack
-	Variants {
-        model: Quickshell.screens
-
-        LazyLoader {
-			id: blurLayerLoader
-			required property var modelData
-			active: GlobalStates.screenLocked
-			component: PanelWindow {
-				screen: blurLayerLoader.modelData
-				WlrLayershell.namespace: "quickshell:lockWindowPusher"
-				color: "transparent"
-				anchors {
-					top: true
-					left: true
-					right: true
-				}
-				// implicitHeight: lockContext.currentText == "" ? 1 : screen.height
-				implicitHeight: 1
-			}
 		}
 	}
 }
