@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
@@ -18,9 +17,11 @@ ShellRoot {
     property var detectedUsers: []
     property var detectedDEs: []
     property var detectedDECommands: []
+    property var detectedKbdLayouts: []
     property string lastSession: ""
     property bool showUserInput: false
     property int selectedDE: 0
+    property bool wrongPassword: false
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()        
@@ -75,6 +76,18 @@ ShellRoot {
         }
     }
 
+    Process {
+        id: getKbdLayoutsProcess
+        running: true
+        command: ["bash", "-c", "localectl list-x11-keymap-layouts 2>/dev/null"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = text.trim().split('\n').filter(l => l.length > 0)
+                root.detectedKbdLayouts = lines
+            }
+        }
+    }
+
     PanelWindow {
         id: bgWindow
         anchors {
@@ -100,15 +113,17 @@ ShellRoot {
             }
         }
 
-        Rectangle {
+        RippleButton {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.margins: 20
             width: statusRow.width + 20
             height: statusRow.height + 10
-            radius: 20
-            color:  Appearance.m3colors.m3error
+            buttonRadius: 20
+            colBackground: Appearance.m3colors.m3error
             visible: !Greetd.available
+            z: 1000
+            hoverEnabled: true
             RowLayout {
                 id: statusRow
                 anchors.centerIn: parent
@@ -124,6 +139,9 @@ ShellRoot {
                     text: "Greetd is not running!"
                     font.pixelSize: 10
                 }
+            }
+            onClicked: {
+                Qt.quit()
             }
         }
 
@@ -159,307 +177,253 @@ ShellRoot {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        RippleButtonWithIcon {
-            mainText: "exit"
-            materialIcon: "exit_to_app"
-            onClicked: Qt.quit()
-            visible: !Greetd.available
-        }
-        
-        Item {
-            width: things.width
-            height: things.height
-            anchors {
-                right: parent.right
-                top: parent.top
-                margins: 20
-            }
-            RowLayout {
-                id: things
-                spacing: 10
+        // Error message wrapper
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: bottomBar.top
+            anchors.bottomMargin: 20
+            width: statusText.implicitWidth + 40
+            height: 40
+            radius: Appearance.rounding.full
+            color: Appearance.m3colors.m3errorContainer
+            visible: statusText.text !== "" && statusText.text !== "Authenticating..." && statusText.text !== "Launching..."
 
-                BluetoothIndicator {}
-                BatteryIndicator {}
-            }
-        }
-
-        Item {
-            anchors.centerIn: parent
-            anchors.verticalCenterOffset: 40
-            width: 440
-            height: loginBox.height
-
-            Rectangle {
-                id: loginBox
+            StyledText {
+                id: statusText
                 anchors.centerIn: parent
-                width: parent.width
-                height: content.height + 60
-                radius: 20
-                color: Appearance.colors.colSurfaceContainerLow
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowOpacity: 0.3
-                    shadowColor: Appearance.colors.colShadow
-                    shadowBlur: 1
-                    shadowScale: 1
-                }
-
-                ColumnLayout {
-                    id: content
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        top: parent.top
-                    }
-                    anchors.margins: 30
-                    spacing: 20
-                    ColumnLayout {
-                        // anchors {
-                        //     left: parent.left
-                        //     right: parent.right
-                        //     top: parent.top
-                        // }
-                        Layout.fillWidth: true
-                        spacing: 20
-                    }
-                    ColumnLayout {
-                        // anchors {
-                        //     left: parent.left
-                        //     right: parent.right
-                        //     top: parent.top
-                        // }
-                        Layout.fillWidth: true
-                        spacing: 20
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 10
-                            visible: !root.showUserInput
-
-                            StyledText {
-                                text: "User"
-                                font.pixelSize: 14
-                                font.family: "Outfit Medium"
-                                color: Appearance.colors.colOnSurfaceVariant
-                            }
-
-                            StyledComboBox {
-                                id: userComboBox
-                                Layout.fillWidth: true
-                                model: root.detectedUsers
-
-                                onModelChanged: {
-                                    if (root.detectedUsers.length > 0) {
-                                        currentIndex = 0
-                                        usernameInput.text = root.detectedUsers[0]
-                                    }
-                                }
-
-                                onCurrentIndexChanged: {
-                                    if (currentIndex >= 0 && currentIndex < root.detectedUsers.length) {
-                                        usernameInput.text = root.detectedUsers[currentIndex]
-                                    }
-                                    root.showUserInput = false
-                                    passwordInput.forceActiveFocus()
-                                }
-                            }
-
-                            RippleButtonWithIcon {
-                                Layout.fillWidth: true
-                                mainText: "Other user"
-                                materialIcon: "person_add"
-                                onClicked: {
-                                    root.showUserInput = true
-                                    usernameInput.forceActiveFocus()
-                                }
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 10
-                            visible: root.showUserInput
-
-                            StyledText {
-                                text: "Username"
-                                font.pixelSize: 14
-                                font.family: "Outfit Medium"
-                                color: Appearance.colors.colOnSurfaceVariant
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 10
-
-                                RippleButton {
-                                    Layout.preferredWidth: 40
-                                    Layout.preferredHeight: 40
-                                    onClicked: root.showUserInput = false
-
-                                    MaterialSymbol {
-                                        text: "arrow_back"
-                                        iconSize: 24
-                                        color: Appearance.colors.colOnSurfaceVariant
-                                        anchors.centerIn: parent
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-                                    MaterialTextField {
-                                        id: usernameInput
-                                        Layout.fillWidth: true
-                                        placeholderText: "Enter username"
-                                    }
-                                }
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 10
-                            visible: usernameInput.text.length > 0
-
-                            StyledText {
-                                text: "Password"
-                                font.pixelSize: 14
-                                font.family: "Outfit Medium"
-                                color: Appearance.colors.colOnSurfaceVariant
-                            }
-
-                            MaterialTextField {
-                                id: passwordInput
-                                Layout.fillWidth: true
-                                placeholderText: "Enter password"
-                                echoMode: TextField.Password
-
-                                Keys.onReturnPressed: submitLogin()
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-                            visible: usernameInput.text.length > 0
-
-                            StyledText {
-                                text: "Session"
-                                font.pixelSize: 13
-                                font.weight: Font.Medium
-                                color: Appearance.colors.colOnSurfaceVariant
-                            }
-
-                            StyledComboBox {
-                                id: deComboBox
-                                Layout.fillWidth: true
-                                model: root.detectedDEs
-                                currentIndex: root.detectedDEs.includes("Sleex") ? root.detectedDEs.indexOf("Sleex") : 0
-                                
-                                onCurrentIndexChanged: {
-                                    root.selectedDE = deComboBox.currentIndex
-                                }
-                            }
-                        }
-
-                        StyledText {
-                            id: statusText
-                            Layout.fillWidth: true
-                            font.pixelSize: 13
-                            color: statusText.text.includes("Failed") || statusText.text.includes("Error")
-                                ? Appearance.m3colors.m3error
-                                : Appearance.colors.colPrimary
-                            wrapMode: Text.WordWrap
-                            visible: text !== ""
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-
-                        RippleButton {
-                            id: loginButton
-                            Layout.fillWidth: true
-                            visible: usernameInput.text.length > 0
-
-                            onClicked: submitLogin()
-                            enabled: statusText.text === "" || statusText.text.includes("Failed")
-
-                            colBackground: Appearance.colors.colPrimary
-                            colBackgroundHover: Appearance.colors.colPrimaryContainer
-
-                            Row {
-                                anchors.centerIn: parent
-                                anchors.margins: 12
-
-                                StyledText {
-                                    visible: statusText.text === ""
-                                    text: "Login"
-                                    color: Appearance.colors.colOnPrimary
-                                    font.pixelSize: 16
-                                    font.family: "Outfit Medium"
-                                }
-
-                                MaterialSymbol {
-                                    text: "login"
-                                    iconSize: 24
-                                    color: Appearance.colors.colOnPrimary
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.leftMargin: 16
-                                    visible: statusText.text === ""
-                                }
-
-                                StyledBusyIndicator {
-                                    visible: statusText.text !== ""
-                                    running: statusText.text !== ""
-                                    implicitSize: 29
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-                        }
-                    }
-                }
+                font.pixelSize: 13
+                color: Appearance.m3colors.m3onErrorContainer
+                wrapMode: Text.WordWrap
             }
         }
 
-        RowLayout {
+        Item {
+            id: bottomBar
+            anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: 20
-            spacing: 12
+            anchors.bottomMargin: 50
+            height: 70
 
-            RippleButton {
-                Layout.preferredHeight: 40
-                Layout.preferredWidth: 40
-                colBackground: Appearance.colors.colSurfaceContainerLow
-                colBackgroundHover: Appearance.colors.colSurfaceContainerLow
-                buttonRadius: Appearance.rounding.full
-                onClicked: {
-                    Quickshell.execDetached({ command: ["systemctl", "poweroff" ]})
+            // Center Pill: Password Input
+            Rectangle {
+                id: passwordContainer
+                anchors.centerIn: parent
+                width: 400
+                height: 70
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colLayer0
+
+                // Shake mechanics
+                property int shakeOffset: 0
+                transform: Translate { x: passwordContainer.shakeOffset }
+
+                SequentialAnimation {
+                    id: shakeAnim
+                    NumberAnimation { target: passwordContainer; property: "shakeOffset"; to: -10; duration: 50 }
+                    NumberAnimation { target: passwordContainer; property: "shakeOffset"; to: 10; duration: 50 }
+                    NumberAnimation { target: passwordContainer; property: "shakeOffset"; to: -5; duration: 50 }
+                    NumberAnimation { target: passwordContainer; property: "shakeOffset"; to: 5; duration: 50 }
+                    NumberAnimation { target: passwordContainer; property: "shakeOffset"; to: 0; duration: 50 }
                 }
 
-                MaterialSymbol {
-                    text: "power_settings_new"
-                    iconSize: 24
-                    color: Appearance.colors.colOnSurface
-                    anchors.centerIn: parent
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+
+                        MaterialSymbol {
+                            text: passwordInput.echoMode === TextInput.Password ? "visibility" : "visibility_off"
+                            iconSize: 20
+                            color: Appearance.colors.colOnLayer0
+                            anchors.centerIn: parent
+                        }
+
+                        onClicked: {
+                            passwordInput.echoMode = passwordInput.echoMode === TextInput.Password ? TextInput.Normal : TextInput.Password
+                            passwordInput.forceActiveFocus()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        color: Appearance.colors.colLayer2
+                        radius: Appearance.rounding.full
+                        clip: true
+                        
+                        border.color: root.wrongPassword ? Appearance.m3colors.m3error : "transparent"
+                        border.width: 1
+
+                        MaterialTextField {
+                            id: usernameInput
+                            visible: false
+                            text: root.detectedUsers.length > 0 ? root.detectedUsers[0] : ""
+                        }
+
+                        StyledTextInput {
+                            id: passwordInput
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            horizontalAlignment: TextInput.AlignHCenter
+                            verticalAlignment: TextInput.AlignVCenter
+                            focus: true
+                            color: Appearance.colors.colOnLayer2
+                            font.pixelSize: 15
+                            echoMode: TextInput.Password
+                            inputMethodHints: Qt.ImhSensitiveData
+
+                            onTextChanged: root.wrongPassword = false
+                            onAccepted: submitLogin()
+
+                            StyledText {
+                                anchors.centerIn: parent
+                                text: qsTr("Enter password")
+                                color: Appearance.colors.colSubtext
+                                font.pixelSize: 15
+                                visible: parent.text.length === 0
+                            }
+                        }
+
+                        NumberAnimation on border.color {
+                            duration: 300
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+
+                    RippleButton {
+                        id: loginButton
+                        colBackground: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryContainer
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        enabled: statusText.text === "" || statusText.text.includes("Failed")
+
+                        MaterialSymbol {
+                            text: "arrow_forward"
+                            iconSize: 24
+                            color: Appearance.colors.colOnPrimary
+                            anchors.centerIn: parent
+                        }
+
+                        onClicked: submitLogin()
+                    }
                 }
             }
 
-            RippleButton {
-                Layout.preferredHeight: 40
-                Layout.preferredWidth: 40
-                colBackground: Appearance.colors.colSurfaceContainerLow
-                colBackgroundHover: Appearance.colors.colSurfaceContainerLow
-                buttonRadius: Appearance.rounding.full
-                onClicked: {
-                    Quickshell.execDetached({ command: ["systemctl", "reboot" ]})
-                }
+            // Left Pill: User & Session
+            Rectangle {
+                id: leftPill
+                anchors.right: passwordContainer.left
+                anchors.rightMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+                height: 70
+                width: leftLayout.implicitWidth + 24 
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colLayer0
 
-                MaterialSymbol {
-                    text: "restart_alt"
-                    iconSize: 24
-                    color: Appearance.colors.colOnSurface
+                RowLayout {
+                    id: leftLayout
                     anchors.centerIn: parent
+                    spacing: 4
+
+                    IconComboBox {
+                        id: userComboBox
+                        icon: "account_circle"
+                        model: root.detectedUsers
+                        onCurrentIndexChanged: {
+                            if (currentIndex >= 0 && currentIndex < root.detectedUsers.length) {
+                                usernameInput.text = root.detectedUsers[currentIndex]
+                            }
+                        }
+                    }
+
+                    IconComboBox {
+                        id: deComboBox
+                        icon: "call_to_action" 
+                        model: root.detectedDEs
+                        currentIndex: root.detectedDEs.includes("Sleex") ? root.detectedDEs.indexOf("Sleex") : 0
+                        onCurrentIndexChanged: {
+                            root.selectedDE = deComboBox.currentIndex
+                        }
+                    }
+
+                    // IconComboBox {
+                    //     id: kbdComboBox
+                    //     icon: "keyboard"
+                    //     model: root.detectedKbdLayouts
+                    // }
+                }
+            }
+
+            // Right Pill: Power Controls
+            Rectangle {
+                id: sysControls
+                anchors.left: passwordContainer.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+                height: 70
+                width: suspendButton.width + rebootButton.width + poweroffButton.width + 40
+                color: Appearance.colors.colLayer0
+                radius: Appearance.rounding.full
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 10
+
+                    RippleButton {
+                        id: suspendButton
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "bedtime"
+                            iconSize: 20
+                            color: Appearance.colors.colOnLayer0
+                            anchors.centerIn: parent
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "suspend"])
+                    }
+                    
+                    RippleButton {
+                        id: rebootButton
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "restart_alt"
+                            iconSize: 20
+                            anchors.centerIn: parent
+                            color: Appearance.colors.colOnLayer0
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "reboot"])
+                    }
+
+                    RippleButton {
+                        id: poweroffButton
+                        colBackground: Appearance.colors.colLayer1
+                        colBackgroundHover: Appearance.colors.colErrorContainer
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "power_settings_new"
+                            iconSize: 20
+                            anchors.centerIn: parent
+                            color: Appearance.colors.colOnLayer0
+                        }
+                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                    }
                 }
             }
         }
@@ -491,6 +455,9 @@ ShellRoot {
             statusText.text = "Failed: " + message
             passwordInput.text = ""
             loginButton.enabled = true
+            root.wrongPassword = true
+            shakeAnim.start()
+
         }
 
         function onReadyToLaunch() {
