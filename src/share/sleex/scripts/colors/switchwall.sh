@@ -210,7 +210,7 @@ switch() {
             generate_colors_material_args=(--path "$imgpath")
 
             if [ -f "$SHELL_CONFIG" ]; then
-                swww img "$imgpath" --transition-step 100 --transition-fps 120 --transition-type grow --transition-angle 30 --transition-duration 1 --transition-pos "$cursorposx, $cursorposy_inverted" &
+                # swww img "$imgpath" --transition-step 100 --transition-fps 120 --transition-type grow --transition-angle 30 --transition-duration 1 --transition-pos "$cursorposx, $cursorposy_inverted" &
                 jq --arg path "$imgpath" '.background.wallpaperPath = $path' "$SHELL_CONFIG" > "$SHELL_CONFIG.tmp" && mv "$SHELL_CONFIG.tmp" "$SHELL_CONFIG"
             fi
             remove_restore
