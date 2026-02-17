@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Qt5Compat.GraphicalEffects
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -15,7 +16,7 @@ ContentPage {
     forceWidth: true
 
     ContentSection {
-        title: "Colors & Wallpaper"
+        title: "Colors"
 
         ButtonGroup {
             id: lightDarkButtonGroup
@@ -119,53 +120,83 @@ ContentPage {
                 }
             }
         }
+    }
 
-        StyledText {
-            text: "Wallpaper"
-            color: Appearance.colors.colSubtext
-        }
-
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            RippleButtonWithIcon {
-                materialIcon: "wallpaper"
-                StyledToolTip { text: "Pick wallpaper image on your system" }
-
-                onClicked: {
-                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`])
-                }
-
-                mainContentComponent: Component {
-                    RowLayout {
-                        spacing: 10
-                        StyledText {
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            text: "Choose file"
-                            color: Appearance.colors.colOnSecondaryContainer
-                        }
-                        RowLayout {
-                            spacing: 3
-                            KeyboardKey { key: "Ctrl" }
-                            KeyboardKey { key: "󰖳" }
-                            StyledText { Layout.alignment: Qt.AlignVCenter; text: "+" }
-                            KeyboardKey { key: "T" }
-                        }
-                    }
-
-                }
-            }
-        }
+    ContentSection {
+        title: "Wallpaper"
 
         MaterialTextField {
             id: ghUsername
             Layout.fillWidth: true
-            placeholderText: "Wallpaper path"
+            placeholderText: "Wallpaper selector directory path"
             text: Config.options.background.wallpaperSelectorPath
             wrapMode: TextEdit.Wrap
             onTextChanged: {
                 Config.options.background.wallpaperSelectorPath = text;
             }
         }
-    }
 
+        Rectangle {
+            id: imageContainer
+            Layout.preferredHeight: 200
+            Layout.preferredWidth: 360
+            Layout.alignment: Qt.AlignHCenter
+            radius: Appearance.rounding.medium
+            color: "transparent"
+            clip: true
+
+            Image {
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                source: Config.options.background.wallpaperPath || ""
+                visible: source !== ""
+                layer.enabled: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        width: 360
+                        height: 200
+                        radius: Appearance.rounding.normal
+                    }
+                }
+            }
+
+            StyledText {
+                anchors.centerIn: parent
+                text: "No wallpaper set"
+                color: Appearance.colors.colSubtext
+                visible: imageContainer.children.filter(child => child.visible).length === 0
+            }
+
+            MouseArea {
+                id: clickArea
+                hoverEnabled: true
+                anchors.fill: parent
+                onClicked: {
+                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`])
+                }
+            }
+
+            Rectangle {
+                id: selectionOverlay
+                anchors.fill: parent
+                color: Appearance.colors.colScrim
+                opacity: clickArea.containsMouse ? 0.8 : 0
+                radius: Appearance.rounding.normal
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 150 }
+                }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "edit"
+                    iconSize: 42
+                    opacity: clickArea.containsMouse ? 1 : 0
+                    Behavior on opacity {
+                        NumberAnimation { duration: 150 }
+                    }
+                }
+            }
+        }
+    }
 }
