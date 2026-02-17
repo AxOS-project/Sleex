@@ -137,4 +137,9 @@ ContentPage {
             }
         }
     }
+
+    Item {
+        implicitHeight: 24
+    }
+
 }
