@@ -177,26 +177,6 @@ ShellRoot {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        // Error message wrapper
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: bottomBar.top
-            anchors.bottomMargin: 20
-            width: statusText.implicitWidth + 40
-            height: 40
-            radius: Appearance.rounding.full
-            color: Appearance.m3colors.m3errorContainer
-            visible: statusText.text !== "" && statusText.text !== "Authenticating..." && statusText.text !== "Launching..."
-
-            StyledText {
-                id: statusText
-                anchors.centerIn: parent
-                font.pixelSize: 13
-                color: Appearance.m3colors.m3onErrorContainer
-                wrapMode: Text.WordWrap
-            }
-        }
-
         Item {
             id: bottomBar
             anchors.left: parent.left
@@ -304,7 +284,6 @@ ShellRoot {
                         Layout.fillHeight: true
                         implicitWidth: height
                         buttonRadius: Appearance.rounding.full
-                        enabled: statusText.text === "" || statusText.text.includes("Failed")
 
                         MaterialSymbol {
                             text: "arrow_forward"
@@ -432,7 +411,6 @@ ShellRoot {
     function submitLogin() {
         if (usernameInput.text.length > 0 && passwordInput.text.length > 0) {
             loginButton.enabled = false
-            statusText.text = "Authenticating..."
             Greetd.createSession(usernameInput.text)
         }
     }
@@ -441,8 +419,6 @@ ShellRoot {
         target: Greetd
 
         function onAuthMessage(message, error, responseRequired, echoResponse) {
-            statusText.text = message
-
             if (responseRequired) {
                 passwordInput.forceActiveFocus()
                 if (passwordInput.text.length > 0) {
@@ -452,17 +428,13 @@ ShellRoot {
         }
 
         function onAuthFailure(message) {
-            statusText.text = "Failed: " + message
             passwordInput.text = ""
             loginButton.enabled = true
             root.wrongPassword = true
             shakeAnim.start()
-
         }
 
         function onReadyToLaunch() {
-            statusText.text = "Launching..."
-
             var command = ["bash"]
             if (root.selectedDE < root.detectedDECommands.length)
                 command = [root.detectedDECommands[root.selectedDE]]
@@ -472,7 +444,6 @@ ShellRoot {
         }
 
         function onError(error) {
-            statusText.text = "Error: " + error
             loginButton.enabled = true
         }
     }
