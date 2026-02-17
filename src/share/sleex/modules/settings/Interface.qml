@@ -108,12 +108,20 @@ ContentPage {
                     }
                 }
                 ConfigSwitch {
-                    text: 'Always show numbers'
+                    text: 'Use Material icons'
                     onClicked: checked = !checked;
-                    checked: Config.options.bar.workspaces.alwaysShowNumbers
+                    checked: Config.options.bar.workspaces.useMaterialIcons
                     onCheckedChanged: {
-                        Config.options.bar.workspaces.alwaysShowNumbers = checked;
+                        Config.options.bar.workspaces.useMaterialIcons = checked;
                     }
+                }
+            }
+            ConfigSwitch {
+                text: 'Always show numbers'
+                onClicked: checked = !checked;
+                checked: Config.options.bar.workspaces.alwaysShowNumbers
+                onCheckedChanged: {
+                    Config.options.bar.workspaces.alwaysShowNumbers = checked;
                 }
             }
             ConfigSpinBox {

@@ -121,7 +121,8 @@ Singleton {
                 property list<string> screenList: [] // List of names, like "eDP-1", find out with 'hyprctl monitors' command
                 property JsonObject workspaces: JsonObject {
                     property int shown: 10
-                    property bool showAppIcons: true
+                    property bool showAppIcons: false
+                    property bool useMaterialIcons: true
                     property bool alwaysShowNumbers: false
                     property int showNumberDelay: 300 // milliseconds
                 }
