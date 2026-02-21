@@ -16,7 +16,7 @@ Singleton {
         running: true
         command: [
             "bash", "-c",
-            "find " + root.wallpaperPath + " -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%P\\n'"
+            "find " + root.wallpaperPath + " -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' \\) -printf '%P\\n'"
         ]
         stdout: StdioCollector {
             onStreamFinished: {

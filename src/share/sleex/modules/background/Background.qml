@@ -54,14 +54,14 @@ Scope {
                     id: currentWallpaper
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-                    opacity: 1.0
+                    playing: true
                 }
 
                 AnimatedImage {
                     id: previousWallpaper
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-                    opacity: 0.0
+                    playing: true
                 }
 
                 states: [
@@ -115,6 +115,9 @@ Scope {
 
                             previousWallpaper.source = wallpaperContainer.currentPath
                             currentWallpaper.source = newPath
+                            
+                            currentWallpaper.playing = false 
+                            currentWallpaper.playing = true
 
                             currentWallpaper.opacity = 0
                             previousWallpaper.opacity = 1
@@ -122,6 +125,7 @@ Scope {
                             wallpaperContainer.state = "crossfading"
                         } else {
                             currentWallpaper.source = newPath
+                            currentWallpaper.playing = true
                             wallpaperContainer.state = "showingCurrent"
                         }
 
@@ -137,7 +141,6 @@ Scope {
                     wallpaperContainer.state = "showingCurrent"
                 }
             }
-
 
             Clock {
                 id: clock
