@@ -22,122 +22,87 @@ Scope {
             id: bgRoot
             required property var modelData
             property string wallpaperPath: Config.options.background.wallpaperPath
-
             property real clockX: Config.options.background.clockX !== 0 ? Config.options.background.clockX : modelData.width / 2
             property real clockY: Config.options.background.clockY !== 0 ? Config.options.background.clockY : modelData.height / 2
-            property var textHorizontalAlignment: clockX < screen.width / 3 ? Text.AlignLeft :
-                (clockX > screen.width * 2 / 3 ? Text.AlignRight : Text.AlignHCenter)
-
+            property var textHorizontalAlignment: clockX < screen.width / 3 ? Text.AlignLeft : (clockX > screen.width * 2 / 3 ? Text.AlignRight : Text.AlignHCenter)
             property color dominantColor: Appearance.colors.colPrimary
-            property bool dominantColorIsDark: dominantColor.hslLightness < 0.5
             property color colText: Config.options.background.clockMode == "light" ? Appearance.colors.colPrimary : ColorUtils.colorWithLightness(Appearance.colors.colPrimary, 0.12)
 
             screen: modelData
             WlrLayershell.layer: WlrLayer.Bottom
             WlrLayershell.namespace: "quickshell:background"
             exclusionMode: ExclusionMode.Ignore
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
+            anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
-            // Animated wallpaper container
             Item {
                 id: wallpaperContainer
                 anchors.fill: parent
+                clip: true
                 property string currentPath: ""
-
-                AnimatedImage {
-                    id: currentWallpaper
-                    anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    opacity: 1.0
-                }
+                
+                property string transitionType: Config.options.background.wallpaperTransition
 
                 AnimatedImage {
                     id: previousWallpaper
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-                    opacity: 0.0
+                    opacity: 1
+                    playing: true
                 }
 
-                states: [
-                    State {
-                        name: "showingCurrent"
-                        // Don't mind the qml warnings, this is safe because currentWallpaper 
-                        // and previousWallpaper are static ids, not evaluated bindings.
-                        PropertyChanges { target: currentWallpaper; opacity: 1.0 }
-                        PropertyChanges { target: previousWallpaper; opacity: 0.0 }
-                    },
-                    State {
-                        name: "showingPrevious"
-                        PropertyChanges { target: currentWallpaper; opacity: 0.0 }
-                        PropertyChanges { target: previousWallpaper; opacity: 1.0 }
-                    },
-                    State {
-                        name: "crossfading"
-                        // no forced change here
-                    }
-                ]
+                AnimatedImage {
+                    id: currentWallpaper
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    opacity: 1
+                    playing: true
+                }
 
-                transitions: [
-                    Transition {
-                        from: "*" 
-                        to: "crossfading"
-                        ParallelAnimation {
-                            id: crossfadeAnim
-                            NumberAnimation { target: currentWallpaper; property: "opacity"; from: 0; to: 1; duration: 500; easing.type: Easing.InOutQuad }
-                            NumberAnimation { target: previousWallpaper; property: "opacity"; from: 1; to: 0; duration: 500; easing.type: Easing.InOutQuad }
+                states: State {
+                    name: "animating"
+                    PropertyChanges { target: currentWallpaper; opacity: 1.0; scale: 1.0 }
+                    PropertyChanges { target: previousWallpaper; opacity: 0.0 }
+                }
 
-                            onStopped: {
-                                currentWallpaper.opacity = 1.0
-                                previousWallpaper.opacity = 0.0
-                                wallpaperContainer.state = "showingCurrent"
-                            }
+                transitions: Transition {
+                    to: "animating"
+                    ParallelAnimation {
+                        NumberAnimation { target: currentWallpaper; property: "opacity"; from: 0; to: 1; duration: Config.options.background.transitionDuration }
+                        NumberAnimation { target: previousWallpaper; property: "opacity"; from: 1; to: 0; duration: Config.options.background.transitionDuration }
+                        
+                        NumberAnimation { 
+                            target: currentWallpaper; property: "scale"
+                            from: wallpaperContainer.transitionType === "scale" ? 1.15 : 1.0
+                            to: 1.0; duration: Config.options.background.transitionDuration; easing.type: Easing.OutCubic 
                         }
                     }
-                ]
+                }
 
                 Connections {
                     target: bgRoot
                     function onWallpaperPathChanged() {
-                        var newPath = bgRoot.wallpaperPath
-
-                        if (wallpaperContainer.currentPath !== "" && wallpaperContainer.currentPath !== newPath) {
-                            // If a crossfade is already happening, throw it in a wall
-                            if (wallpaperContainer.state === "crossfading") {
-                                crossfadeAnim.stop()
-                                wallpaperContainer.state = "showingCurrent"
-                            }
-
-                            previousWallpaper.source = wallpaperContainer.currentPath
-                            currentWallpaper.source = newPath
-
-                            currentWallpaper.opacity = 0
-                            previousWallpaper.opacity = 1
-
-                            wallpaperContainer.state = "crossfading"
-                        } else {
-                            currentWallpaper.source = newPath
-                            wallpaperContainer.state = "showingCurrent"
-                        }
-
-                        wallpaperContainer.currentPath = newPath
+                        var path = bgRoot.wallpaperPath
+                        if (path === wallpaperContainer.currentPath) return
+                        
+                        previousWallpaper.source = wallpaperContainer.currentPath
+                        currentWallpaper.source = path
+                        
+                        currentWallpaper.playing = false
+                        currentWallpaper.playing = true
+                        
+                        wallpaperContainer.state = ""
+                        wallpaperContainer.state = "animating"
+                        wallpaperContainer.currentPath = path
                     }
                 }
 
                 Component.onCompleted: {
                     currentWallpaper.source = bgRoot.wallpaperPath
-                    currentPath = bgRoot.wallpaperPath
-                    currentWallpaper.opacity = 1
-                    previousWallpaper.opacity = 0
-                    wallpaperContainer.state = "showingCurrent"
+                    wallpaperContainer.currentPath = bgRoot.wallpaperPath
+                    wallpaperContainer.state = "animating"
                 }
             }
-
 
             Clock {
                 id: clock
@@ -150,23 +115,12 @@ Scope {
                 fixedClockPosition: root.fixedClockPosition
                 textColor: bgRoot.colText
                 textHorizontalAlignment: bgRoot.textHorizontalAlignment
-
-                onClockPositionChanged: function(newX, newY) {
-                    bgRoot.clockX = newX
-                    bgRoot.clockY = newY
-                }
-
-                onFixedPositionToggled: {
-                    Config.options.background.fixedClockPosition = !root.fixedClockPosition
-                }
+                onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
+                onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
             }
 
-            Watermark {
-                visibleWatermark: Config.options.background.showWatermark
-            }
-            Quote {
-                visibleQuote: Config.options.background.enableQuote
-            }
+            Watermark { visibleWatermark: Config.options.background.showWatermark }
+            Quote { visibleQuote: Config.options.background.enableQuote }
         }
     }
 }
