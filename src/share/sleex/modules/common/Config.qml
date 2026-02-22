@@ -148,6 +148,8 @@ Singleton {
                 property bool showWatermark: true // Whether to show the watermark
                 property string wallpaperPath: "/usr/share/backgrounds/sleex/SleexOne.png"
                 property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
+                property string wallpaperTransition: "fade"
+                property real transitionDuration: 0.5
                 property string clockFontFamily: "Rubik"
                 property real clockSizeMultiplier: 1
                 property bool enableQuote: true
