@@ -9,11 +9,19 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
-import qs.modules.common.functions
 
 ContentPage {
     baseWidth: lightDarkButtonGroup.implicitWidth
     forceWidth: true
+
+    readonly property var paletteKeys: ["auto", "scheme-content", "scheme-expressive", "scheme-fidelity", "scheme-fruit-salad", "scheme-monochrome", "scheme-neutral", "scheme-rainbow", "scheme-tonal-spot"]
+    readonly property var transitionKeys: ["fade", "scale", "wipe"]
+    readonly property var wipeOrientationKeys: ["wipe_left", "wipe", "wipe_up", "wipe_down"]
+
+    readonly property bool isWipeSelected: {
+        const t = Config.options.background.wallpaperTransition
+        return t === "wipe" || t === "wipe_left" || t === "wipe_down" || t === "wipe_up"
+    }
 
     ContentSection {
         title: "Colors"
@@ -32,55 +40,23 @@ ContentPage {
 
         StyledComboBox {
             id: paletteComboBox
-            model: [
-                "Auto",
-                "Content",
-                "Expressive",
-                "Fidelity",
-                "Fruit Salad",
-                "Monochrome",
-                "Neutral",
-                "Rainbow",
-                "Tonal Spot"
-            ]
-            currentIndex: model.indexOf(
-                (() => {
-                    switch (Config.options.appearance.palette.type) {
-                        case "auto": return "Auto";
-                        case "scheme-content": return "Content";
-                        case "scheme-expressive": return "Expressive";
-                        case "scheme-fidelity": return "Fidelity";
-                        case "scheme-fruit-salad": return "Fruit Salad";
-                        case "scheme-monochrome": return "Monochrome";
-                        case "scheme-neutral": return "Neutral";
-                        case "scheme-rainbow": return "Rainbow";
-                        case "scheme-tonal-spot": return "Tonal Spot";
-                        default: return "Auto";
-                    }
-                })()
-            )
-            onCurrentIndexChanged: {
-                const valueMap = {
-                    "Auto": "auto",
-                    "Content": "scheme-content",
-                    "Expressive": "scheme-expressive",
-                    "Fidelity": "scheme-fidelity",
-                    "Fruit Salad": "scheme-fruit-salad",
-                    "Monochrome": "scheme-monochrome",
-                    "Neutral": "scheme-neutral",
-                    "Rainbow": "scheme-rainbow",
-                    "Tonal Spot": "scheme-tonal-spot"
-                }
-                const selectedValue = valueMap[model[currentIndex]]
+            model: ["Auto", "Content", "Expressive", "Fidelity", "Fruit Salad", "Monochrome", "Neutral", "Rainbow", "Tonal Spot"]
+            currentIndex: Math.max(0, paletteKeys.indexOf(Config.options.appearance.palette.type))
+
+            onActivated: (index) => {
+                const selectedValue = paletteKeys[index]
                 if (Config.options.appearance.palette.type !== selectedValue) {
                     Config.options.appearance.palette.type = selectedValue
-                    if (!Config.options.appearance.palette.useStaticColors) Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--type", `${selectedValue}`])
-                    else Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`])
+                    if (!Config.options.appearance.palette.useStaticColors) {
+                        Quickshell.execDetached(["sh", Directories.wallpaperSwitchScriptPath, "--noswitch", "--type", selectedValue])
+                    } else {
+                        Quickshell.execDetached(["sh", Directories.wallpaperSwitchScriptPath, "--noswitch", "--color", Config.options.appearance.palette.accentColorHex])
+                    }
                 }
             }
         }
 
-        ConfigSwitch {
+       ConfigSwitch {
             id: staticColorsSwitch
             text: "Static colors"
             onClicked: checked = !checked;
@@ -125,14 +101,80 @@ ContentPage {
     ContentSection {
         title: "Wallpaper"
 
+        StyledText {
+            text: "Transition Style"
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledComboBox {
+            id: transitionComboBox
+            model: ["Fade", "Scale", "Wipe"]
+            currentIndex: {
+                const t = Config.options.background.wallpaperTransition
+                if (t === "wipe" || t === "wipe_left" || t === "wipe_down" || t === "wipe_up") return 2
+                return Math.max(0, transitionKeys.indexOf(t))
+            }
+
+            onActivated: (index) => {
+                let selectedValue
+                if (index === 2) {
+                    const current = Config.options.background.wallpaperTransition
+                    selectedValue = wipeOrientationKeys.includes(current) ? current : "wipe"
+                } else {
+                    selectedValue = transitionKeys[index]
+                }
+                if (Config.options.background.wallpaperTransition !== selectedValue) {
+                    Config.options.background.wallpaperTransition = selectedValue
+                }
+            }
+        }
+
+        StyledText {
+            text: "Wipe Direction"
+            color: Appearance.colors.colSubtext
+            visible: isWipeSelected
+        }
+
+        StyledComboBox {
+            id: wipeOrientationComboBox
+            visible: isWipeSelected
+            model: ["Left", "Right", "Up", "Down"]
+            currentIndex: Math.max(0, wipeOrientationKeys.indexOf(Config.options.background.wallpaperTransition))
+
+            onActivated: (index) => {
+                const selectedValue = wipeOrientationKeys[index]
+                if (Config.options.background.wallpaperTransition !== selectedValue) {
+                    Config.options.background.wallpaperTransition = selectedValue
+                }
+            }
+        }
+
+        StyledText {
+            text: "Animation Intensity"
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledSlider {
+            id: animationSlider
+            from: 0
+            to: 1.0
+            value: Config.options.background.transitionDuration / 1000
+
+            onMoved: {
+                if (Config.loaded) {
+                    Config.options.background.transitionDuration = value * 1000
+                }
+            }
+        }
+
         MaterialTextField {
-            id: ghUsername
+            id: wallpaperPathField
             Layout.fillWidth: true
             placeholderText: "Wallpaper selector directory path"
             text: Config.options.background.wallpaperSelectorPath
             wrapMode: TextEdit.Wrap
             onTextChanged: {
-                Config.options.background.wallpaperSelectorPath = text;
+                Config.options.background.wallpaperSelectorPath = text
             }
         }
 
@@ -164,7 +206,7 @@ ContentPage {
                 anchors.centerIn: parent
                 text: "No wallpaper set"
                 color: Appearance.colors.colSubtext
-                visible: imageContainer.children.filter(child => child.visible).length === 0
+                visible: !Config.options.background.wallpaperPath
             }
 
             MouseArea {
