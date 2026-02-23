@@ -167,37 +167,6 @@ ContentPage {
             }
         }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-
-            RippleButtonWithIcon {
-                materialIcon: "wallpaper"
-                StyledToolTip { text: "Pick wallpaper image on your system" }
-
-                onClicked: {
-                    Quickshell.execDetached(["sh", Directories.wallpaperSwitchScriptPath])
-                }
-
-                mainContentComponent: Component {
-                    RowLayout {
-                        spacing: 10
-                        StyledText {
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            text: "Choose file"
-                            color: Appearance.colors.colOnSecondaryContainer
-                        }
-                        RowLayout {
-                            spacing: 3
-                            KeyboardKey { key: "Ctrl" }
-                            KeyboardKey { key: "󰖳" }
-                            StyledText { Layout.alignment: Qt.AlignVCenter; text: "+" }
-                            KeyboardKey { key: "T" }
-                        }
-                    }
-                }
-            }
-        }
-
         MaterialTextField {
             id: wallpaperPathField
             Layout.fillWidth: true
