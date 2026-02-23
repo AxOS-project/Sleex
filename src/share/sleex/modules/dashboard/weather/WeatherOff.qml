@@ -34,7 +34,7 @@ Rectangle {
                 Layout.bottomMargin: 2
             }
             Text {
-                text: "The weather service is disabled.\nEnable it in the policy page of the Sleex settings."
+                text: "The weather service is disabled.\nEnable it within the privacy page of Sleex settings."
                 color: Appearance.colors.colOnLayer1
                 font.pixelSize: Appearance.font.pixelSize.normal
                 horizontalAlignment: Text.AlignHCenter
