@@ -16,7 +16,7 @@ Singleton {
     property string raw
     property string weatherCode
     property bool useCustomLocation: false
-
+    
     Timer {
         id: weatherTimer
         interval: 3600000 // 1 hour
@@ -24,10 +24,10 @@ Singleton {
         repeat: true
         onTriggered: updateWeather()
     }
-
+    
     // Check if custom location is set in config
     function checkCustomLocation() {
-        if (Config.options.dashboard.weatherLocation && Config.options.dashboard.weatherLocation.trim() !== "") {
+        if (!Config.options.dashboard.autoWeatherLocation && Config.options.dashboard.weatherLocation && Config.options.dashboard.weatherLocation.trim() !== "") {
             // Use the custom location from config
             root.loc = Config.options.dashboard.weatherLocation.trim();
             root.useCustomLocation = true;
@@ -37,20 +37,20 @@ Singleton {
             getIp.running = true;
         }
     }
-
+    
     Process {
         id: getIp
-        command: ["curl", "ipinfo.io"]
+        command: ["curl", "https://ipwho.is"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
                     const data = JSON.parse(text);
-                    root.loc = data.loc;
+                    // ipwho.is uses 'latitude' and 'longitude' instead of 'loc'
+                    root.loc = `${data.latitude},${data.longitude}`;
                     root.useCustomLocation = false;
                     getWeather.running = true;
                 } catch (e) {
                     console.error("Error parsing IP data:", e);
-                    // Fallback to a default location if IP lookup fails
                     root.loc = "London";
                     root.useCustomLocation = false;
                     getWeather.running = true;
@@ -58,7 +58,7 @@ Singleton {
             }
         }
     }
-
+    
     Process {
         id: getWeather
         command: ["curl", `https://wttr.in/${root.loc}?format=j1`]
@@ -81,11 +81,11 @@ Singleton {
             }
         }
     }
-
+    
     function updateWeather() {
         checkCustomLocation();
     }
-
+    
     Component.onCompleted: {
         // Initial weather update
         updateWeather();
