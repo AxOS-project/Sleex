@@ -214,7 +214,7 @@ ContentPage {
                 hoverEnabled: true
                 anchors.fill: parent
                 onClicked: {
-                    Quickshell.execDetached(["sh", Directories.wallpaperSwitchScriptPath])
+                    Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`])
                 }
             }
 
