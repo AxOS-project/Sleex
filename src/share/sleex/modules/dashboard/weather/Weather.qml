@@ -61,9 +61,24 @@ Rectangle {
                         }
                     }
                 }
-                // Spacer to push content to the right
+
+                // Spacer to push button to the right
                 Item {
                     Layout.fillWidth: true
+                }
+
+                // Refresh button
+                MaterialSymbol {
+                    text: "restart_alt"
+                    iconSize: 22
+                    color: Appearance.colors.colPrimary
+                    Layout.alignment: Qt.AlignVCenter
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Weather.updateWeather()
+                    }
                 }
             }
 
@@ -92,7 +107,6 @@ Rectangle {
                         property var dayData: weatherData && weatherData.weather && weatherData.weather[index] ? weatherData.weather[index] : null
                         
                         StyledText {
-                            // Day of the week (e.g., Mon)
                             text: dayData ? Qt.formatDateTime(new Date(dayData.date), "ddd") : Qt.formatDateTime(new Date(Date.now() + index * 24 * 60 * 60 * 1000), "ddd")
                             font.pixelSize: 15
                             color: Appearance.colors.colOnLayer0
@@ -100,7 +114,6 @@ Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                         }
                         MaterialSymbol {
-                            // Material Symbol icon - use the day's weather code
                             text: dayData && dayData.hourly && dayData.hourly.length > 0 ? 
                                   materialSymbolForCode(dayData.hourly[Math.floor(dayData.hourly.length/2)].weatherCode) : 
                                   "cloud"
@@ -110,7 +123,6 @@ Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                         }
                         StyledText {
-                            // High/low temp
                             text: dayData ? `${dayData.mintempC}°C / ${dayData.maxtempC}°C` : "--"
                             font.pixelSize: 12
                             color: Appearance.colors.colOnLayer0
@@ -131,60 +143,60 @@ Rectangle {
             case 113: return "sunny";
             case 116: return "partly_cloudy_day";
             
-            case 119: // Cloudy
-            case 122: // Overcast
+            case 119:
+            case 122:
                 return "cloud";
             
-            case 143: // Mist
-            case 248: // Fog
-            case 260: // Freezing fog
+            case 143:
+            case 248:
+            case 260:
                 return "foggy";
             
-            case 176: // Patchy rain nearby
-            case 263: // Patchy light drizzle
-            case 266: // Light drizzle
-            case 293: // Patchy light rain
-            case 296: // Light rain
-            case 299: // Moderate rain at times
-            case 302: // Moderate rain
-            case 305: // Heavy rain at times
-            case 308: // Heavy rain
-            case 353: // Light rain shower
-            case 356: // Moderate or heavy rain shower
-            case 359: // Torrential rain shower
+            case 176:
+            case 263:
+            case 266:
+            case 293:
+            case 296:
+            case 299:
+            case 302:
+            case 305:
+            case 308:
+            case 353:
+            case 356:
+            case 359:
                 return "rainy";
             
-            case 179: // Patchy snow nearby
-            case 182: // Patchy sleet nearby
-            case 185: // Patchy freezing drizzle nearby
-            case 227: // Blowing snow
-            case 230: // Blizzard
-            case 281: // Freezing drizzle
-            case 284: // Heavy freezing drizzle
-            case 311: // Light freezing rain
-            case 314: // Moderate or Heavy freezing rain
-            case 317: // Light sleet
-            case 320: // Moderate or heavy sleet
-            case 323: // Patchy light snow
-            case 326: // Light snow
-            case 329: // Patchy moderate snow
-            case 332: // Moderate snow
-            case 335: // Patchy heavy snow
-            case 338: // Heavy snow
-            case 350: // Ice pellets
-            case 362: // Light sleet showers
-            case 365: // Moderate or heavy sleet showers
-            case 368: // Light snow showers
-            case 371: // Moderate or heavy snow showers
-            case 374: // Light showers of ice pellets
-            case 377: // Moderate or heavy showers of ice pellets
+            case 179:
+            case 182:
+            case 185:
+            case 227:
+            case 230:
+            case 281:
+            case 284:
+            case 311:
+            case 314:
+            case 317:
+            case 320:
+            case 323:
+            case 326:
+            case 329:
+            case 332:
+            case 335:
+            case 338:
+            case 350:
+            case 362:
+            case 365:
+            case 368:
+            case 371:
+            case 374:
+            case 377:
                 return "weather_snowy";
             
-            case 200: // Thundery outbreaks nearby
-            case 386: // Patchy light rain with thunder
-            case 389: // Moderate or heavy rain with thunder
-            case 392: // Patchy light snow with thunder
-            case 395: // Moderate or heavy snow with thunder
+            case 200:
+            case 386:
+            case 389:
+            case 392:
+            case 395:
                 return "thunderstorm";
             
             default:
