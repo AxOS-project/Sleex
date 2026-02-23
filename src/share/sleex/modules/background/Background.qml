@@ -40,8 +40,11 @@ Scope {
                 anchors.fill: parent
                 clip: true
                 property string currentPath: ""
-                
                 property string transitionType: Config.options.background.wallpaperTransition
+
+                readonly property bool isHorizontalWipe: transitionType === "wipe" || transitionType === "wipe_left"
+                readonly property bool isVerticalWipe:   transitionType === "wipe_down" || transitionType === "wipe_up"
+                readonly property bool isAnyWipe:        isHorizontalWipe || isVerticalWipe
 
                 AnimatedImage {
                     id: previousWallpaper
@@ -51,30 +54,72 @@ Scope {
                     playing: true
                 }
 
-                AnimatedImage {
-                    id: currentWallpaper
-                    anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    opacity: 1
-                    playing: true
+                Rectangle {
+                    id: wipeClip
+                    x: wallpaperContainer.transitionType === "wipe_left"
+                        ? wallpaperContainer.width - width : 0
+                    y: wallpaperContainer.transitionType === "wipe_up"
+                        ? wallpaperContainer.height - height : 0
+
+                    width:  wallpaperContainer.width
+                    height: wallpaperContainer.height
+                    color: "transparent"
+                    clip: true
+
+                    AnimatedImage {
+                        id: currentWallpaper
+                        x: wallpaperContainer.transitionType === "wipe_left" ? -wipeClip.x : 0
+                        y: wallpaperContainer.transitionType === "wipe_up"   ? -wipeClip.y : 0
+
+                        width:  wallpaperContainer.width
+                        height: wallpaperContainer.height
+                        fillMode: Image.PreserveAspectCrop
+                        opacity: 1
+                        playing: true
+                    }
                 }
 
                 states: State {
                     name: "animating"
                     PropertyChanges { target: currentWallpaper; opacity: 1.0; scale: 1.0 }
                     PropertyChanges { target: previousWallpaper; opacity: 0.0 }
+                    PropertyChanges { target: wipeClip; width: wallpaperContainer.width; height: wallpaperContainer.height }
                 }
 
                 transitions: Transition {
                     to: "animating"
                     ParallelAnimation {
-                        NumberAnimation { target: currentWallpaper; property: "opacity"; from: 0; to: 1; duration: Config.options.background.transitionDuration }
-                        NumberAnimation { target: previousWallpaper; property: "opacity"; from: 1; to: 0; duration: Config.options.background.transitionDuration }
-                        
-                        NumberAnimation { 
+                        NumberAnimation {
+                            target: currentWallpaper; property: "opacity"
+                            from: wallpaperContainer.isAnyWipe ? 1 : 0
+                            to: 1; duration: Config.options.background.transitionDuration
+                        }
+                        NumberAnimation {
+                            target: previousWallpaper; property: "opacity"
+                            from: 1; to: 0; duration: Config.options.background.transitionDuration
+                        }
+                        NumberAnimation {
                             target: currentWallpaper; property: "scale"
                             from: wallpaperContainer.transitionType === "scale" ? 1.15 : 1.0
-                            to: 1.0; duration: Config.options.background.transitionDuration; easing.type: Easing.OutCubic 
+                            to: 1.0; duration: Config.options.background.transitionDuration; easing.type: Easing.OutCubic
+                        }
+
+                        NumberAnimation {
+                            target: wipeClip; property: "width"
+                            from: wallpaperContainer.isHorizontalWipe ? 0 : wallpaperContainer.width
+                            to: wallpaperContainer.width
+                            duration: wallpaperContainer.isHorizontalWipe
+                                        ? Config.options.background.transitionDuration : 0
+                            easing.type: Easing.InOutCubic
+                        }
+
+                        NumberAnimation {
+                            target: wipeClip; property: "height"
+                            from: wallpaperContainer.isVerticalWipe ? 0 : wallpaperContainer.height
+                            to: wallpaperContainer.height
+                            duration: wallpaperContainer.isVerticalWipe
+                                        ? Config.options.background.transitionDuration : 0
+                            easing.type: Easing.InOutCubic
                         }
                     }
                 }
@@ -84,13 +129,16 @@ Scope {
                     function onWallpaperPathChanged() {
                         var path = bgRoot.wallpaperPath
                         if (path === wallpaperContainer.currentPath) return
-                        
+
                         previousWallpaper.source = wallpaperContainer.currentPath
                         currentWallpaper.source = path
-                        
+
                         currentWallpaper.playing = false
                         currentWallpaper.playing = true
-                        
+
+                        if (wallpaperContainer.isHorizontalWipe) wipeClip.width  = 0
+                        if (wallpaperContainer.isVerticalWipe)   wipeClip.height = 0
+
                         wallpaperContainer.state = ""
                         wallpaperContainer.state = "animating"
                         wallpaperContainer.currentPath = path
