@@ -472,7 +472,7 @@ ContentPage {
             text: "Sync interval (minutes)"
             value: Config.options.dashboard.calendar.syncInterval
             from: 1
-            to: 1440
+            to: 1440 // 24 hours
             stepSize: 1
             onValueChanged: {
                 Config.options.dashboard.calendar.syncInterval = value;
