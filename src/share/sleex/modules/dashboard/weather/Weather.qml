@@ -12,6 +12,12 @@ Rectangle {
 
     property var weatherData: Weather.raw ? JSON.parse(Weather.raw) : null
     property string city: Weather.raw ? weatherData.nearest_area[0].areaName[0].value : "Loading..."
+    property bool isLoading: false
+
+    // Reset loading state whenever weather data updates
+    onWeatherDataChanged: {
+        isLoading = false
+    }
 
     Rectangle {
         id: card
@@ -66,17 +72,50 @@ Rectangle {
                     Layout.fillWidth: true
                 }
                 
-                // Refresh button
-                MaterialSymbol {
-                    text: "restart_alt"
-                    iconSize: 22
-                    color: Appearance.colors.colPrimary
+                // Refresh button — hidden while loading, spinner shown instead
+                Item {
+                    width: 22
+                    height: 22
                     Layout.alignment: Qt.AlignVCenter
 
-                    MouseArea {
+                    // Refresh icon (visible when idle)
+                    MaterialSymbol {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Weather.updateWeather()
+                        text: "restart_alt"
+                        iconSize: 22
+                        color: Appearance.colors.colPrimary
+                        visible: !isLoading
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                isLoading = true
+                                Weather.updateWeather()
+                            }
+                        }
+                    }
+
+                    // Spinner (visible while loading)
+                    Item {
+                        anchors.fill: parent
+                        visible: isLoading
+
+                        MaterialSymbol {
+                            id: spinnerIcon
+                            anchors.centerIn: parent
+                            text: "progress_activity"
+                            iconSize: 22
+                            color: Appearance.colors.colPrimary
+
+                            RotationAnimator on rotation {
+                                running: isLoading
+                                from: 0
+                                to: 360
+                                duration: 900
+                                loops: Animation.Infinite
+                            }
+                        }
                     }
                 }
             }
