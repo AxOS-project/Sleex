@@ -42,7 +42,7 @@ ContentPage {
             checked: Config.options.dashboard.enableWeather
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.enableWeather = checked
-            StyledToolTip { text: "View weather forecasts directly in your dashboard." }
+            StyledToolTip { text: "View weather forecasts directly in your dashboard via wttr.in" }
         }
         
         ConfigSwitch {
