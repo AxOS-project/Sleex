@@ -18,6 +18,7 @@ ContentPage {
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
             _selectedFaceImage = file.toString().replace("file://", "")
+            faceImageField.text = _selectedFaceImage
             usernameProcess.running = true
         }
     }
@@ -49,6 +50,7 @@ ContentPage {
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
             Config.options.dashboard.avatarPath = file.toString().replace("file://", "")
+            avatarPathField.text = Config.options.dashboard.avatarPath
         }
     }
 
@@ -227,12 +229,25 @@ ContentPage {
             }
         }
 
-        RippleButtonWithIcon {
-            materialIcon: "image"
-            materialIconFill: false
-            mainText: "Avatar image"
-            onClicked: {
-                avatarPickerDialog.open()
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            MaterialTextField {
+                id: avatarPathField
+                Layout.fillWidth: true
+                placeholderText: "Avatar image path"
+                text: Config.options.dashboard.avatarPath
+                onEditingFinished: {
+                    Config.options.dashboard.avatarPath = text;
+                }
+            }
+
+            RippleButtonWithIcon {
+                materialIcon: "image"
+                materialIconFill: false
+                mainText: "Browse"
+                onClicked: avatarPickerDialog.open()
             }
         }
 
@@ -444,12 +459,22 @@ ContentPage {
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
         }
 
-        RippleButtonWithIcon {
-            materialIcon: "account_circle"
-            materialIconFill: false
-            mainText: "Profile picture"
-            onClicked: {
-                sddmFaceDialog.open()
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            MaterialTextField {
+                id: faceImageField
+                Layout.fillWidth: true
+                placeholderText: "Lockscreen profile picture"
+                readOnly: true
+            }
+
+            RippleButtonWithIcon {
+                materialIcon: "account_circle"
+                materialIconFill: false
+                mainText: "Browse"
+                onClicked: sddmFaceDialog.open()
             }
         }
     }
