@@ -1,12 +1,56 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform as Platform
+import Quickshell.Io
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
+
+    property string _selectedFaceImage: ""
+
+    Platform.FileDialog {
+        id: sddmFaceDialog
+        title: "Select profile picture"
+        nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
+        onAccepted: {
+            _selectedFaceImage = file.toString().replace("file://", "")
+            usernameProcess.running = true
+        }
+    }
+
+    Process {
+        id: usernameProcess
+        command: ["id", "-un"]
+        running: false
+        stdout: SplitParser {
+            onRead: (line) => {
+                copyProcess.command = [
+                    "pkexec", "cp",
+                    _selectedFaceImage,
+                    "/usr/share/sddm/faces/" + line.trim() + ".face.icon"
+                ]
+                copyProcess.running = true
+            }
+        }
+    }
+
+    Process {
+        id: copyProcess
+        running: false
+    }
+
+    Platform.FileDialog {
+        id: avatarPickerDialog
+        title: "Select avatar image"
+        nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
+        onAccepted: {
+            Config.options.dashboard.avatarPath = file.toString().replace("file://", "")
+        }
+    }
 
     ContentSection {
         title: "Shell style"
@@ -174,22 +218,21 @@ ContentPage {
         }
 
         MaterialTextField {
-            id: avatarPath
-            Layout.fillWidth: true
-            placeholderText: "Avatar path"
-            text: Config.options.dashboard.avatarPath
-            onTextChanged: {
-                Config.options.dashboard.avatarPath = text;
-            }
-        }
-
-        MaterialTextField {
             id: userDesc
             Layout.fillWidth: true
             placeholderText: "User description"
             text: Config.options.dashboard.userDesc
             onTextChanged: {
                 Config.options.dashboard.userDesc = text;
+            }
+        }
+
+        RippleButtonWithIcon {
+            materialIcon: "image"
+            materialIconFill: false
+            mainText: "Avatar image"
+            onClicked: {
+                avatarPickerDialog.open()
             }
         }
 
@@ -400,6 +443,15 @@ ContentPage {
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
         }
+
+        RippleButtonWithIcon {
+            materialIcon: "account_circle"
+            materialIconFill: false
+            mainText: "Profile picture"
+            onClicked: {
+                sddmFaceDialog.open()
+            }
+        }
     }
 
     ContentSection {
@@ -420,7 +472,7 @@ ContentPage {
             text: "Sync interval (minutes)"
             value: Config.options.dashboard.calendar.syncInterval
             from: 1
-            to: 1440 // 24 hours
+            to: 1440
             stepSize: 1
             onValueChanged: {
                 Config.options.dashboard.calendar.syncInterval = value;
