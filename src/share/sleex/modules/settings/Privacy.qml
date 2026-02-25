@@ -7,7 +7,6 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
     ContentSection {
         title: "Policies"
         ContentSubsectionLabel {
@@ -33,33 +32,45 @@ ContentPage {
                 }
             ]
         }
-
-        ContentSubsectionLabel {
-            text: "Weather"
-        }
+    }
+    
+    ContentSection {
+        title: "Weather"
         ConfigSwitch {
             id: weatherSwitch
             text: "Enabled"
             checked: Config.options.dashboard.enableWeather
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.enableWeather = checked
-            StyledToolTip { text: "The weather module uses your approximate location based on your local IP. It uses the https://wttr.in provider." }
+            StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider." }
         }
-
+        
+        ConfigSwitch {
+            id: autoLocationSwitch
+            visible: weatherSwitch.checked
+            text: "Automatic Location"
+            checked: Config.options.dashboard.autoWeatherLocation ?? true
+            onClicked: checked = !checked;
+            onCheckedChanged: {
+                Config.options.dashboard.autoWeatherLocation = checked;
+                Weather.updateWeather();
+            }
+            StyledToolTip { text: "IP-based approximate location." }
+        }
+        
         MaterialTextField {
             id: weatherLocation
+            visible: weatherSwitch.checked && !autoLocationSwitch.checked
             Layout.fillWidth: true
             placeholderText: "Weather Location"
             text: Config.options.dashboard.weatherLocation
             wrapMode: TextEdit.Wrap
-
             onEditingFinished: {
-                // Only replace spaces with dashes when the user is done typing
-                Config.options.dashboard.weatherLocation = text.replace(/ /g, "-");
+                Config.options.dashboard.weatherLocation = text;
             }
         }
     }
-
+    
     Item {
         implicitHeight: 24
     }

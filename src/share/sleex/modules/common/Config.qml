@@ -163,6 +163,7 @@ Singleton {
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
                 property string weatherLocation: ""
+                property bool autoWeatherLocation: true
                 property string mediaPlayer: ""
                 property JsonObject calendar: JsonObject {
                     property bool useVdirsyncer: false
