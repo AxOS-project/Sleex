@@ -42,7 +42,7 @@ ContentPage {
             checked: Config.options.dashboard.enableWeather
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.enableWeather = checked
-            StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://wttr.in provider." }
+            StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider." }
         }
         
         ConfigSwitch {
@@ -66,8 +66,7 @@ ContentPage {
             text: Config.options.dashboard.weatherLocation
             wrapMode: TextEdit.Wrap
             onEditingFinished: {
-                // Only replace spaces with dashes when the user is done typing
-                Config.options.dashboard.weatherLocation = text.replace(/ /g, "-");
+                Config.options.dashboard.weatherLocation = text;
             }
         }
     }
