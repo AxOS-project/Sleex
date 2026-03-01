@@ -65,11 +65,11 @@ Singleton {
     Process {
         id: getQuote
         running: false
-        command: ["curl", "https://quotes-api-self.vercel.app/quote"]
+        command: ["curl", "http://api.quotable.io/random"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const json = JSON.parse(text)
-                root.quote = json.quote
+                root.quote = json.content
                 root.author = json.author
             }
         }

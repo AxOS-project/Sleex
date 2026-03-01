@@ -121,7 +121,8 @@ Singleton {
                 property list<string> screenList: [] // List of names, like "eDP-1", find out with 'hyprctl monitors' command
                 property JsonObject workspaces: JsonObject {
                     property int shown: 10
-                    property bool showAppIcons: true
+                    property bool showAppIcons: false
+                    property bool useMaterialIcons: true
                     property bool alwaysShowNumbers: false
                     property int showNumberDelay: 300 // milliseconds
                 }
@@ -147,6 +148,8 @@ Singleton {
                 property bool showWatermark: true // Whether to show the watermark
                 property string wallpaperPath: "/usr/share/backgrounds/sleex/SleexOne.png"
                 property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
+                property string wallpaperTransition: "fade"
+                property real transitionDuration: 0.5
                 property string clockFontFamily: "Rubik"
                 property real clockSizeMultiplier: 1
                 property bool enableQuote: true
@@ -160,6 +163,7 @@ Singleton {
                 property string userDesc: "Today is a good day to have a good day!"
                 property bool enableWeather: false
                 property string weatherLocation: ""
+                property bool autoWeatherLocation: true
                 property string mediaPlayer: ""
                 property JsonObject calendar: JsonObject {
                     property bool useVdirsyncer: false

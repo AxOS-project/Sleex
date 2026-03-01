@@ -54,7 +54,7 @@ ShellRoot {
         FirstRunExperience.load()
         Cliphist.refresh()
         Idle.init();
-        nightLight.load()
+        NightLight.load()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }

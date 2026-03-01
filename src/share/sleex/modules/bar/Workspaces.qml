@@ -14,6 +14,7 @@ import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
 
 Item {
+    id: root
     required property var bar
     property bool borderless: Config.options.bar.borderless
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
@@ -29,6 +30,8 @@ Item {
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
     property int workspaceIndexInGroup: (monitor.activeWorkspace?.id - 1) % Config.options.bar.workspaces.shown
+
+    property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
     
     // Function to update workspaceOccupied
@@ -191,6 +194,31 @@ Item {
                         }
                         property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
 
+                        property string materialIconName: {
+                            if (!biggestWindow) return ""
+
+                            const winClass = biggestWindow.class.toLowerCase()
+                            const map = {
+                                "language":    ["firefox", "chromium", "google-chrome", "brave", "edge", "vivaldi", "qutebrowser", "librewolf", "zen-browser"],
+                                "terminal":    ["foot", "kitty", "alacritty", "wezterm", "gnome-terminal", "konsole", "xfce4-terminal", "xterm"],
+                                "code":        ["code", "visual-studio-code", "sublime-text", "jetbrains-idea", "pycharm", "webstorm", "goland", "clion", "rider"],
+                                "chat_bubble": ["discord", "vesktop", "slack", "mattermost", "element", "riot-desktop", "gajim"],
+                                "music_note":  ["spotify", "spotifyd", "clementine", "audacious", "rhythmbox", "deadbeef", "tidal-hifi"],
+                                "email":       ["thunderbird", "evolution", "geary", "mailspring", "mailbird"],
+                                "book_4":      ["obsidian", "notion", "evernote", "joplin", "simplenote", "zotero"],
+                                "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm"],
+                                "video_library": ["vlc", "mpv", "smplayer", "kodi", "plex", "plexamp"],
+                                "edit_document": ["libreoffice", "onlyoffice", "wps-office", "calligra", "evince", "okular", "org.kde.kwrite", "gedit", "mousepad"],
+                                "gamepad":      ["steam", "lutris", "heroic", "itch", "playnite", "gamelauncher"],
+                                "image":        ["gimp", "krita", "darktable", "digikam", "shotwell", "eog", "org.gnome.loupe", "gwenview", "nomacs"],
+                                "settings":     ["gnome-control-center", "systemsettings", "lxqt-config", "mate-control-center", "xfce4-settings-manager", "org.quickshell"],
+                            }
+
+                            const icon = Object.keys(map).find(key => map[key].includes(winClass))
+                            
+                            return icon || "circle"
+                        }
+
                         StyledText { // Workspace number text
                             opacity: GlobalStates.workspaceShowNumbers
                                 || ((Config.options?.bar.workspaces.alwaysShowNumbers && (!Config.options?.bar.workspaces.showAppIcons || !workspaceButtonBackground.biggestWindow || GlobalStates.workspaceShowNumbers))
@@ -249,6 +277,8 @@ Item {
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
                                 anchors.rightMargin: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
+                                
+                                visible: !root.useMaterialIcons
 
                                 source: workspaceButtonBackground.mainAppIconSource
                                 implicitSize: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? workspaceIconSize : workspaceIconSizeShrinked
@@ -266,6 +296,33 @@ Item {
                                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
                                 }
 
+                            }
+
+                            MaterialSymbol {
+                                visible: root.useMaterialIcons
+                                text: workspaceButtonBackground.materialIconName
+                                iconSize: (!GlobalStates.workspaceShowNumbers) ? workspaceIconSize : workspaceIconSizeShrinked
+                                anchors.bottom: parent.bottom
+                                anchors.right: parent.right
+                                anchors.bottomMargin: (!GlobalStates.workspaceShowNumbers) ? 
+                                    (workspaceButtonWidth - workspaceIconSize) / 2 - 2 : workspaceIconMarginShrinked
+                                anchors.rightMargin: (!GlobalStates.workspaceShowNumbers) ? 
+                                    (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
+                                color: (monitor.activeWorkspace?.id == button.workspaceValue) ? 
+                                    Appearance.m3colors.m3onPrimary : Appearance.m3colors.m3onSecondaryContainer
+
+                                Behavior on opacity {
+                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                }
+                                Behavior on anchors.bottomMargin {
+                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                }
+                                Behavior on anchors.rightMargin {
+                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                }
+                                Behavior on iconSize {
+                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                }
                             }
                         }
                     }
