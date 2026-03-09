@@ -4,376 +4,365 @@ import QtQuick.Controls
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import Sleex.Services
 
 Item {
     id: root
-    Layout.fillWidth: true
-    Layout.fillHeight: true
+    implicitHeight: canvas.height + controlBar.height + selectedMonitorDetails.height + 48
+    implicitWidth:  canvas.width
 
-    // Track pending changes
-    property var pendingChanges: ({})
-    property bool hasChanges: Object.keys(pendingChanges).length > 0
+    Behavior on implicitHeight { NumberAnimation { duration: 150 } }
 
-    Rectangle {
-        id: workspace
+    readonly property bool hasPendingChanges: pendingChanges.count > 0
+
+    property string selectedMonitorName: ""
+
+    QtObject {
+        id: pendingChanges
+        property var map:   ({})   // { name: {x,y} }
+        property int count: 0
+
+        function set(name, x, y) {
+            let m = Object.assign({}, map)
+            m[name] = {x: x, y: y}
+            map = m
+            count = Object.keys(m).length
+        }
+        function clear() {
+            map   = {}
+            count = 0
+        }
+        function toVariantList() {
+            let result = []
+            for (let name in map) {
+                result.push({ name: name, x: map[name].x, y: map[name].y })
+            }
+            return result
+        }
+    }
+
+    ColumnLayout {
         anchors.fill: parent
-        anchors.bottomMargin: 80 // Make room for buttons
-        color: "transparent"
+        spacing: 8
 
-        // Dynamically create monitor items based on detected monitors
-        Repeater {
-            model: Monitors.monitors || []
-            
-            MonitorItem {
-                monitorName: modelData && modelData.name ? modelData.name : ""
-                // Scale down positions for display (divide by scale factor)
-                x: modelData && modelData.x !== undefined ? modelData.x / 16 : 0
-                y: modelData && modelData.y !== undefined ? modelData.y / 16 : 0
-                workspace: workspace
-                
-                // Find other monitors for snapping
-                property var otherMonitors: {
-                    if (!Monitors.monitors || !modelData || !modelData.name) return [];
-                    return Monitors.monitors.filter(m => m && m.name && m.name !== monitorName);
-                }
-            }
-        }
-
-        // Snap guide overlay
         Rectangle {
-            id: snapGuide
-            objectName: "snapGuide"
-            visible: false
-            color: "transparent"
-            border.color: Appearance.m3colors.m3primary
-            border.width: 2
-            radius: Appearance.rounding.unsharpenmore
+            Layout.fillWidth: true
+            visible: Monitors.lastError !== ""
+            height:  visible ? errorRow.implicitHeight + 16 : 0
+            radius:  6
+            color:   "#40FF4444"
 
-            Behavior on x { NumberAnimation { duration: 100 } }
-            Behavior on y { NumberAnimation { duration: 100 } }
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-        }
-    }
-
-    // Apply all pending changes
-    function applyChanges() {
-        for (const monitorName in pendingChanges) {
-            const change = pendingChanges[monitorName];
-            Monitors.setMonitorPosition(monitorName, change.x, change.y);
-        }
-        pendingChanges = {};
-    }
-
-    // Cancel all pending changes
-    function cancelChanges() {
-        // Reset monitor positions to their original values
-        for (const monitorName in pendingChanges) {
-            const monitor = findMonitorItem(monitorName);
-            if (monitor) {
-                const originalMonitor = Monitors.monitors.find(m => m.name === monitorName);
-                if (originalMonitor) {
-                    monitor.x = originalMonitor.x / 16;
-                    monitor.y = originalMonitor.y / 16;
+            RowLayout {
+                id: errorRow
+                anchors { fill: parent; margins: 8 }
+                spacing: 8
+                StyledText {
+                    text:  "⚠ " + Monitors.lastError
+                    color: "#FF6666"
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
                 }
             }
         }
-        pendingChanges = {};
-    }
 
-    // Find monitor item by name
-    function findMonitorItem(name) {
-        for (let i = 0; i < workspace.children.length; i++) {
-            const child = workspace.children[i];
-            if (child.monitorName === name) {
-                return child;
+        Rectangle {
+            id: canvas
+            Layout.fillWidth: true
+            Layout.preferredHeight: 300
+            radius: Appearance.rounding.normal
+            color:  Appearance.colors.colLayer1
+            clip:   true
+
+            Rectangle {
+                anchors.fill: parent
+                visible:  Monitors.busy
+                color:    "#80000000"
+                radius:   parent.radius
+                z:        99
+
+                BusyIndicator { anchors.centerIn: parent; running: Monitors.busy }
             }
-        }
-        return null;
-    }
 
-    // Quick preset functions - now add to pending changes instead of applying immediately
-    function presetDualHorizontal() {
-        const monitors = Monitors.monitors;
-        if (monitors.length >= 2) {
-            const primary = monitors[0];
-            const secondary = monitors[1];
-            
-            // Set positions in pending changes
-            pendingChanges[secondary.name] = {
-                x: primary.x + primary.width,
-                y: primary.y
-            };
-            
-            // Update display positions
-            const secondaryItem = findMonitorItem(secondary.name);
-            if (secondaryItem) {
-                secondaryItem.x = (primary.x + primary.width) / 16;
-                secondaryItem.y = primary.y / 16;
-            }
-        }
-    }
+            Column {
+                anchors.centerIn: parent
+                spacing: 8
+                visible: Monitors.monitors.length === 0 && !Monitors.busy
 
-    function presetDualVertical() {
-        const monitors = Monitors.monitors;
-        if (monitors.length >= 2) {
-            const primary = monitors[0];
-            const secondary = monitors[1];
-            
-            // Set positions in pending changes
-            pendingChanges[secondary.name] = {
-                x: primary.x,
-                y: primary.y + primary.height
-            };
-            
-            // Update display positions
-            const secondaryItem = findMonitorItem(secondary.name);
-            if (secondaryItem) {
-                secondaryItem.x = primary.x / 16;
-                secondaryItem.y = (primary.y + primary.height) / 16;
-            }
-        }
-    }
-
-    component MonitorItem: Rectangle {
-        id: monitor
-        width: 120
-        height: 80
-        color: hasChanges && (monitorName in root.pendingChanges) ? "#1a1a1a" : "#000000"
-        radius: Appearance.rounding.unsharpenmore
-        border.color: {
-            if (dragHandler.active) return Appearance.m3colors.m3primary;
-            if (hasChanges && (monitorName in root.pendingChanges)) return Appearance.m3colors.m3secondary;
-            return "#666666";
-        }
-        border.width: 2
-
-        property string monitorName: ""
-        property var workspace: null
-        property var otherMonitors: []
-        property bool isSnapping: false
-        property int snapThreshold: Monitors.snapThreshold
-        property point snapPosition: Qt.point(0, 0)
-
-        // Monitor label
-        Text {
-            text: parent.monitorName + (hasChanges && (monitorName in root.pendingChanges) ? " *" : "")
-            color: "white"
-            font.pixelSize: 12
-            font.bold: true
-            anchors.centerIn: parent
-        }
-
-        // Drag handling
-        DragHandler {
-            id: dragHandler
-            target: null
-            cursorShape: active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-
-            property real startX
-            property real startY
-
-            onActiveChanged: {
-                if (active) {
-                    startX = monitor.x
-                    startY = monitor.y
-                } else {
-                    monitor.performSnap()
-                    // Add to pending changes instead of applying immediately
-                    const actualX = Math.round(monitor.x * 16);
-                    const actualY = Math.round(monitor.y * 16);
-                    root.pendingChanges[monitor.monitorName] = { x: actualX, y: actualY };
-                    root.pendingChangesChanged(); // Trigger property binding update
+                MaterialSymbol {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "desktop_access_disabled"
+                    font.pixelSize: 48
+                    color: Appearance.colors.colSubtext
+                }
+                StyledText {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "No monitors detected"
+                    color: Appearance.colors.colSubtext
                 }
             }
 
-            onTranslationChanged: {
-                let newX = startX + translation.x
-                let newY = startY + translation.y
+            Item {
+                id: tileRoot
+                anchors.fill: parent
+                anchors.margins: 16
 
-                // clamp inside workspace (use parent dimensions as fallback)
-                let workspaceWidth = workspace ? workspace.width : (monitor.parent ? monitor.parent.width : 800)
-                let workspaceHeight = workspace ? workspace.height : (monitor.parent ? monitor.parent.height : 600)
-                
-                let maxX = workspaceWidth - monitor.width
-                let maxY = workspaceHeight - monitor.height
+                // Snap guide
+                Rectangle {
+                    id: snapGuide
+                    visible:  false
+                    color:    "transparent"
+                    border.color: Appearance.colors.colPrimary
+                    border.width: 2
+                    radius:   4
+                    z:        50
+                    opacity:  0.8
 
-                newX = Math.max(0, Math.min(maxX, newX))
-                newY = Math.max(0, Math.min(maxY, newY))
+                    Behavior on x { NumberAnimation { duration: 80 } }
+                    Behavior on y { NumberAnimation { duration: 80 } }
+                }
 
-                monitor.x = newX
-                monitor.y = newY
+                property real scaleF:   _scaleF()
+                property point origin:  _origin()
 
-                monitor.checkSnapping()
-            }
-        }
+                function _scaleF() {
+                    const mons = Monitors.monitors
+                    if (!mons || mons.length === 0) return 1/20
+                    let minX = Infinity, minY = Infinity
+                    let maxX = -Infinity, maxY = -Infinity
+                    for (let m of mons) {
+                        minX = Math.min(minX, m.x)
+                        minY = Math.min(minY, m.y)
+                        maxX = Math.max(maxX, m.x + m.width)
+                        maxY = Math.max(maxY, m.y + m.height)
+                    }
+                    const wTotal = maxX - minX
+                    const hTotal = maxY - minY
+                    const sx = wTotal > 0 ? (tileRoot.width  - 0) / wTotal : 1/20
+                    const sy = hTotal > 0 ? (tileRoot.height - 0) / hTotal : 1/20
+                    return Math.min(sx, sy, 1/12)
+                }
 
-        // Simplified snapping logic
-        function checkSnapping() {
-            if (!otherMonitors.length || !workspace) return;
-            
-            var snapGuide = findSnapGuide();
-            var bestSnap = null;
-            var minDistance = snapThreshold + 1;
+                function _origin() {
+                    const mons = Monitors.monitors
+                    if (!mons || mons.length === 0) return Qt.point(0, 0)
+                    let minX = Infinity, minY = Infinity
+                    for (let m of mons) {
+                        minX = Math.min(minX, m.x)
+                        minY = Math.min(minY, m.y)
+                    }
+                    return Qt.point(minX, minY)
+                }
 
-            // Check snap positions against all other monitors
-            for (var i = 0; i < otherMonitors.length; i++) {
-                var otherMonitor = otherMonitors[i];
-                var snapPositions = getSnapPositions(otherMonitor);
-                
-                for (var j = 0; j < snapPositions.length; j++) {
-                    var pos = snapPositions[j];
-                    var distance = Math.sqrt(Math.pow(monitor.x - pos.x, 2) + Math.pow(monitor.y - pos.y, 2));
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        bestSnap = pos;
+                // Convert real pixel coords → canvas coords
+                function toCanvas(px, py) {
+                    return Qt.point(
+                        (px - origin.x) * scaleF,
+                        (py - origin.y) * scaleF
+                    )
+                }
+
+                // Convert canvas coords → real pixel coords
+                function toReal(cx, cy) {
+                    return Qt.point(
+                        Math.round(cx / scaleF + origin.x),
+                        Math.round(cy / scaleF + origin.y)
+                    )
+                }
+
+                Repeater {
+                    id: monitorRepeater
+                    model: Monitors.monitors
+
+                    delegate: MonitorTile {
+                        required property var  modelData
+                        required property int  index
+
+                        isSelected: selectedMonitorName === modelData.name
+                        onClicked: {
+                            if (root.selectedMonitorName === modelData.name) {
+                                root.selectedMonitorName = ""
+                            } else {
+                                root.selectedMonitorName = modelData.name
+                            }
+                        }
+                        onIsSelectedChanged: {
+                            if (isSelected) root.selectedMonitorName = monitorInfo.name
+                        }
+
+                        monitorInfo: modelData
+                        canvasScaleF: tileRoot.scaleF
+                        origin:       tileRoot.origin
+                        isPending:    pendingChanges.map[modelData.name] !== undefined
+                        tileParent:   tileRoot
+                        allTiles:     monitorRepeater
+
+                        onDragCommitted: (name, cx, cy) => {
+                            const real = tileRoot.toReal(cx, cy)
+                            pendingChanges.set(name, real.x, real.y)
+                        }
+                        onSnapGuideUpdate: (visible, cx, cy, cw, ch) => {
+                            snapGuide.visible = visible
+                            if (visible) {
+                                snapGuide.x = cx; snapGuide.y = cy
+                                snapGuide.width = cw; snapGuide.height = ch
+                            }
+                        }
                     }
                 }
             }
-
-            if (bestSnap && minDistance <= snapThreshold) {
-                showSnapGuide(bestSnap.x, bestSnap.y);
-                monitor.isSnapping = true;
-                monitor.snapPosition = Qt.point(bestSnap.x, bestSnap.y);
-            } else {
-                if (snapGuide) snapGuide.visible = false;
-                monitor.isSnapping = false;
-            }
         }
 
-        // Get snap positions for another monitor (scaled down for display)
-        function getSnapPositions(otherMonitor) {
-            const otherX = otherMonitor.x / 16;
-            const otherY = otherMonitor.y / 16;
-            
-            // Find the actual MonitorItem for the other monitor to get its display size
-            const otherItem = root.findMonitorItem(otherMonitor.name);
-            const otherW = otherItem ? otherItem.width : 120;
-            const otherH = otherItem ? otherItem.height : 80;
-            
-            return [
-                { x: otherX + otherW, y: otherY },      // Right
-                { x: otherX - monitor.width, y: otherY }, // Left
-                { x: otherX, y: otherY - monitor.height }, // Top
-                { x: otherX, y: otherY + otherH }       // Bottom
-            ];
-        }
+        Rectangle {
+            id: selectedMonitorDetails
+            Layout.fillWidth: true
+            visible: root.selectedMonitorName !== ""
+            height: optionsRow.implicitHeight
+            color: 'transparent'
 
-        function findSnapGuide() {
-            if (!workspace) return null
-            for (var i = 0; i < workspace.children.length; i++) {
-                var child = workspace.children[i]
-                if (child.objectName === "snapGuide") {
-                    return child
+            Behavior on height { NumberAnimation { duration: 150 } }
+
+            ConfigRow {
+                id: optionsRow
+                anchors.fill: parent
+
+                ConfigSpinBox {
+                    id: scaleSpinBox
+                    from: 25; to: 300; stepSize: 25
+                    fillWidth: false
+                    value: {
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        return m ? Math.round(m.scale * 100) : 100
+                    }
+                    text: "Scale"
+                    onValueChanged: {
+                        Monitors.applyScale(root.selectedMonitorName, value / 100.0)
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                IconComboBox {
+                    id: mirrorCombo
+                    icon: "tv_displays"
+                    model: {
+                        const others = Monitors.monitors
+                            .filter(m => m.name !== root.selectedMonitorName)
+                            .map(m => m.name)
+                        return ["None", ...others]
+                    }
+
+                    currentIndex: {
+                        const mon = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        if (!mon || !mon.mirrorOf) return 0
+                        const idx = model.indexOf(mon.mirrorOf)
+                        return idx >= 0 ? idx : 0
+                    }
+
+                    onCurrentIndexChanged: {
+                        if (currentIndex < 0) return
+                        const target = model[currentIndex]
+                        Monitors.applyMirror(
+                            root.selectedMonitorName,
+                            target === "None" ? "" : target
+                        )
+                        
+                        // If un-mirroring, give Hyprland more time to re-expose the monitor
+                        if (target === "None") {
+                            Qt.callLater(() => {
+                                Qt.createQmlObject('import QtQuick 2.0; Timer { interval: 1000; running: true; onTriggered: Monitors.refresh() }', root)
+                            })
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                IconComboBox {
+                    id: resolutionCombo
+                    icon: "display_settings"
+                    model: {
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        return m ? m.availableModes : []
+                    }
+                    currentIndex: {
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        if (!m) return 0
+                        return Math.max(0, model.indexOf(m.width + "x" + m.height))
+                    }
+                    onCurrentIndexChanged: {
+                        if (currentIndex < 0) return
+                        Monitors.applyMode(root.selectedMonitorName, model[currentIndex])
+                    }
                 }
             }
-            return null
         }
 
-        function showSnapGuide(snapX, snapY) {
-            var snapGuide = findSnapGuide()
-            if (!snapGuide) return
-            snapGuide.x = snapX
-            snapGuide.y = snapY
-            snapGuide.width = monitor.width
-            snapGuide.height = monitor.height
-            snapGuide.visible = true
-        }
+        RowLayout {
+            id: controlBar
+            Layout.fillWidth: true
+            spacing: 8
+            Layout.alignment: Qt.AlignHCenter
 
-        function performSnap() {
-            if (monitor.isSnapping) {
-                snapAnimation.to = monitor.snapPosition
-                snapAnimation.start()
+            RippleButtonWithIcon {
+                materialIcon: "view_week"
+                mainText:  "Horizontal"
+                onClicked: root.applyPresetHorizontal()
             }
-        }
 
-        // Animations
-        ParallelAnimation {
-            id: snapAnimation
-            property point to: Qt.point(0, 0)
-
-            NumberAnimation {
-                target: monitor
-                property: "x"
-                to: snapAnimation.to.x
-                duration: 200
-                easing.type: Easing.OutBack
+            RippleButtonWithIcon {
+                materialIcon: "view_agenda"
+                mainText:  "Vertical"
+                onClicked: root.applyPresetVertical()
             }
-            NumberAnimation {
-                target: monitor
-                property: "y"
-                to: snapAnimation.to.y
-                duration: 200
-                easing.type: Easing.OutBack
+
+            RippleButtonWithIcon {
+                enabled: root.hasPendingChanges
+                materialIcon: "cancel"
+                mainText:  "Discard"
+                onClicked: {
+                    pendingChanges.clear()
+                    Monitors.resetPositions()
+                }
             }
-        }
-
-        // Hover effect
-        states: State {
-            name: "hovered"
-            when: dragHandler.active === false && dragHandler.containsMouse
-            PropertyChanges { target: monitor; scale: 1.05 }
-        }
-
-        transitions: Transition {
-            NumberAnimation { property: "scale"; duration: 100 }
+            RippleButtonWithIcon {
+                enabled: root.hasPendingChanges
+                materialIcon: "check_circle"
+                mainText:  "Apply"
+                onClicked: {
+                    Monitors.applyAllPositions(pendingChanges.toVariantList())
+                    pendingChanges.clear()
+                }
+            }
         }
     }
 
-    // Control buttons
-    Column {
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.margins: 20
-        spacing: 10
+    Connections {
+        target: Monitors
+        function onApplySucceeded() { pendingChanges.clear() }
+    }
 
-        // Preset buttons
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 10
-
-            Button {
-                text: "Side by Side"
-                onClicked: root.presetDualHorizontal()
-            }
-
-            Button {
-                text: "Stacked"  
-                onClicked: root.presetDualVertical()
-            }
-
-            Button {
-                text: "Refresh"
-                onClicked: Monitors.refreshMonitors()
-            }
+    function applyPresetHorizontal() {
+        const mons = Monitors.monitors
+        if (mons.length < 2) return
+        let cursor = 0
+        let changes = []
+        for (let m of mons) {
+            changes.push({ name: m.name, x: cursor, y: 0 })
+            cursor += m.width
         }
+        Monitors.applyAllPositions(changes)
+    }
 
-        // Apply/Cancel buttons
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 10
-            visible: root.hasChanges
-
-            Button {
-                text: "Apply Changes"
-                highlighted: true
-                onClicked: root.applyChanges()
-            }
-
-            Button {
-                text: "Cancel"
-                onClicked: root.cancelChanges()
-            }
+    function applyPresetVertical() {
+        const mons = Monitors.monitors
+        if (mons.length < 2) return
+        let cursor = 0
+        let changes = []
+        for (let m of mons) {
+            changes.push({ name: m.name, x: 0, y: cursor })
+            cursor += m.height
         }
-
-        // Status text
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.hasChanges ? 
-                `${Object.keys(root.pendingChanges).length} monitor(s) have pending changes` : 
-                "No pending changes"
-            color: root.hasChanges ? Appearance.m3colors.m3secondary : "#666666"
-            font.pixelSize: 11
-            visible: true
-        }
+        Monitors.applyAllPositions(changes)
     }
 }

@@ -7,6 +7,7 @@ qml_module(sleex-services
         resourceUsage.cpp resourceUsage.hpp
         network.cpp network.hpp
         bluetooth.cpp bluetooth.hpp
+        monitors.cpp monitors.hpp
         plugin.cpp  
     DEPENDENCIES
             Qt::Bluetooth
