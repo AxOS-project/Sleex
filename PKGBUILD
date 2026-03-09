@@ -9,7 +9,7 @@ depends=(
   # Backlight
   'hyprsunset' 'geoclue' 'brightnessctl' 'ddcutil'
   # Basic
-  "axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors" "qt5ct" "qt6ct"
+  "axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors" "qt5ct" "qt6ct" "sqlite"
   # Cursor
   "sleex-bibata-modern-classic-bin"
   # Fonts & Themes

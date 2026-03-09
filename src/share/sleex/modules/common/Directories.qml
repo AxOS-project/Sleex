@@ -21,8 +21,6 @@ Singleton {
     property string coverArt: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/coverart`)
     property string latexOutput: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/latex`)
     property string shellConfig: FileUtils.trimFileProtocol(`${Directories.home}/.sleex`)
-    property string shellConfigName: "settings.json"
-    property string shellConfigPath: `${Directories.shellConfig}/${Directories.shellConfigName}`
     property string todoPath: FileUtils.trimFileProtocol(`${Directories.home}/.sleex/user/todo.json`)
     property string notificationsPath: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/notifications/notifications.json`)
     property string generatedMaterialThemePath: FileUtils.trimFileProtocol(`${Directories.state}/sleex/user/generated/colors.json`)
