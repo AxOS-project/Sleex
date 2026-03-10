@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Qt.labs.folderlistmodel
 import qs.modules.common
 import qs.modules.common.functions
 import Sleex.Utils
@@ -14,164 +13,18 @@ Item {
     property int cellHeight: 110
     
     property var selectedIcons: []
-
     property string dragLeader: ""
     property real groupDragX: 0
     property real groupDragY: 0
-    property bool isMassDropping: false
 
     property real startX: 0
     property real startY: 0
-
-
     property string editingFilePath: ""
     property var contextMenu: desktopMenu
 
-    property var iconLayout: ({})
-    property bool layoutLoaded: false
-
-    // Timer {
-    //     id: debugTimer
-    //     interval: 1000
-    //     running: true
-    //     repeat: true
-    //     onTriggered: {
-    //         console.log(selectedIcons)
-    //     }
-    // }
-
-    Component.onCompleted: {
-        let savedLayout = DesktopStateManager.getLayout();
-        let layout = {};
-        
-        for (let file in savedLayout) {
-            layout[file] = { 
-                x: parseInt(savedLayout[file].x || 0), 
-                y: parseInt(savedLayout[file].y || 0) 
-            };
-        }
-        
-        iconLayout = layout;
-        layoutLoaded = true;
-    }
-
-    function saveLayout() {
-        DesktopStateManager.saveLayout(iconLayout);
-    }
-
-    function handleDrop(draggedFilePath, gridX, gridY) {
-        root.isMassDropping = true;
-        
-        let draggedFileName = draggedFilePath.substring(draggedFilePath.lastIndexOf('/') + 1);
-
-        let maxCol = Math.max(0, Math.floor(gridArea.width / cellWidth) - 1);
-        let maxRow = Math.max(0, Math.floor(gridArea.height / cellHeight) - 1);
-        gridX = Math.max(0, Math.min(gridX, maxCol));
-        gridY = Math.max(0, Math.min(gridY, maxRow));
-
-        let layout = Object.assign({}, iconLayout);
-
-        let oldX = layout[draggedFileName] ? layout[draggedFileName].x : 0;
-        let oldY = layout[draggedFileName] ? layout[draggedFileName].y : 0;
-        let deltaX = gridX - oldX;
-        let deltaY = gridY - oldY;
-
-        if (deltaX !== 0 || deltaY !== 0) {
-            let selectedNames = selectedIcons.map(path => path.substring(path.lastIndexOf('/') + 1));
-            let movingFiles = [];
-            for (let i = 0; i < selectedNames.length; i++) {
-                let name = selectedNames[i];
-                if (layout[name]) {
-                    movingFiles.push({ name: name, x: layout[name].x, y: layout[name].y });
-                    delete layout[name]; 
-                }
-            }
-
-            for (let i = 0; i < movingFiles.length; i++) {
-                let file = movingFiles[i];
-                let targetX = Math.max(0, Math.min(file.x + deltaX, maxCol));
-                let targetY = Math.max(0, Math.min(file.y + deltaY, maxRow));
-
-                let collision = false;
-                for (let existingFile in layout) {
-                    if (layout[existingFile].x === targetX && layout[existingFile].y === targetY) {
-                        collision = true; break;
-                    }
-                }
-
-                if (collision) {
-                    layout[file.name] = getEmptySpot(layout);
-                } else {
-                    layout[file.name] = { x: targetX, y: targetY };
-                }
-            }
-        }
-
-        let visuals = [];
-        for (let i = 0; i < gridArea.children.length; i++) {
-            let child = gridArea.children[i];
-            if (child.filePath && root.selectedIcons.indexOf(child.filePath) !== -1) {
-                let offsetX = (root.dragLeader === child.filePath) ? child.getDragX() : root.groupDragX;
-                let offsetY = (root.dragLeader === child.filePath) ? child.getDragY() : root.groupDragY;
-                visuals.push({
-                    childRef: child,
-                    absX: child.x + offsetX,
-                    absY: child.y + offsetY
-                });
-            }
-        }
-
-        iconLayout = layout; 
-        if (deltaX !== 0 || deltaY !== 0) saveLayout();
-
-        for (let i = 0; i < visuals.length; i++) {
-            visuals[i].childRef.compensateAndSnap(visuals[i].absX, visuals[i].absY);
-        }
-
-        root.dragLeader = "";
-        root.groupDragX = 0;
-        root.groupDragY = 0;
-        root.isMassDropping = false;
-    }
-
-    function getEmptySpot(layout) {
-        let safeW = gridArea.width > 0 ? gridArea.width : Screen.width - 40;
-        let safeH = gridArea.height > 0 ? gridArea.height : Screen.height - 60;
-        
-        let maxCol = Math.max(1, Math.floor(safeW / cellWidth));
-        let maxRow = Math.max(1, Math.floor(safeH / cellHeight));
-        
-        for (let x = 0; x < maxCol; x++) {
-            for (let y = 0; y < maxRow; y++) {
-                let taken = false;
-                for (let file in layout) {
-                    if (layout[file].x === x && layout[file].y === y) {
-                        taken = true; break;
-                    }
-                }
-                if (!taken) return { x: x, y: y };
-            }
-        }
-        return { x: maxCol - 1, y: maxRow - 1 };
-    }
-
-    function renameIconInLayout(oldName, newName) {
-        if (iconLayout[oldName]) {
-            let layout = Object.assign({}, iconLayout);
-            layout[newName] = layout[oldName];
-            delete layout[oldName];
-            iconLayout = layout;
-            saveLayout();
-        }
-    }
-
-    function registerNewIcon(fileName) {
-        if (layoutLoaded && !iconLayout[fileName]) {
-            let layout = Object.assign({}, iconLayout);
-            layout[fileName] = getEmptySpot(layout);
-            iconLayout = layout;
-            saveLayout();
-        }
+    DesktopModel {
+        id: desktopModel
+        Component.onCompleted: loadDirectory(FileUtils.trimFileProtocol(Directories.desktop))
     }
 
     function exec(filePath, isDir) {
@@ -189,6 +42,37 @@ Item {
             default: cmd = ["xdg-open", filePath];
         }
         Quickshell.execDetached(cmd)
+    }
+
+    function performMassDrop(leaderPath, targetX, targetY) {
+
+        let maxCol = Math.max(0, Math.floor(gridArea.width / cellWidth) - 1);
+        let maxRow = Math.max(0, Math.floor(gridArea.height / cellHeight) - 1);
+
+        let visuals = [];
+        for (let i = 0; i < gridArea.children.length; i++) {
+            let child = gridArea.children[i];
+            if (child.filePath && root.selectedIcons.includes(child.filePath)) {
+                let isLeader = (root.dragLeader === child.filePath);
+                let offsetX = isLeader ? child.getDragX() : root.groupDragX;
+                let offsetY = isLeader ? child.getDragY() : root.groupDragY;
+                visuals.push({
+                    childRef: child,
+                    absX: child.x + offsetX,
+                    absY: child.y + offsetY
+                });
+            }
+        }
+
+        desktopModel.massMove(root.selectedIcons, leaderPath, targetX, targetY, maxCol, maxRow);
+
+        for (let i = 0; i < visuals.length; i++) {
+            visuals[i].childRef.compensateAndSnap(visuals[i].absX, visuals[i].absY);
+        }
+
+        root.dragLeader = "";
+        root.groupDragX = 0;
+        root.groupDragY = 0;
     }
 
     Rectangle {
@@ -227,46 +111,34 @@ Item {
         
         onPositionChanged: (mouse) => {
             if (lasso.visible) {
-                lasso.x = Math.min(mouse.x, root.startX)
-                lasso.y = Math.min(mouse.y, root.startY)
-                lasso.width = Math.abs(mouse.x - root.startX)
-                lasso.height = Math.abs(mouse.y - root.startY)
+                lasso.x = Math.min(mouse.x, root.startX);
+                lasso.y = Math.min(mouse.y, root.startY);
+                lasso.width = Math.abs(mouse.x - root.startX);
+                lasso.height = Math.abs(mouse.y - root.startY);
                 
-                let newSelection = []
-                
+                let minCol = Math.floor((lasso.x - gridArea.x) / cellWidth);
+                let maxCol = Math.floor((lasso.x + lasso.width - gridArea.x) / cellWidth);
+                let minRow = Math.floor((lasso.y - gridArea.y) / cellHeight);
+                let maxRow = Math.floor((lasso.y + lasso.height - gridArea.y) / cellHeight);
+
+                let newSelection = [];
                 for (let i = 0; i < gridArea.children.length; i++) {
-                    let child = gridArea.children[i]
-                    
-                    if (child.filePath !== undefined) {
-                        let iconX = gridArea.x + child.x
-                        let iconY = gridArea.y + child.y
-                        
-                        if (iconX < lasso.x + lasso.width && iconX + child.width > lasso.x &&
-                            iconY < lasso.y + lasso.height && iconY + child.height > lasso.y) {
-                            
-                            newSelection.push(child.filePath)
-                        }
+                    let child = gridArea.children[i];
+                    if (child.filePath !== undefined && 
+                        child.gridX >= minCol && child.gridX <= maxCol &&
+                        child.gridY >= minRow && child.gridY <= maxRow) {
+                        newSelection.push(child.filePath);
                     }
                 }
-                
-                root.selectedIcons = newSelection
+                root.selectedIcons = newSelection;
             }
         }
         
-        onReleased: {
-            lasso.visible = false
-        }
+        onReleased: { lasso.visible = false }
     }
 
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_F2 && selectedIcons.length > 0) editingFilePath = selectedIcons[0]
-    }
-
-    FolderListModel {
-        id: folderModel
-        folder: Directories.desktop
-        showDotAndDotDot: false
-        nameFilters: ["*"] 
     }
 
     Item {
@@ -277,8 +149,10 @@ Item {
         anchors.topMargin: 40
 
         Repeater {
-            model: folderModel
-            delegate: DesktopIconDelegate {}
+            model: desktopModel
+            delegate: DesktopIconDelegate {
+                property int itemIndex: index 
+            }
         }
     }
 
@@ -288,7 +162,5 @@ Item {
         onRenameRequested: (path) => { root.editingFilePath = path }
     }
 
-    BackgroundContextMenu {
-        id: bgContextMenu
-    }
+    BackgroundContextMenu { id: bgContextMenu }
 }

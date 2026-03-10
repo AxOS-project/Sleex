@@ -4,6 +4,7 @@ qml_module(sleex-utils
     URI Sleex.Utils
     SOURCES
         DesktopStateManager.cpp DesktopStateManager.hpp
+        DesktopModel.cpp DesktopModel.hpp
         plugin.cpp
 )
 

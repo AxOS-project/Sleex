@@ -9,9 +9,11 @@ import qs.services
 Item {
     id: delegateRoot
     
-    required property string fileName
-    required property string filePath
-    required property bool fileIsDir
+    property string fileName: model.fileName
+    property string filePath: model.filePath
+    property bool fileIsDir: model.isDir
+    property int gridX: model.gridX
+    property int gridY: model.gridY
 
     function getDragX() { return dragContainer.x; }
     function getDragY() { return dragContainer.y; }
@@ -39,23 +41,18 @@ Item {
         }
     }
 
-    property int gridX: root.iconLayout[fileName] ? root.iconLayout[fileName].x : 0
-    property int gridY: root.iconLayout[fileName] ? root.iconLayout[fileName].y : 0
-
     x: gridX * root.cellWidth
     y: gridY * root.cellHeight
 
     property bool isSnapping: snapAnimX.running || snapAnimY.running
     Behavior on x { 
-        enabled: !mouseArea.drag.active && !isSnapping && !root.isMassDropping
+        enabled: !mouseArea.drag.active && !isSnapping && !root.selectedIcons.includes(filePath)
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
     }
     Behavior on y { 
-        enabled: !mouseArea.drag.active && !isSnapping && !root.isMassDropping
+        enabled: !mouseArea.drag.active && !isSnapping && !root.selectedIcons.includes(filePath)
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
     }
-
-    Component.onCompleted: root.registerNewIcon(fileName)
 
     Item {
         id: dragContainer
@@ -72,8 +69,8 @@ Item {
         transitions: Transition { NumberAnimation { properties: "scale,opacity"; duration: 150 } }
 
         transform: Translate {
-            x: (root.selectedIcons.indexOf(filePath) !== -1 && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragX : 0
-            y: (root.selectedIcons.indexOf(filePath) !== -1 && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragY : 0
+            x: (root.selectedIcons.includes(filePath) && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragX : 0
+            y: (root.selectedIcons.includes(filePath) && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragY : 0
         }
 
         onXChanged: {
@@ -154,7 +151,6 @@ Item {
                                     let newName = text.trim();
                                     let newPath = filePath.substring(0, filePath.lastIndexOf('/') + 1) + newName;
                                     
-                                    root.renameIconInLayout(fileName, newName);
                                     Quickshell.execDetached(["mv", filePath, newPath])
                                 }
                                 root.editingFilePath = ""
@@ -197,7 +193,7 @@ Item {
             }
 
             onPressed: (mouse) => {
-                if (mouse.button === Qt.LeftButton && root.selectedIcons.indexOf(filePath) === -1) {
+                if (mouse.button === Qt.LeftButton && !root.selectedIcons.includes(filePath)) {
                     root.selectedIcons = [filePath]
                 }
             }
@@ -206,11 +202,10 @@ Item {
                 if (drag.active) {
                     let absoluteX = delegateRoot.x + dragContainer.x;
                     let absoluteY = delegateRoot.y + dragContainer.y;
-
                     let snapX = Math.max(0, Math.round(absoluteX / root.cellWidth));
                     let snapY = Math.max(0, Math.round(absoluteY / root.cellHeight));
 
-                    root.handleDrop(filePath, snapX, snapY);
+                    root.performMassDrop(filePath, snapX, snapY);
                 }
             }
 
@@ -218,12 +213,10 @@ Item {
                 root.forceActiveFocus() 
                 
                 if (mouse.button === Qt.RightButton) {
-                    if (root.selectedIcons.indexOf(filePath) === -1) {
+                    if (!root.selectedIcons.includes(filePath)) {
                         root.selectedIcons = [filePath]
                     }
-                    
                     let pos = mapToItem(root, mouse.x, mouse.y)
-                    
                     root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
                 } else {
                     root.selectedIcons = [filePath]
