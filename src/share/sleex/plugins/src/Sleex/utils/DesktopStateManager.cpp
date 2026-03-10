@@ -3,7 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
-#include <QJsonArray>
+#include <QJsonObject>
 #include <QDebug>
 
 DesktopStateManager::DesktopStateManager(QObject *parent) : QObject(parent) {}
@@ -14,44 +14,36 @@ QString DesktopStateManager::getConfigFilePath() const {
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-    return configDir + "/desktop_order.json";
+    return configDir + "/desktop_layout.json"; 
 }
 
-void DesktopStateManager::saveOrder(const QStringList& order) {
-    QJsonArray jsonArray;
-    for (const QString& fileName : order) {
-        jsonArray.append(fileName);
-    }
-
-    QJsonDocument doc(jsonArray);
+void DesktopStateManager::saveLayout(const QVariantMap& layout) {
+    QJsonObject jsonObj = QJsonObject::fromVariantMap(layout);
+    QJsonDocument doc(jsonObj);
     QFile file(getConfigFilePath());
     
     if (file.open(QIODevice::WriteOnly)) {
-        file.write(doc.toJson());
+        file.write(doc.toJson(QJsonDocument::Indented));
         file.close();
     } else {
-        qWarning() << "Cannot save desktop icons order in " << getConfigFilePath();
+        qWarning() << "Sleex: Impossible de sauvegarder le layout du bureau dans" << getConfigFilePath();
     }
 }
 
-QStringList DesktopStateManager::getOrder() {
-    QStringList order;
+QVariantMap DesktopStateManager::getLayout() {
     QFile file(getConfigFilePath());
     
     if (!file.open(QIODevice::ReadOnly)) {
-        return order;
+        return QVariantMap();
     }
 
     QByteArray data = file.readAll();
     file.close();
 
     QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (doc.isArray()) {
-        QJsonArray jsonArray = doc.array();
-        for (const QJsonValue& val : jsonArray) {
-            order.append(val.toString());
-        }
+    if (doc.isObject()) {
+        return doc.object().toVariantMap();
     }
 
-    return order;
+    return QVariantMap();
 }

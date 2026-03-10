@@ -12,12 +12,9 @@ Item {
     required property string fileName
     required property string filePath
     required property bool fileIsDir
-    required property var gridView
 
-    width: gridView.cellWidth
-    height: gridView.cellHeight
-
-    property int visualIndex: DelegateModel.itemsIndex
+    width: root.cellWidth
+    height: root.cellHeight
 
     property var appEntry: fileName.endsWith(".desktop") ? DesktopEntries.byId(DesktopUtils.getAppId(fileName)) : null
 
@@ -32,18 +29,35 @@ Item {
         }
     }
 
+    property int gridX: root.iconLayout[fileName] ? root.iconLayout[fileName].x : 0
+    property int gridY: root.iconLayout[fileName] ? root.iconLayout[fileName].y : 0
+
+    x: gridX * root.cellWidth
+    y: gridY * root.cellHeight
+
+    property bool isSnapping: snapAnimX.running || snapAnimY.running
+
+    Behavior on x { 
+        enabled: !mouseArea.drag.active && !delegateRoot.isSnapping
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
+    }
+    Behavior on y { 
+        enabled: !mouseArea.drag.active && !delegateRoot.isSnapping
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
+    }
+
+    Component.onCompleted: root.registerNewIcon(fileName)
+
     Item {
         id: dragContainer
-        anchors.fill: mouseArea.drag.active ? undefined : parent
+        width: parent.width
+        height: parent.height
 
-        Drag.active: mouseArea.drag.active
-        Drag.source: delegateRoot
-        Drag.hotSpot.x: width / 2
-        Drag.hotSpot.y: height / 2
+        PropertyAnimation { id: snapAnimX; target: dragContainer; property: "x"; to: 0; duration: 250; easing.type: Easing.OutCubic }
+        PropertyAnimation { id: snapAnimY; target: dragContainer; property: "y"; to: 0; duration: 250; easing.type: Easing.OutCubic }
 
         states: State {
             when: mouseArea.drag.active
-            ParentChange { target: dragContainer; parent: gridView }
             PropertyChanges { target: dragContainer; opacity: 0.8; scale: 1.1; z: 100 }
         }
         transitions: Transition { NumberAnimation { properties: "scale,opacity"; duration: 150 } }
@@ -86,47 +100,41 @@ Item {
                     anchors.centerIn: parent
                     width: 110
                     height: 24
-                    
-                    active: gridView.editingFilePath === filePath
+                    active: root.editingFilePath === filePath
 
                     sourceComponent: StyledTextInput {
-                        id: renameInput
+                        anchors.fill: parent
+                        anchors.margins: 2
                         text: fileName
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
-                        width: 110
                         color: "white"
-
-                        onEditingFinished: gridView.editingFilePath = ""
 
                         Component.onCompleted: {
                             forceActiveFocus()
                             selectAll()
                         }
 
-                        onVisibleChanged: {
-                            if (visible) {
-                                forceActiveFocus()
-                                selectAll()
-                            }
-                        }
-
                         onActiveFocusChanged: {
-                            if (!activeFocus && gridView.editingFilePath === filePath) {
-                                gridView.editingFilePath = ""
+                            if (!activeFocus && root.editingFilePath === filePath) {
+                                root.editingFilePath = ""
                             }
                         }
 
                         Keys.onPressed: function (event) {
                             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                 if (text.trim() !== "" && text !== fileName) {
-                                    let newPath = filePath.substring(0, filePath.lastIndexOf('/') + 1) + text.trim()
+                                    let newName = text.trim();
+                                    let newPath = filePath.substring(0, filePath.lastIndexOf('/') + 1) + newName;
                                     
+                                    root.renameIconInLayout(fileName, newName);
                                     Quickshell.execDetached(["mv", filePath, newPath])
                                 }
-                                gridView.editingFilePath = ""
+                                root.editingFilePath = ""
+                                event.accepted = true
                             } else if (event.key === Qt.Key_Escape) {
-                                gridView.editingFilePath = ""
+                                root.editingFilePath = ""
+                                event.accepted = true
                             }
                         }
                     }
@@ -138,7 +146,7 @@ Item {
             anchors.fill: parent
             anchors.margins: 4
             color: "white"
-            opacity: gridView.selectedIcon === filePath ? 0.2 : 0.0
+            opacity: root.selectedIcon === filePath ? 0.2 : 0.0
             radius: 8
             Behavior on opacity { NumberAnimation { duration: 100 } }
         }
@@ -152,16 +160,6 @@ Item {
             
             drag.target: dragContainer
 
-            onPositionChanged: (mouse) => {
-                if (drag.active) {
-                    let mappedPos = mapToItem(gridView, mouseX, mouseY)
-                    let targetIndex = gridView.indexAt(mappedPos.x, mappedPos.y)                    
-                    if (targetIndex !== -1 && targetIndex !== delegateRoot.visualIndex) {
-                        gridView.model.items.move(delegateRoot.visualIndex, targetIndex)
-                    }
-                }
-            }
-            
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 4
@@ -171,36 +169,44 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: 100 } }
             }
 
-            onClicked: (mouse) => {
-                gridView.forceActiveFocus()
-
-                if (mouse.button === Qt.RightButton) {
-                    gridView.selectedIcon = filePath
-                    
-                    let pos = mapToItem(gridView.parent, mouse.x, mouse.y)
-                    
-                    gridView.contextMenu.openAt(
-                        pos.x, pos.y, 
-                        filePath, fileIsDir, appEntry, 
-                        gridView.parent.width, gridView.parent.height
-                    )
-                } else {
-                    gridView.selectedIcon = (gridView.selectedIcon === filePath) ? "" : filePath
-                    gridView.contextMenu.close()
-                }
-            }
-
-            onDoubleClicked: {
-                if (filePath.endsWith(".desktop") && appEntry) {
-                    appEntry.execute()
-                } else {
-                    gridView.execFile(filePath, fileIsDir)
-                }
-            }
-
             onReleased: {
-                if (typeof gridView.saveOrder === "function") {
-                    gridView.saveOrder()
+                if (drag.active) {
+                    let absoluteX = delegateRoot.x + dragContainer.x;
+                    let absoluteY = delegateRoot.y + dragContainer.y;
+
+                    let snapX = Math.max(0, Math.round(absoluteX / root.cellWidth));
+                    let snapY = Math.max(0, Math.round(absoluteY / root.cellHeight));
+
+                    let targetRootX = snapX * root.cellWidth;
+                    let targetRootY = snapY * root.cellHeight;
+
+                    dragContainer.x = absoluteX - targetRootX;
+                    dragContainer.y = absoluteY - targetRootY;
+
+                    snapAnimX.start();
+                    snapAnimY.start();
+
+                    root.handleDrop(fileName, snapX, snapY);
+                }
+            }
+
+            onClicked: (mouse) => {
+                root.forceActiveFocus()
+                
+                if (mouse.button === Qt.RightButton) {
+                    root.selectedIcon = filePath
+                    let pos = mapToItem(root, mouse.x, mouse.y)
+                    root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height)
+                } else {
+                    root.selectedIcon = (root.selectedIcon === filePath) ? "" : filePath
+                    root.contextMenu.close()
+                }
+            }
+
+            onDoubleClicked: (mouse) => {
+                if (mouse.button === Qt.LeftButton) {
+                    if (filePath.endsWith(".desktop") && appEntry) appEntry.execute()
+                    else root.exec(filePath, fileIsDir)
                 }
             }
         }

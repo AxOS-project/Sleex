@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <QStringList>
+#include <QVariantMap>
 #include <QQmlEngine>
 
 class DesktopStateManager : public QObject {
@@ -12,8 +12,8 @@ class DesktopStateManager : public QObject {
 public:
     explicit DesktopStateManager(QObject *parent = nullptr);
 
-    Q_INVOKABLE void saveOrder(const QStringList& order);
-    Q_INVOKABLE QStringList getOrder();
+    Q_INVOKABLE void saveLayout(const QVariantMap& layout);
+    Q_INVOKABLE QVariantMap getLayout();
 
 private:
     QString getConfigFilePath() const;
