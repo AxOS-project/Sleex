@@ -100,13 +100,16 @@ Item {
             grid.editingFilePath = ""
 
             if (mouse.button === Qt.RightButton) {
-                // TODO: global context
+                bgContextMenu.openAt(mouse.x, mouse.y, root.width, root.height)
+            } else {
+                bgContextMenu.close()
             }
         }
     }
 
     GridView {
         id: grid
+        visible: Config.options.background.showDesktopIcons
         anchors.fill: parent
         anchors.margins: 20
         anchors.topMargin: 40
@@ -147,5 +150,9 @@ Item {
         id: desktopMenu
         onOpenFileRequested: (path, isDir) => root.exec(path, isDir)
         onRenameRequested: (path) => { grid.editingFilePath = path }
+    }
+
+    BackgroundContextMenu {
+        id: bgContextMenu
     }
 }

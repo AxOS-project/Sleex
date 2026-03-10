@@ -156,7 +156,6 @@ Scope {
             DesktopIcons {
                 id: desktopIcons
                 z: 1
-                visible: Config.options.background.showDesktopIcons
             }
 
             Clock {
