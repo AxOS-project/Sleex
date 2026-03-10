@@ -130,6 +130,13 @@ Singleton {
             property string settings: "qs -p /usr/share/sleex/settings.qml"
             property string taskManager: "missioncenter"
             property string terminal: "foot"
+            property string webBrowser: "firefox"
+            property string fileManager: "pcmanfm-qt"
+            property string videoPlayer: "mpv"
+            property string archiveManager: "file-roller"
+            property string textEditor: "code"
+            property string audioPlayer: "axuralis"
+            property string documentViewer: "onlyoffice-desktopeditors"
         }
 
         property JsonObject battery: JsonObject {
@@ -180,6 +187,7 @@ Singleton {
             property real clockSizeMultiplier: 1
             property bool enableQuote: true
             property int quoteSource: 0 // 0 for "local", 1 for "online"
+            property bool showDesktopIcons: false
         }
 
         property JsonObject dashboard: JsonObject {

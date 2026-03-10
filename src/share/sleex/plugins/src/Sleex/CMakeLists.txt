@@ -35,3 +35,4 @@ endfunction()
 
 add_subdirectory(services)
 add_subdirectory(core)
+add_subdirectory(utils)
