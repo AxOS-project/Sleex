@@ -13,6 +13,16 @@ Item {
     required property string filePath
     required property bool fileIsDir
 
+    function getDragX() { return dragContainer.x; }
+    function getDragY() { return dragContainer.y; }
+
+    function compensateAndSnap(absVisX, absVisY) {
+        dragContainer.x = absVisX - delegateRoot.x;
+        dragContainer.y = absVisY - delegateRoot.y;
+        snapAnimX.start();
+        snapAnimY.start();
+    }
+
     width: root.cellWidth
     height: root.cellHeight
 
@@ -36,13 +46,12 @@ Item {
     y: gridY * root.cellHeight
 
     property bool isSnapping: snapAnimX.running || snapAnimY.running
-
     Behavior on x { 
-        enabled: !mouseArea.drag.active && !delegateRoot.isSnapping
+        enabled: !mouseArea.drag.active && !isSnapping && !root.isMassDropping
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
     }
     Behavior on y { 
-        enabled: !mouseArea.drag.active && !delegateRoot.isSnapping
+        enabled: !mouseArea.drag.active && !isSnapping && !root.isMassDropping
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic } 
     }
 
@@ -61,6 +70,24 @@ Item {
             PropertyChanges { target: dragContainer; opacity: 0.8; scale: 1.1; z: 100 }
         }
         transitions: Transition { NumberAnimation { properties: "scale,opacity"; duration: 150 } }
+
+        transform: Translate {
+            x: (root.selectedIcons.indexOf(filePath) !== -1 && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragX : 0
+            y: (root.selectedIcons.indexOf(filePath) !== -1 && root.dragLeader !== "" && root.dragLeader !== filePath) ? root.groupDragY : 0
+        }
+
+        onXChanged: {
+            if (mouseArea.drag.active) {
+                root.dragLeader = filePath;
+                root.groupDragX = x;
+            }
+        }
+        onYChanged: {
+            if (mouseArea.drag.active) {
+                root.dragLeader = filePath;
+                root.groupDragY = y;
+            }
+        }
 
         Column {
             anchors.centerIn: parent
@@ -146,7 +173,7 @@ Item {
             anchors.fill: parent
             anchors.margins: 4
             color: "white"
-            opacity: root.selectedIcon === filePath ? 0.2 : 0.0
+            opacity: root.selectedIcons.includes(filePath) ? 0.2 : 0.0
             radius: 8
             Behavior on opacity { NumberAnimation { duration: 100 } }
         }
@@ -169,6 +196,12 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: 100 } }
             }
 
+            onPressed: (mouse) => {
+                if (mouse.button === Qt.LeftButton && root.selectedIcons.indexOf(filePath) === -1) {
+                    root.selectedIcons = [filePath]
+                }
+            }
+
             onReleased: {
                 if (drag.active) {
                     let absoluteX = delegateRoot.x + dragContainer.x;
@@ -177,28 +210,23 @@ Item {
                     let snapX = Math.max(0, Math.round(absoluteX / root.cellWidth));
                     let snapY = Math.max(0, Math.round(absoluteY / root.cellHeight));
 
-                    let targetRootX = snapX * root.cellWidth;
-                    let targetRootY = snapY * root.cellHeight;
-
-                    dragContainer.x = absoluteX - targetRootX;
-                    dragContainer.y = absoluteY - targetRootY;
-
-                    snapAnimX.start();
-                    snapAnimY.start();
-
-                    root.handleDrop(fileName, snapX, snapY);
+                    root.handleDrop(filePath, snapX, snapY);
                 }
             }
 
             onClicked: (mouse) => {
-                root.forceActiveFocus()
+                root.forceActiveFocus() 
                 
                 if (mouse.button === Qt.RightButton) {
-                    root.selectedIcon = filePath
+                    if (root.selectedIcons.indexOf(filePath) === -1) {
+                        root.selectedIcons = [filePath]
+                    }
+                    
                     let pos = mapToItem(root, mouse.x, mouse.y)
-                    root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height)
+                    
+                    root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
                 } else {
-                    root.selectedIcon = (root.selectedIcon === filePath) ? "" : filePath
+                    root.selectedIcons = [filePath]
                     root.contextMenu.close()
                 }
             }

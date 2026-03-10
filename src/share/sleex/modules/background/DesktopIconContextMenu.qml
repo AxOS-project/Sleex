@@ -17,6 +17,8 @@ Item {
     property bool targetIsDir: false
     property var targetAppEntry: null
     
+    property var targetPaths: []
+
     signal openFileRequested(string path, bool isDir)
     signal renameRequested(string path)
 
@@ -66,10 +68,14 @@ Item {
                 }
                 
                 onClicked: {
-                    if (contextMenu.targetFilePath.endsWith(".desktop") && contextMenu.targetAppEntry) {
-                        contextMenu.targetAppEntry.execute()
-                    } else {
-                        contextMenu.openFileRequested(contextMenu.targetFilePath, contextMenu.targetIsDir)
+                    for (let i = 0; i < contextMenu.targetPaths.length; i++) {
+                        let p = contextMenu.targetPaths[i];
+                        if (p === contextMenu.targetFilePath) {
+                            if (p.endsWith(".desktop") && contextMenu.targetAppEntry) contextMenu.targetAppEntry.execute()
+                            else contextMenu.openFileRequested(p, contextMenu.targetIsDir)
+                        } else {
+                            Quickshell.execDetached(["xdg-open", p])
+                        }
                     }
                     contextMenu.close()
                 }
@@ -118,7 +124,7 @@ Item {
                 }
                 
                 onClicked: {
-                    Quickshell.execDetached(["wl-copy", contextMenu.targetFilePath])
+                    Quickshell.execDetached(["wl-copy", contextMenu.targetPaths.join("\n")])
                     contextMenu.close()
                 }
             }
@@ -126,6 +132,7 @@ Item {
             RippleButton {
                 Layout.fillWidth: true
                 buttonRadius: popupBackground.radius - popupBackground.padding
+                visible: contextMenu.targetPaths.length === 1
                 
                 contentItem: RowLayout {
                     spacing: 8
@@ -172,17 +179,20 @@ Item {
                 }
                 
                 onClicked: {
-                    Quickshell.execDetached(["gio", "trash", contextMenu.targetFilePath])
+                    let cmd = ["gio", "trash"].concat(contextMenu.targetPaths)
+                    Quickshell.execDetached(cmd)
                     contextMenu.close()
                 }
             }
         }
     }
     
-    function openAt(mouseX, mouseY, path, isDir, appEnt, parentW, parentH) {
+    function openAt(mouseX, mouseY, path, isDir, appEnt, parentW, parentH, selectionArray) {
         targetFilePath = path
         targetIsDir = isDir
         targetAppEntry = appEnt
+        
+        targetPaths = (selectionArray && selectionArray.length > 0) ? selectionArray : [path]
         
         menuX = Math.min(mouseX, parentW - popupBackground.implicitWidth)
         menuY = Math.min(mouseY, parentH - popupBackground.implicitHeight)
