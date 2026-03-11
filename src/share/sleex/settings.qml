@@ -13,6 +13,7 @@ import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -245,6 +246,14 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+    }
+
+    IpcHandler {
+        target: "settings"
+
+        function reloadWallpaper(newPath: string): void {
+            Config.options.background.wallpaperPath = newPath
         }
     }
 }
