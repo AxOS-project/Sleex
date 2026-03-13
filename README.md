@@ -27,7 +27,7 @@ If you are using AxOS, you can simply use epsilon:
 epsi i sleex
 ```
 
-# Cross distro
+### Cross distro
 
 - Clone this repo
 - Build every sleex meta-packages in `sleex-packages` then install them
