@@ -19,6 +19,10 @@ Singleton {
         let dbJson = DatabaseManager.getFullConfig();
         if (dbJson !== "{}" && dbJson !== "") {
             ObjectUtils.applyToQtObject(root.options, JSON.parse(dbJson));
+        } else {
+            console.log("[Config] Initializing config in DB with default values.");
+            let plainObj = ObjectUtils.toPlainObject(root.options);
+            DatabaseManager.saveAll(JSON.stringify(plainObj));
         }
         root.isReloading = false;
     }

@@ -111,7 +111,7 @@ void DatabaseManager::saveAll(const QString &fullJson) {
     QJsonObject root = doc.object();
 
     db.transaction();
-    query.prepare("UPDATE sleex_settings SET config_json = :config WHERE module = :module");
+    query.prepare("INSERT OR REPLACE INTO sleex_settings (module, config_json) VALUES (:module, :config)");
     
     for (auto it = root.begin(); it != root.end(); ++it) {
         query.bindValue(":config", QString(QJsonDocument(it.value().toObject()).toJson(QJsonDocument::Compact)));
