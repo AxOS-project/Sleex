@@ -9,4 +9,4 @@ Target = sleex
 [Action]
 Description = reloading hyprctl configuration
 When = PostTransaction
-Exec = /usr/bin/hyprctl reload
+Exec = /usr/bin/sleep 5 && /usr/bin/hyprctl reload &
