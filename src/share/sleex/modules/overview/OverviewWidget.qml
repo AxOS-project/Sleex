@@ -17,26 +17,20 @@ Item {
     id: root
     required property var panelWindow
     readonly property var monitor: FhtcMonitors.activeMonitor
-    readonly property var toplevels: ToplevelManager.toplevels
+    // readonly property var toplevels: ToplevelManager.toplevels
     readonly property int workspacesShown: Config.options.overview.numOfRows * Config.options.overview.numOfCols
-    readonly property int workspaceGroup: Math.floor((monitor["active-workspace-idx"] - 1) / workspacesShown)
+    readonly property int workspaceGroup: Math.floor(((monitor["active-workspace-idx"] ?? 0)) / workspacesShown)
     property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
-    property var windows: HyprlandData.windowList
-    property var windowByAddress: HyprlandData.windowByAddress
-    property var windowAddresses: HyprlandData.addresses
-    property var monitorData: HyprlandData.monitors.find(m => m.id === root.monitor.id)
+    readonly property var focusedScreen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName)
     property real scale: Config.options.overview.scale
     property color activeBorderColor: Appearance.colors.colSecondary
 
-    property real workspaceImplicitWidth: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.height - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale) :
-        ((monitor.width - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale)
-    property real workspaceImplicitHeight: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.width - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale) :
-        ((monitor.height - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale)
+    property real workspaceImplicitWidth: (focusedScreen?.width ?? 0) * root.scale
+    property real workspaceImplicitHeight: ((focusedScreen?.height ?? 0) - Appearance.sizes.barHeight) * root.scale
 
     property real workspaceNumberMargin: 80
-    property real workspaceNumberSize: Math.min(workspaceImplicitHeight, workspaceImplicitWidth) * monitor.scale
+    property real workspaceNumberSize: Math.min(workspaceImplicitHeight, workspaceImplicitWidth) * (panelWindow.screen.devicePixelRatio ?? 1)
+
     property int workspaceZ: 0
     property int windowZ: 1
     property int windowDraggingZ: 99999
@@ -83,7 +77,7 @@ Item {
                         Rectangle { // Workspace
                             id: workspace
                             property int colIndex: index
-                            property int workspaceValue: root.workspaceGroup * workspacesShown + rowIndex * Config.options.overview.numOfCols + colIndex + 1
+                            property int workspaceValue: root.workspaceGroup * workspacesShown + rowIndex * Config.options.overview.numOfCols + colIndex
                             property color defaultWorkspaceColor: Appearance.colors.colLayer1 // TODO: reconsider this color for a cleaner look
                             property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
                             property color hoveredBorderColor: Appearance.colors.colLayer2Hover
@@ -112,9 +106,8 @@ Item {
                                 acceptedButtons: Qt.LeftButton
                                 onClicked: {
                                     if (root.draggingTargetWorkspace === -1) {
-                                        // Hyprland.dispatch(`exec qs ipc call overview close`)
                                         GlobalStates.overviewOpen = false
-                                        Fhtc.dispatch(`workspace ${workspaceValue}`)
+                                        FhtcIpc.dispatch("focus-workspace-by-index", { "workspace_idx": workspaceValue })
                                     }
                                 }
                             }
@@ -147,36 +140,29 @@ Item {
             Repeater { // Window repeater
                 model: ScriptModel {
                     values: {
-                        // console.log(JSON.stringify(ToplevelManager.toplevels.values.map(t => t), null, 2))
-                        return ToplevelManager.toplevels.values.filter((toplevel) => {
-                            const address = `0x${toplevel.HyprlandToplevel.address}`
-                            // console.log(`Checking window with address: ${address}`)
-                            var win = windowByAddress[address]
-                            return (root.workspaceGroup * root.workspacesShown < win?.workspace?.id && win?.workspace?.id <= (root.workspaceGroup + 1) * root.workspacesShown)
+                        return Object.values(FhtcWorkspaces.windows).filter((win) => {
+                            const wsId = win?.["workspace-id"] ?? -1
+                            return wsId >= root.workspaceGroup * root.workspacesShown &&
+                                wsId <  (root.workspaceGroup + 1) * root.workspacesShown
                         })
                     }
                 }
                 delegate: OverviewWindow {
                     id: window
                     required property var modelData
-                    property var address: `0x${modelData.HyprlandToplevel.address}`
-                    windowData: windowByAddress[address]
-                    toplevel: modelData
-                    monitorData: root.monitorData
+                    windowData: modelData
+                    // toplevel: not yet available with fhtc compositor
+                    monitorData: root.focusedScreen
                     scale: root.scale
                     availableWorkspaceWidth: root.workspaceImplicitWidth
                     availableWorkspaceHeight: root.workspaceImplicitHeight
 
-                    property int monitorId: windowData?.monitor
-                    property var monitor: HyprlandData.monitors[monitorId]
-
                     property bool atInitPosition: (initX == x && initY == y)
-                    restrictToWorkspace: Drag.active || atInitPosition
 
-                    property int workspaceColIndex: (windowData?.workspace.id - 1) % Config.options.overview.numOfCols
-                    property int workspaceRowIndex: Math.floor((windowData?.workspace.id - 1) % root.workspacesShown / Config.options.overview.numOfCols)
-                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex - (monitor?.x * root.scale)
-                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex - (monitor?.y * root.scale)
+                    property int workspaceColIndex: (modelData?.["workspace-id"] ?? 0) % Config.options.overview.numOfCols
+                    property int workspaceRowIndex: Math.floor((modelData?.["workspace-id"] ?? 0) % root.workspacesShown / Config.options.overview.numOfCols)
+                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex - ((root.focusedScreen?.x ?? 0) * root.scale)
+                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex - ((root.focusedScreen?.y ?? 0) * root.scale)
 
                     Timer {
                         id: updateWindowPosition
@@ -184,11 +170,12 @@ Item {
                         repeat: false
                         running: false
                         onTriggered: {
-                            window.x = Math.round(Math.max((windowData?.at[0] - monitorData?.reserved[0]) * root.scale, 0) + xOffset)
-                            window.y = Math.round(Math.max((windowData?.at[1] - monitorData?.reserved[1]) * root.scale, 0) + yOffset)
-                            // console.log(`[OverviewWindow] Updated position for window ${windowData?.address} to (${window.x}, ${window.y})`)
+                            window.x = Math.round(Math.max(modelData?.location[0] * root.scale, 0) + xOffset)
+                            window.y = Math.round(Math.max((modelData?.location[1] - Appearance.sizes.barHeight) * root.scale, 0) + yOffset)
                         }
                     }
+
+                    Component.onCompleted: updateWindowPosition.restart()
 
                     z: atInitPosition ? root.windowZ : root.windowDraggingZ
                     Drag.hotSpot.x: targetWindowWidth / 2
@@ -202,35 +189,32 @@ Item {
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                         drag.target: parent
                         onPressed: {
-                            root.draggingFromWorkspace = windowData?.workspace.id
+                            root.draggingFromWorkspace = modelData?.["workspace-id"]
                             window.pressed = true
                             window.Drag.active = true
                             window.Drag.source = window
-                            // console.log(`[OverviewWindow] Dragging window ${windowData?.address} from position (${window.x}, ${window.y})`)
                         }
                         onReleased: {
                             const targetWorkspace = root.draggingTargetWorkspace
                             window.pressed = false
                             window.Drag.active = false
                             root.draggingFromWorkspace = -1
-                            if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                                Fhtc.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${window.windowData?.address}`)
+                            if (targetWorkspace !== -1 && targetWorkspace !== modelData?.["workspace-id"]) {
+                                FhtcIpc.dispatch("send-window-to-workspace", { "window-id": modelData?.id, "workspace-id": targetWorkspace })
                                 updateWindowPosition.restart()
-                            }
-                            else {
+                            } else {
                                 window.x = window.initX
                                 window.y = window.initY
                             }
                         }
                         onClicked: (event) => {
-                            if (!windowData) return;
-
+                            if (!modelData) return;
                             if (event.button === Qt.LeftButton) {
                                 GlobalStates.overviewOpen = false
-                                Hyprland.dispatch(`focuswindow address:${windowData.address}`)
+                                FhtcIpc.dispatch("focus-window", { "window-id": modelData.id })
                                 event.accepted = true
                             } else if (event.button === Qt.MiddleButton) {
-                                Hyprland.dispatch(`closewindow address:${windowData.address}`)
+                                FhtcIpc.dispatch("close-window", { "window-id": modelData.id })
                                 event.accepted = true
                             }
                         }
@@ -238,7 +222,7 @@ Item {
                         StyledToolTip {
                             extraVisibleCondition: false
                             alternativeVisibleCondition: dragArea.containsMouse && !window.Drag.active
-                            text: `${windowData.title}\n[${windowData.class}] ${windowData.xwayland ? "[XWayland] " : ""}\n`
+                            text: `${modelData.title}\n[${modelData["app-id"]}]\n`
                         }
                     }
                 }
@@ -246,9 +230,9 @@ Item {
 
             Rectangle { // Focused workspace indicator
                 id: focusedWorkspaceIndicator
-                property int activeWorkspaceInGroup: monitor.activeWorkspace?.id - (root.workspaceGroup * root.workspacesShown)
-                property int activeWorkspaceRowIndex: Math.floor((activeWorkspaceInGroup - 1) / Config.options.overview.numOfCols)
-                property int activeWorkspaceColIndex: (activeWorkspaceInGroup - 1) % Config.options.overview.numOfCols
+                property int activeWorkspaceInGroup: (monitor["active-workspace-idx"] ?? 0) - (root.workspaceGroup * root.workspacesShown)
+                property int activeWorkspaceRowIndex: Math.floor(activeWorkspaceInGroup / Config.options.overview.numOfCols)
+                property int activeWorkspaceColIndex: activeWorkspaceInGroup % Config.options.overview.numOfCols
                 x: (root.workspaceImplicitWidth + workspaceSpacing) * activeWorkspaceColIndex
                 y: (root.workspaceImplicitHeight + workspaceSpacing) * activeWorkspaceRowIndex
                 z: root.windowZ

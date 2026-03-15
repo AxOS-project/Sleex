@@ -204,7 +204,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.clipboard
@@ -227,7 +227,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.emojis
