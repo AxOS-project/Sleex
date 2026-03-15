@@ -54,6 +54,6 @@ Singleton {
         const fullPath = "/usr/share/sleex/" + relativeSoundPath;
         // Use the absolute path to paplay to be safe.
         const command = ["/usr/bin/paplay", `${fullPath}`];
-        Quickshell.execDetached([command]);
+        Quickshell.execDetached(command);
     }
 }

@@ -148,6 +148,7 @@ Singleton {
             property int critical: 5
             property int suspend: 2
             property bool sound: true //Added for Battery Sound Toggle
+            property bool overlayEnabled: true
         }
 
         property JsonObject bar: JsonObject {
