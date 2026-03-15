@@ -27,12 +27,10 @@ If you are using AxOS, you can simply use epsilon:
 epsi i sleex
 ```
 
-# Cross distro
+### Other arch-based distributions
 
-- Clone this repo
-- Build every sleex meta-packages in `sleex-packages` then install them
-- Build the user configuration in the `sleex-user-config` and copy the user files to your home dir with `cp -r /etc/skel/.config/* ~/.config`.
-- Build and install the main package
+Sleex is available on the AUR as `sleex-git`. [See the page](https://aur.archlinux.org/packages/sleex-git).
+You can install it using an aur helper such as `yay` or `paru`.
 
 Then, you can start sleex by selecting the sleex session on your greeter
 

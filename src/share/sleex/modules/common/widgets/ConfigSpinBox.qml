@@ -11,13 +11,14 @@ RowLayout {
     property alias stepSize: spinBoxWidget.stepSize
     property alias from: spinBoxWidget.from
     property alias to: spinBoxWidget.to
+    property bool fillWidth: true
     spacing: 10
     Layout.leftMargin: 8
     Layout.rightMargin: 8
 
     StyledText {
         id: labelWidget
-        Layout.fillWidth: true
+        Layout.fillWidth: root.fillWidth
         text: root.text
         font.pixelSize: Appearance.font.pixelSize.small
         color: Appearance.colors.colOnSecondaryContainer

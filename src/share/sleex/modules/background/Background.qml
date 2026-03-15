@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import qs 
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
@@ -32,6 +33,7 @@ Scope {
             WlrLayershell.layer: WlrLayer.Bottom
             WlrLayershell.namespace: "quickshell:background"
             exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
@@ -150,6 +152,11 @@ Scope {
                     wallpaperContainer.currentPath = bgRoot.wallpaperPath
                     wallpaperContainer.state = "animating"
                 }
+            }
+
+            DesktopIcons {
+                id: desktopIcons
+                z: 1
             }
 
             Clock {

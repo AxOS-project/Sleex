@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Greetd
 import Qt5Compat.GraphicalEffects
+import qs
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services

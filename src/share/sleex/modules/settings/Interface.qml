@@ -379,6 +379,13 @@ ContentPage {
 
             }
 
+            ConfigSwitch {
+                text: "Show desktop icons"
+                checked: Config.options.background.showDesktopIcons
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.background.showDesktopIcons = checked;
+             }
+
             ContentSubsection {
                 title: "Clock mode"
 

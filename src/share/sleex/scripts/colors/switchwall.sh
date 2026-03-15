@@ -6,7 +6,7 @@ XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 CONFIG_DIR="/usr/share/sleex"
 CACHE_DIR="$XDG_CACHE_HOME/sleex"
 STATE_DIR="$XDG_STATE_HOME/sleex"
-SHELL_CONFIG="$HOME/.sleex/settings.json"
+DB_CONFIG="$XDG_CONFIG_HOME/sleex/sleex_settings.db"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$CONFIG_DIR/scripts/terminal/scheme-base.json"
@@ -209,9 +209,10 @@ switch() {
             matugen_args=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
 
-            if [ -f "$SHELL_CONFIG" ]; then
-                # swww img "$imgpath" --transition-step 100 --transition-fps 120 --transition-type grow --transition-angle 30 --transition-duration 1 --transition-pos "$cursorposx, $cursorposy_inverted" &
-                jq --arg path "$imgpath" '.background.wallpaperPath = $path' "$SHELL_CONFIG" > "$SHELL_CONFIG.tmp" && mv "$SHELL_CONFIG.tmp" "$SHELL_CONFIG"
+            if [[ -f "$DB_CONFIG" ]]; then
+                sqlite3 "$DB_CONFIG" "UPDATE sleex_settings SET config_json = json_set(config_json, '$.wallpaperPath', '$imgpath') WHERE module='background';"
+                qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$imgpath"
+                qs -p /usr/share/sleex/settings.qml ipc call settings reloadWallpaper "$imgpath"
             fi
             remove_restore
         fi
@@ -254,7 +255,8 @@ main() {
     noswitch_flag=""
 
     get_type_from_config() {
-        jq -r '.appearance.palette.type' "$SHELL_CONFIG" 2>/dev/null || echo "auto"
+        local val=$(sqlite3 "$DB_CONFIG" "SELECT json_extract(config_json, '$.palette.type') FROM sleex_settings WHERE module='appearance';" 2>/dev/null)
+        echo "${val:-auto}"
     }
 
     detect_scheme_type_from_image() {
@@ -288,7 +290,7 @@ main() {
                 ;;
             --noswitch)
                 noswitch_flag="1"
-                imgpath=$(jq -r '.background.wallpaperPath' "$SHELL_CONFIG" 2>/dev/null || echo "")
+                imgpath=$(sqlite3 "$DB_CONFIG" "SELECT json_extract(config_json, '$.wallpaperPath') FROM sleex_settings WHERE module='background';" 2>/dev/null)
                 shift
                 ;;
             *)

@@ -83,4 +83,11 @@ Singleton {
         }
     }
 
+    IpcHandler {
+        target: "background"
+
+        function forceWallpaperReload(newPath: string): void {
+            Config.options.background.wallpaperPath = newPath
+        }
+    }
 }
