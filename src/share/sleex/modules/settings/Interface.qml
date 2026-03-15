@@ -18,7 +18,6 @@ ContentPage {
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
             _selectedFaceImage = file.toString().replace("file://", "")
-            faceImageField.text = _selectedFaceImage
             usernameProcess.running = true
         }
     }
@@ -42,6 +41,31 @@ ContentPage {
     Process {
         id: copyProcess
         running: false
+    }
+
+    Process {
+        id: initFaceProcess
+        command: ["bash", "-c", "f=\"/usr/share/sddm/faces/$(id -un).face.icon\"; [ -f \"$f\" ] && echo \"$f\" || echo \"\""]
+        running: false
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (line.trim() !== "") {
+                    _selectedFaceImage = line.trim()
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: initFaceProcess.running = true
+
+    Process {
+        id: removeProcess
+        running: false
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                _selectedFaceImage = ""
+            }
+        }
     }
 
     Platform.FileDialog {
@@ -465,23 +489,46 @@ ContentPage {
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
         }
+    }
+
+    ContentSection {
+        title: "Login Screen"
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 12
 
-            MaterialTextField {
-                id: faceImageField
+            Text {
+                id: faceImageLabel
                 Layout.fillWidth: true
-                placeholderText: "Lockscreen profile picture"
-                readOnly: true
+                text: _selectedFaceImage !== "" ? "  Custom picture set" : "No picture selected"
+                elide: Text.ElideMiddle
+                color: palette.windowText
             }
 
-            RippleButtonWithIcon {
-                materialIcon: "account_circle"
-                materialIconFill: false
-                mainText: "Browse"
-                onClicked: sddmFaceDialog.open()
+            RowLayout {
+                spacing: 0
+
+                RippleButtonWithIcon {
+                    materialIcon: "folder_open"
+                    materialIconFill: false
+                    mainText: ""
+                    onClicked: sddmFaceDialog.open()
+                }
+
+                RippleButtonWithIcon {
+                    visible: _selectedFaceImage !== ""
+                    materialIcon: "delete"
+                    materialIconFill: false
+                    mainText: ""
+                    onClicked: {
+                        removeProcess.command = [
+                            "pkexec", "rm", "-f",
+                            "/usr/share/sddm/faces/" + _selectedFaceImage.split("/").pop()
+                        ]
+                        removeProcess.running = true
+                    }
+                }
             }
         }
     }
