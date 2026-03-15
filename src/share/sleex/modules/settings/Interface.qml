@@ -1,12 +1,69 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
+import Quickshell.Io
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
+
+    property string _selectedFaceImage: ""
+
+    FileDialog {
+        id: sddmFaceDialog
+        title: "Select profile picture"
+        nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
+        onAccepted: {
+            _selectedFaceImage = selectedFile.toString().replace("file://", "")
+            copyProcess.command = ["bash", "-c",
+                "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
+            ]
+            copyProcess.running = true
+        }
+    }
+
+    Process {
+        id: copyProcess
+        running: false
+    }
+
+    Process {
+        id: initFaceProcess
+        command: ["bash", "-c", "f=\"/usr/share/sddm/faces/$(id -un).face.icon\"; [ -f \"$f\" ] && echo \"$f\" || echo \"\""]
+        running: false
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (line.trim() !== "") {
+                    _selectedFaceImage = line.trim()
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: initFaceProcess.running = true
+
+    Process {
+        id: removeProcess
+        running: false
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                _selectedFaceImage = ""
+            }
+        }
+    }
+
+    FileDialog {
+        id: avatarPickerDialog
+        title: "Select avatar image"
+        nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
+        onAccepted: {
+            Config.options.dashboard.avatarPath = selectedFile.toString().replace("file://", "")
+            avatarPathField.text = Config.options.dashboard.avatarPath
+        }
+    }
 
     ContentSection {
         title: "Shell style"
@@ -174,22 +231,35 @@ ContentPage {
         }
 
         MaterialTextField {
-            id: avatarPath
-            Layout.fillWidth: true
-            placeholderText: "Avatar path"
-            text: Config.options.dashboard.avatarPath
-            onTextChanged: {
-                Config.options.dashboard.avatarPath = text;
-            }
-        }
-
-        MaterialTextField {
             id: userDesc
             Layout.fillWidth: true
             placeholderText: "User description"
             text: Config.options.dashboard.userDesc
             onTextChanged: {
                 Config.options.dashboard.userDesc = text;
+            }
+        }
+
+        // Avatar path field with Browse button (merged from doc 1)
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            MaterialTextField {
+                id: avatarPathField
+                Layout.fillWidth: true
+                placeholderText: "Avatar image path"
+                text: Config.options.dashboard.avatarPath
+                onEditingFinished: {
+                    Config.options.dashboard.avatarPath = text;
+                }
+            }
+
+            RippleButtonWithIcon {
+                materialIcon: "image"
+                materialIconFill: false
+                mainText: "Browse"
+                onClicked: avatarPickerDialog.open()
             }
         }
 
@@ -406,6 +476,48 @@ ContentPage {
             checked: Config.options.lockscreen.enableScrim
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
+        }
+    }
+
+    ContentSection {
+        title: "Login Screen"
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+
+            Text {
+                id: faceImageLabel
+                Layout.fillWidth: true
+                text: _selectedFaceImage !== "" ? "  Custom picture set" : "  No picture selected"
+                elide: Text.ElideMiddle
+                color: palette.windowText
+            }
+
+            RowLayout {
+                spacing: 8
+
+                RippleButtonWithIcon {
+                    materialIcon: "folder_open"
+                    materialIconFill: false
+                    mainText: "Browse"
+                    onClicked: sddmFaceDialog.open()
+                }
+
+                RippleButtonWithIcon {
+                    visible: _selectedFaceImage !== ""
+                    materialIcon: "delete"
+                    materialIconFill: false
+                    mainText: "Remove"
+                    onClicked: {
+                        removeProcess.command = [
+                            "pkexec", "rm", "-f",
+                            "/usr/share/sddm/faces/" + _selectedFaceImage.split("/").pop()
+                        ]
+                        removeProcess.running = true
+                    }
+                }
+            }
         }
     }
 
