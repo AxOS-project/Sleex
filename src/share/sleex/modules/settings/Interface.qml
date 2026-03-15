@@ -466,6 +466,16 @@ ContentPage {
                 {"value": "top-right", "displayName": "Top Right"},
             ]
         }
+        
+        ConfigSwitch {
+            visible: UPower.displayDevice.isLaptopBattery
+            text: "Battery overlay warnings"
+            checked: Config.options.battery.overlayEnabled
+            onClicked: checked = !checked;
+            onCheckedChanged: {
+                Config.options.battery.overlayEnabled = checked;
+            }
+        }  
     }
 
     ContentSection {
