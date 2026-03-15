@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.platform as Platform
+import QtQuick.Dialogs
 import Quickshell.Io
 import qs.services
 import qs.modules.common
@@ -12,29 +12,16 @@ ContentPage {
 
     property string _selectedFaceImage: ""
 
-    Platform.FileDialog {
+    FileDialog {
         id: sddmFaceDialog
         title: "Select profile picture"
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
-            _selectedFaceImage = file.toString().replace("file://", "")
-            usernameProcess.running = true
-        }
-    }
-
-    Process {
-        id: usernameProcess
-        command: ["id", "-un"]
-        running: false
-        stdout: SplitParser {
-            onRead: (line) => {
-                copyProcess.command = [
-                    "pkexec", "cp",
-                    _selectedFaceImage,
-                    "/usr/share/sddm/faces/" + line.trim() + ".face.icon"
-                ]
-                copyProcess.running = true
-            }
+            _selectedFaceImage = selectedFile.toString().replace("file://", "")
+            copyProcess.command = ["bash", "-c",
+                "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
+            ]
+            copyProcess.running = true
         }
     }
 
@@ -68,12 +55,12 @@ ContentPage {
         }
     }
 
-    Platform.FileDialog {
+    FileDialog {
         id: avatarPickerDialog
         title: "Select avatar image"
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
-            Config.options.dashboard.avatarPath = file.toString().replace("file://", "")
+            Config.options.dashboard.avatarPath = selectedFile.toString().replace("file://", "")
             avatarPathField.text = Config.options.dashboard.avatarPath
         }
     }
@@ -253,6 +240,7 @@ ContentPage {
             }
         }
 
+        // Avatar path field with Browse button (merged from doc 1)
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -501,7 +489,7 @@ ContentPage {
             Text {
                 id: faceImageLabel
                 Layout.fillWidth: true
-                text: _selectedFaceImage !== "" ? "  Custom picture set" : "  No picture selected"
+                text: _selectedFaceImage !== "" ? "Custom picture set" : "No picture selected"
                 elide: Text.ElideMiddle
                 color: palette.windowText
             }
