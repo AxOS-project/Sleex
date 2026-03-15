@@ -501,7 +501,7 @@ ContentPage {
             Text {
                 id: faceImageLabel
                 Layout.fillWidth: true
-                text: _selectedFaceImage !== "" ? "Custom picture set" : "No picture selected"
+                text: _selectedFaceImage !== "" ? "  Custom picture set" : "  No picture selected"
                 elide: Text.ElideMiddle
                 color: palette.windowText
             }
