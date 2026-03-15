@@ -220,12 +220,12 @@ Item {
                                 return winArea > maxArea ? win : maxWin
                             }, null)
                         }
-                        property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
+                        property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.["app-id"]), "image-missing")
 
                         property string materialIconName: {
                             if (!biggestWindow) return ""
 
-                            const winClass = biggestWindow.class.toLowerCase()
+                            const winClass = biggestWindow?.["app-id"]
                             const map = {
                                 "language":    ["firefox", "chromium", "google-chrome", "brave", "edge", "vivaldi", "qutebrowser", "librewolf", "zen-browser"],
                                 "terminal":    ["foot", "kitty", "alacritty", "wezterm", "gnome-terminal", "konsole", "xfce4-terminal", "xterm"],
@@ -336,8 +336,8 @@ Item {
                                     (workspaceButtonWidth - workspaceIconSize) / 2 - 2 : workspaceIconMarginShrinked
                                 anchors.rightMargin: (!GlobalStates.workspaceShowNumbers) ? 
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
-                                color: (monitor.activeWorkspace?.id == button.workspaceValue) ? 
-                                    Appearance.m3colors.m3onPrimary : Appearance.m3colors.m3onSecondaryContainer
+                                color: (activeWorkspaceIndex == index) ?
+                                    Appearance.m3colors.m3onPrimary : Appearance.colors.colOnSecondaryContainer
 
                                 Behavior on opacity {
                                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
