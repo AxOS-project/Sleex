@@ -501,18 +501,18 @@ ContentPage {
             Text {
                 id: faceImageLabel
                 Layout.fillWidth: true
-                text: _selectedFaceImage !== "" ? "  Custom picture set" : "No picture selected"
+                text: _selectedFaceImage !== "" ? "Custom picture set" : "No picture selected"
                 elide: Text.ElideMiddle
                 color: palette.windowText
             }
 
             RowLayout {
-                spacing: 0
+                spacing: 8
 
                 RippleButtonWithIcon {
                     materialIcon: "folder_open"
                     materialIconFill: false
-                    mainText: ""
+                    mainText: "Browse"
                     onClicked: sddmFaceDialog.open()
                 }
 
@@ -520,7 +520,7 @@ ContentPage {
                     visible: _selectedFaceImage !== ""
                     materialIcon: "delete"
                     materialIconFill: false
-                    mainText: ""
+                    mainText: "Remove"
                     onClicked: {
                         removeProcess.command = [
                             "pkexec", "rm", "-f",
