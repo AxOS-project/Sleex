@@ -91,7 +91,7 @@ done < <(
     /^\$[a-zA-Z0-9_]+:/ {
       line=$0
       sub(/^[ \t]+/, "", line)
-      key=$1; sub(/\:.*/, "", key)
+      key=$1; sub(/:.*/, "", key)
       val=$2; gsub(/;.*$/, "", val); gsub(/^[ \t]+|[ \t]+$/, "", val)
       if (match(key, /^\$term([0-9]{1,2})$/, m)) {
         printf("TERM[%d]=#%s\n", m[1], gensub(/^#?([0-9A-Fa-f]{6}).*/, "\\1", "g", val))

@@ -34,4 +34,5 @@ function(qml_module arg_TARGET)
 endfunction()
 
 add_subdirectory(services)
-add_subdirectory(fhtc)
+add_subdirectory(core)
+add_subdirectory(utils)

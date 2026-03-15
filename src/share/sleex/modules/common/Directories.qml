@@ -15,14 +15,13 @@ Singleton {
     readonly property string pictures: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
     readonly property string downloads: StandardPaths.standardLocations(StandardPaths.DownloadLocation)[0]
     readonly property string home: StandardPaths.standardLocations(StandardPaths.HomeLocation)[0]
+    readonly property string desktop: StandardPaths.standardLocations(StandardPaths.DesktopLocation)[0]
 
     // Other dirs used by the shell, without "file://"
     property string favicons: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/favicons`)
     property string coverArt: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/coverart`)
     property string latexOutput: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/media/latex`)
     property string shellConfig: FileUtils.trimFileProtocol(`${Directories.home}/.sleex`)
-    property string shellConfigName: "settings.json"
-    property string shellConfigPath: `${Directories.shellConfig}/${Directories.shellConfigName}`
     property string todoPath: FileUtils.trimFileProtocol(`${Directories.home}/.sleex/user/todo.json`)
     property string notificationsPath: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/notifications/notifications.json`)
     property string generatedMaterialThemePath: FileUtils.trimFileProtocol(`${Directories.state}/sleex/user/generated/colors.json`)

@@ -108,12 +108,20 @@ ContentPage {
                     }
                 }
                 ConfigSwitch {
-                    text: 'Always show numbers'
+                    text: 'Use Material icons'
                     onClicked: checked = !checked;
-                    checked: Config.options.bar.workspaces.alwaysShowNumbers
+                    checked: Config.options.bar.workspaces.useMaterialIcons
                     onCheckedChanged: {
-                        Config.options.bar.workspaces.alwaysShowNumbers = checked;
+                        Config.options.bar.workspaces.useMaterialIcons = checked;
                     }
+                }
+            }
+            ConfigSwitch {
+                text: 'Always show numbers'
+                onClicked: checked = !checked;
+                checked: Config.options.bar.workspaces.alwaysShowNumbers
+                onCheckedChanged: {
+                    Config.options.bar.workspaces.alwaysShowNumbers = checked;
                 }
             }
             ConfigSpinBox {
@@ -313,6 +321,13 @@ ContentPage {
 
             }
 
+            ConfigSwitch {
+                text: "Show desktop icons"
+                checked: Config.options.background.showDesktopIcons
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.background.showDesktopIcons = checked;
+             }
+
             ContentSubsection {
                 title: "Clock mode"
 
@@ -418,5 +433,9 @@ ContentPage {
                 Config.options.dashboard.calendar.syncInterval = value;
             }
         }
+    }
+
+    Item {
+        implicitHeight: 24
     }
 }

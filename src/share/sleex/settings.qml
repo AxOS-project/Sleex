@@ -13,6 +13,7 @@ import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -54,6 +55,11 @@ ApplicationWindow {
             component: "modules/settings/Wifi.qml"
         },
         {
+            name: "Applications",
+            icon: "apps",
+            component: "modules/settings/Applications.qml"
+        },
+        {
             name: "Display",
             icon: "display_settings",
             component: "modules/settings/Display.qml"
@@ -80,10 +86,10 @@ ApplicationWindow {
         Idle.init();
     }
 
-    minimumWidth: 600
-    minimumHeight: 400
-    width: 900
-    height: 650
+    minimumWidth: 650
+    minimumHeight: 730
+    width: 850
+    height: 730
     color: Appearance.colors.colLayer1
 
     ColumnLayout {
@@ -240,6 +246,14 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+    }
+
+    IpcHandler {
+        target: "settings"
+
+        function reloadWallpaper(newPath: string): void {
+            Config.options.background.wallpaperPath = newPath
         }
     }
 }

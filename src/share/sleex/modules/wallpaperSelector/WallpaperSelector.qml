@@ -49,7 +49,6 @@ Scope {
 
         Loader {
             id: wppselectorContentLoader
-            active: GlobalStates.wppselectorOpen
             anchors {
                 top: parent.top
                 bottom: parent.bottom
@@ -69,8 +68,6 @@ Scope {
                     wppselectorRoot.hide();
                 }
             } 
-
-
 
             sourceComponent: Item {
                 implicitHeight: wppselectorBackground.implicitHeight
@@ -104,7 +101,6 @@ Scope {
                         contentHeight: height
                         flickableDirection: Flickable.HorizontalFlick
 
-
                         Row {
                             id: wallpaperRow
                             spacing: 20
@@ -128,14 +124,14 @@ Scope {
                                             width: 45
                                             height: 45
                                         }                   
-                                        
-                                        
+                                             
                                         Image {
                                             id: wallpaperImage
                                             anchors.fill: parent
                                             fillMode: Image.PreserveAspectCrop
                                             source: Config.options.background.wallpaperSelectorPath + "/" + modelData
                                             asynchronous: true
+                                            cache: true
                                             sourceSize: Qt.size(250, 250)
 
                                             MouseArea {

@@ -28,6 +28,8 @@ import QtQuick
 import QtQuick.Controls
 import qs.services
 
+import Sleex.Core
+
 ShellRoot {
     // Enable/disable modules here. False = not loaded at all, so rest assured
     // no unnecessary stuff will take up memory if you decide to only use, say, the overview.

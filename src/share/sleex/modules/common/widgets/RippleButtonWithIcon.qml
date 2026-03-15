@@ -14,7 +14,7 @@ RippleButton {
         StyledText {
             text: buttonWithIconRoot.mainText
             font.pixelSize: Appearance.font.pixelSize.small
-            color: Appearance.colors.colOnSecondaryContainer
+            color: buttonWithIconRoot.enabled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOutline
         }
     }
     implicitHeight: 35
@@ -32,7 +32,7 @@ RippleButton {
                 sourceComponent: MaterialSymbol {
                     text: buttonWithIconRoot.materialIcon
                     iconSize: Appearance.font.pixelSize.larger
-                    color: Appearance.colors.colOnSecondaryContainer
+                    color: buttonWithIconRoot.enabled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOutline
                     fill: buttonWithIconRoot.materialIconFill ? 1 : 0
                 }
             }
@@ -44,7 +44,7 @@ RippleButton {
                     text: buttonWithIconRoot.nerdIcon
                     font.pixelSize: Appearance.font.pixelSize.larger
                     font.family: Appearance.font.family.iconNerd
-                    color: Appearance.colors.colOnSecondaryContainer
+                    color: buttonWithIconRoot.enabled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOutline
                 }
             }
         }
