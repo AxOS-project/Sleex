@@ -16,8 +16,6 @@ import Sleex.Fhtc
 Item {
     id: root
     required property var bar
-    property bool borderless: Config.options.bar.borderless
-    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
     readonly property string screenName: bar.screen?.name ?? ""
     
     // Get workspaces for this screen only, sorted by ID
@@ -39,14 +37,12 @@ Item {
     }
     
     property list<bool> workspaceOccupied: []
-    property int widgetPadding: 0
     property int horizontalPadding: 5
     property int workspaceButtonWidth: 30
     property real workspaceIconSize: workspaceButtonWidth * 0.6
     property real workspaceIconSizeShrinked: workspaceButtonWidth * 0.55
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
-    property int workspaceIndexInGroup: (monitor.activeWorkspace?.id - 1) % Config.options.bar.workspaces.shown
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
