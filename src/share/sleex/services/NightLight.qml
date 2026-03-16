@@ -1,5 +1,4 @@
 pragma Singleton
-
 import QtQuick
 import qs.modules.common
 import Quickshell
@@ -10,53 +9,86 @@ import Quickshell.Io
  * In theory we don't need this because hyprsunset has a config file, but it somehow doesn't work.
  * It should also be possible to control it via hyprctl, but it doesn't work consistently either so we're just killing and launching.
  */
-
 Singleton {
     id: root
+    property bool ready: false
     property var manualActive
     property string from: Config.options.display.nightLightFrom
     property string to: Config.options.display.nightLightTo
     property bool automatic: Config.options.display.nightLightAuto && (Config?.ready ?? true)
     property int colorTemperature: Config.options.display.nightLightTemperature
     property bool shouldBeOn
-    property bool firstEvaluation: true
     property bool active: false
-
-    property int fromHour: Number(from.split(":")[0])
+    property int fromHour:   Number(from.split(":")[0])
     property int fromMinute: Number(from.split(":")[1])
-    property int toHour: Number(to.split(":")[0])
-    property int toMinute: Number(to.split(":")[1])
-
-    property int clockHour: DateTime.clock.hours
+    property int toHour:     Number(to.split(":")[0])
+    property int toMinute:   Number(to.split(":")[1])
+    property int clockHour:   DateTime.clock.hours
     property int clockMinute: DateTime.clock.minutes
 
+    Component.onCompleted: {
+        ready = true;
+        reEvaluate();
+        if (!root.automatic && !root.active && Config.options.display.nightLightEnabled) {
+            root.enable();
+        }
+    }
 
-    onClockMinuteChanged: reEvaluate()
-    onAutomaticChanged: {
+    onClockMinuteChanged: {
+        if (ready) reEvaluate();
+    }
+
+    onFromChanged: {
+        if (!ready) return;
         root.manualActive = undefined;
-        root.firstEvaluation = true;
         reEvaluate();
     }
-    function reEvaluate() {
-        const t = clockHour * 60 + clockMinute;
-        const from = fromHour * 60 + fromMinute;
-        const to = toHour * 60 + toMinute;
+    onToChanged: {
+        if (!ready) return;
+        root.manualActive = undefined;
+        reEvaluate();
+    }
 
-        if (from < to) {
-            root.shouldBeOn = t >= from && t <= to;
-        } else {
-            // Wrapped around midnight
-            root.shouldBeOn = t >= from || t <= to;
-        }
-        if (firstEvaluation) {
-            firstEvaluation = false;
-            root.ensureState();
+    property real appliedTemperature: colorTemperature
+    property int lastSentTemp: -1
+
+    Behavior on appliedTemperature {
+        NumberAnimation { duration: 2000; easing.type: Easing.InOutSine }
+    }
+
+    onAppliedTemperatureChanged: {
+        if (!root.active) return;
+        const t = Math.round(root.appliedTemperature);
+        if (t === root.lastSentTemp) return;
+        root.lastSentTemp = t;
+        Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(t)]);
+    }
+
+    onColorTemperatureChanged: {
+        if (root.active) {
+            root.appliedTemperature = colorTemperature;
         }
     }
 
-    onShouldBeOnChanged: ensureState()
+    onAutomaticChanged: {
+        if (!ready) return;
+        root.manualActive = undefined;
+        reEvaluate();
+    }
+
+    function reEvaluate() {
+        const t = clockHour * 60 + clockMinute;
+        const f = fromHour  * 60 + fromMinute;
+        const e = toHour    * 60 + toMinute;
+        if (f < e) {
+            root.shouldBeOn = t >= f && t < e;
+        } else {
+            root.shouldBeOn = t >= f || t < e;
+        }
+        root.ensureState();
+    }
+
     function ensureState() {
-        // console.log("[Hyprsunset] Ensuring state:", root.shouldBeOn, "Automatic mode:", root.automatic);
         if (!root.automatic || root.manualActive !== undefined)
             return;
         if (root.shouldBeOn) {
@@ -66,18 +98,18 @@ Singleton {
         }
     }
 
-    function load() { } // Dummy to force init
+    function load() { }
 
     function enable() {
         root.active = true;
-        // console.log("[Hyprsunset] Enabling");
-        Quickshell.execDetached(["bash", "-c", `pidof hyprsunset || hyprsunset --temperature ${root.colorTemperature}`]);
+        root.lastSentTemp = -1;
+        Quickshell.execDetached(["bash", "-c",
+            `pidof hyprsunset || hyprsunset --temperature ${root.colorTemperature}`]);
     }
 
     function disable() {
         root.active = false;
-        // console.log("[Hyprsunset] Disabling");
-        Quickshell.execDetached(["bash", "-c", `pkill hyprsunset`]);
+        Quickshell.execDetached(["bash", "-c", "pkill hyprsunset"]);
     }
 
     function fetchState() {
@@ -96,7 +128,6 @@ Singleton {
                     root.active = false;
                 else
                     root.active = (output != "6500");
-                // console.log("[Hyprsunset] Fetched state:", output, "->", root.active);
             }
         }
     }
@@ -104,7 +135,6 @@ Singleton {
     function toggle() {
         if (root.manualActive === undefined)
             root.manualActive = root.active;
-
         root.manualActive = !root.manualActive;
         if (root.manualActive) {
             root.enable();
