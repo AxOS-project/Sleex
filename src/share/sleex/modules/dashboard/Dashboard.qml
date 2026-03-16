@@ -8,7 +8,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
-import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
@@ -17,33 +16,42 @@ import Quickshell.Hyprland
 import Quickshell.Bluetooth
 
 Scope {
+    id: dashboardScope
+
     property int dashboardWidth: Appearance.sizes.dashboardWidth
     property int dashboardPadding: 15
     property real dashboardScale: Config.options.dashboard.dashboardScale
-    
+
+    function openDashboard(): void {
+        GlobalStates.dashboardOpen = true
+        Notifications.timeoutAll()
+    }
+    function closeDashboard(): void { GlobalStates.dashboardOpen = false }
+    function toggleDashboard(): void {
+        if (GlobalStates.dashboardOpen) closeDashboard()
+        else openDashboard()
+    }
+
     PanelWindow {
         id: dashboardRoot
-        visible: GlobalStates.dashboardOpen
-
-        function hide() {
-            GlobalStates.dashboardOpen = false
-        }
+        visible: true
+        function hide(): void { dashboardScope.closeDashboard() }
 
         exclusiveZone: 0
         implicitWidth: 1500 * dashboardScale
         implicitHeight: 900 * dashboardScale
         WlrLayershell.namespace: "quickshell:dashboard"
-        // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
-        // WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.layer: WlrLayer.Overlay
         color: "transparent"
+        mask: GlobalStates.dashboardOpen ? null : emptyRegion
+
+        Region { id: emptyRegion }
 
         HyprlandFocusGrab {
             id: grab
             windows: [ dashboardRoot ]
             active: GlobalStates.dashboardOpen
-            onCleared: () => {
-                if (!active) dashboardRoot.hide()
-            }
+            onCleared: () => { if (!active) dashboardRoot.hide() }
         }
 
         Item {
@@ -53,9 +61,67 @@ Scope {
             height: parent.height / dashboardScale
             scale: dashboardScale
 
+            property bool isAnimating: false
+            property bool slideAnimEnabled: true
+
+            Connections {
+                target: GlobalStates
+                function onDashboardOpenChanged() {
+                    scaleWrapper.isAnimating = true
+                    closeHoldTimer.restart()
+                }
+            }
+            Timer {
+                id: closeHoldTimer
+                interval: Config.options.dashboard.animationDuration + 50
+                onTriggered: scaleWrapper.isAnimating = false
+            }
+            Connections {
+                target: Config.options.dashboard
+                function onAnimationDirectionChanged() {
+                    scaleWrapper.slideAnimEnabled = false
+                    Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
+                }
+            }
+
             Loader {
                 id: dashboardContentLoader
-                active: GlobalStates.dashboardOpen
+                active: true
+                visible: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
+
+                transform: Translate {
+                    x: {
+                        if (GlobalStates.dashboardOpen) return 0
+                        const dir = Config.options.dashboard.animationDirection
+                        if (dir === "left")  return -scaleWrapper.width
+                        if (dir === "right") return  scaleWrapper.width
+                        return 0
+                    }
+                    y: {
+                        if (GlobalStates.dashboardOpen) return 0
+                        const dir = Config.options.dashboard.animationDirection
+                        if (dir === "up")   return -scaleWrapper.height
+                        if (dir === "down") return  scaleWrapper.height
+                        return 0
+                    }
+                    Behavior on x {
+                        enabled: scaleWrapper.slideAnimEnabled
+                        NumberAnimation {
+                            duration: Config.options.dashboard.animationDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
+                        }
+                    }
+                    Behavior on y {
+                        enabled: scaleWrapper.slideAnimEnabled
+                        NumberAnimation {
+                            duration: Config.options.dashboard.animationDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
+                        }
+                    }
+                }
+
                 anchors {
                     top: parent.top
                     bottom: parent.bottom
@@ -68,12 +134,9 @@ Scope {
                 }
                 width: dashboardWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
                 height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-
                 focus: GlobalStates.dashboardOpen
                 Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) {
-                        dashboardRoot.hide();
-                    }
+                    if (event.key === Qt.Key_Escape) dashboardRoot.hide()
                 }
 
                 sourceComponent: Item {
@@ -108,16 +171,19 @@ Scope {
                                 Item {
                                     implicitWidth: distroIcon.width
                                     implicitHeight: distroIcon.height
+
                                     CustomIcon {
                                         id: distroIcon
                                         width: 30
                                         height: 30
                                         source: SystemInfo.distroIcon
                                     }
-                                    ColorOverlay {
-                                        anchors.fill: distroIcon
+
+                                    MultiEffect {
                                         source: distroIcon
-                                        color: Appearance.colors.colOnLayer0
+                                        anchors.fill: distroIcon
+                                        colorization: 1.0
+                                        colorizationColor: Appearance.colors.colOnLayer0
                                     }
                                 }
 
@@ -144,14 +210,14 @@ Scope {
                                         buttonIcon: "settings"
                                         onClicked: {
                                             Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
-                                            GlobalStates.dashboardOpen = false
+                                            dashboardScope.closeDashboard()
                                         }
                                         StyledToolTip { text: qsTr("Settings") }
                                     }
                                     QuickToggleButton {
                                         toggled: false
                                         buttonIcon: "power_settings_new"
-                                        onClicked: { Hyprland.dispatch("global quickshell:sessionOpen") }
+                                        onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
                                         StyledToolTip { text: qsTr("Session") }
                                     }
                                 }
@@ -166,6 +232,7 @@ Scope {
 
                                     Loader {
                                         active: Bluetooth.adapters.values.length > 0
+                                        asynchronous: true
                                         sourceComponent: BluetoothToggle {}
                                     }
 
@@ -180,10 +247,9 @@ Scope {
                                 Layout.fillHeight: true
                                 Layout.preferredHeight: 600
                                 Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
-
                                 onCurrentTabChanged: {
                                     if (currentTab === "greetings")
-                                        Notifications.timeoutAll();
+                                        Notifications.timeoutAll()
                                 }
                             }
                         }
@@ -195,38 +261,24 @@ Scope {
 
     IpcHandler {
         target: "dashboard"
-
-        function toggle(): void {
-            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
-            if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
-        }
-
-        function close(): void { GlobalStates.dashboardOpen = false; }
-        function open(): void {
-            GlobalStates.dashboardOpen = true;
-            Notifications.timeoutAll();
-        }
+        function toggle(): void { dashboardScope.toggleDashboard() }
+        function close(): void  { dashboardScope.closeDashboard()  }
+        function open(): void   { dashboardScope.openDashboard()   }
     }
 
     GlobalShortcut {
         name: "dashboardToggle"
         description: qsTr("Toggles dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
-            if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
-        }
+        onPressed: dashboardScope.toggleDashboard()
     }
     GlobalShortcut {
         name: "dashboardOpen"
         description: qsTr("Opens dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = true;
-            Notifications.timeoutAll();
-        }
+        onPressed: dashboardScope.openDashboard()
     }
     GlobalShortcut {
         name: "dashboardClose"
         description: qsTr("Closes dashboard on press")
-        onPressed: { GlobalStates.dashboardOpen = false; }
+        onPressed: dashboardScope.closeDashboard()
     }
 }
