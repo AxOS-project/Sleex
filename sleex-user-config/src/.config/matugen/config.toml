@@ -38,10 +38,9 @@ input_path = '~/.config/matugen/templates/discord.css'
 output_path = '~/.config/vesktop/themes/discord.css'
 
 [templates.kitty]
-input_path = '~/.config/Matugen/templates/kitty-colors.conf'
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
 output_path = '~/.config/kitty/themes/Matugen.conf'
 post_hook = "kitty +kitten themes --reload-in=all Matugen"
-# ...
 
 [templates.zed]
 input_path = '~/.config/matugen/templates/zed.json'
