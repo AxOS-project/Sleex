@@ -37,9 +37,11 @@ output_path = '~/.local/state/sleex/user/generated/wallpaper/path.txt'
 input_path = '~/.config/matugen/templates/discord.css'
 output_path = '~/.config/vesktop/themes/discord.css'
 
-[templates.vscode]
-input_path = '~/.config/matugen/templates/vscode.json'
-output_path = "~/.vscode/extensions/sleex-theme/themes/sleex.json"
+[templates.kitty]
+input_path = '~/.config/Matugen/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/themes/Matugen.conf'
+post_hook = "kitty +kitten themes --reload-in=all Matugen"
+# ...
 
 [templates.zed]
 input_path = '~/.config/matugen/templates/zed.json'
