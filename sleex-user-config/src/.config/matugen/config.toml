@@ -44,3 +44,8 @@ output_path = "~/.vscode/extensions/sleex-theme/themes/sleex.json"
 [templates.zed]
 input_path = '~/.config/matugen/templates/zed.json'
 output_path = "~/.config/zed/themes/sleex.json"
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty.conf'
+output_path = '~/.config/kitty/themes/Matugen.conf'
+post_hook = "kitty +kitten themes --reload-in=all Matugen"
