@@ -130,11 +130,11 @@ ContentPage {
             id: dashboardAnimationSlider
             from: 0
             to: 1
-            value: Config.options.dashboard.animationDuration / 1000
+            value: Config.options.dashboard.animationDuration / 1500
 
             onMoved: {
                 if (Config.loaded) {
-                    Config.options.dashboard.animationDuration = value * 1000
+                    Config.options.dashboard.animationDuration = value * 1500
                 }
             }
         }
