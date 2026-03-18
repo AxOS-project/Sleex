@@ -38,8 +38,8 @@ Scope {
         function hide(): void { dashboardScope.closeDashboard() }
 
         exclusiveZone: 0
-        implicitWidth: 1500 * dashboardScale
-        implicitHeight: 900 * dashboardScale
+        implicitWidth: Screen.width
+        implicitHeight: Screen.height
         WlrLayershell.namespace: "quickshell:dashboard"
         WlrLayershell.layer: WlrLayer.Overlay
         color: "transparent"
@@ -57,13 +57,28 @@ Scope {
         Item {
             id: scaleWrapper
             anchors.centerIn: parent
-            width: parent.width / dashboardScale
-            height: parent.height / dashboardScale
+            width: 1500
+            height: 900
             scale: dashboardScale
 
             property bool isAnimating: false
-            property bool slideAnimEnabled: true
+            property bool slideAnimEnabled: false
+            property string animDir: ""
+            property int animDuration: Config.options.dashboard.animationDuration
 
+            // Use full screen dimensions so the panel fully exits the screen
+            // in every direction, regardless of where scaleWrapper is centered.
+            readonly property int targetX: animDir === "left"  ? -dashboardRoot.width
+                                         : animDir === "right" ?  dashboardRoot.width : 0
+            readonly property int targetY: animDir === "up"    ? -dashboardRoot.height
+                                         : animDir === "down"  ?  dashboardRoot.height : 0
+
+            Component.onCompleted: {
+                animDir = Config.options.dashboard.animationDirection
+                Qt.callLater(() => { slideAnimEnabled = true })
+            }
+
+            // Keep loader visible for the full duration of the close animation.
             Connections {
                 target: GlobalStates
                 function onDashboardOpenChanged() {
@@ -76,10 +91,12 @@ Scope {
                 interval: Config.options.dashboard.animationDuration + 50
                 onTriggered: scaleWrapper.isAnimating = false
             }
+
             Connections {
                 target: Config.options.dashboard
                 function onAnimationDirectionChanged() {
                     scaleWrapper.slideAnimEnabled = false
+                    scaleWrapper.animDir = Config.options.dashboard.animationDirection
                     Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
                 }
             }
@@ -87,27 +104,26 @@ Scope {
             Loader {
                 id: dashboardContentLoader
                 active: true
+                // Load content on a background thread — zero main-thread
+                // blocking at startup, content is ready before first open.
+                asynchronous: true
                 visible: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
 
+                // Keep the layer always primed so the GPU texture is ready
+                // the instant an animation begins — no first-frame stall.
+                layer.enabled: true
+                // Integer-pixel translations need no sub-pixel smoothing;
+                // disabling it removes a per-frame GPU filtering pass.
+                layer.smooth: false
+                layer.mipmap: false
+
                 transform: Translate {
-                    x: {
-                        if (GlobalStates.dashboardOpen) return 0
-                        const dir = Config.options.dashboard.animationDirection
-                        if (dir === "left")  return -scaleWrapper.width
-                        if (dir === "right") return  scaleWrapper.width
-                        return 0
-                    }
-                    y: {
-                        if (GlobalStates.dashboardOpen) return 0
-                        const dir = Config.options.dashboard.animationDirection
-                        if (dir === "up")   return -scaleWrapper.height
-                        if (dir === "down") return  scaleWrapper.height
-                        return 0
-                    }
+                    x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
+                    y: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetY
                     Behavior on x {
                         enabled: scaleWrapper.slideAnimEnabled
                         NumberAnimation {
-                            duration: Config.options.dashboard.animationDuration
+                            duration: scaleWrapper.animDuration
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
                         }
@@ -115,7 +131,7 @@ Scope {
                     Behavior on y {
                         enabled: scaleWrapper.slideAnimEnabled
                         NumberAnimation {
-                            duration: Config.options.dashboard.animationDuration
+                            duration: scaleWrapper.animDuration
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
                         }
@@ -132,8 +148,6 @@ Scope {
                     bottomMargin: Appearance.sizes.hyprlandGapsOut
                     leftMargin: Appearance.sizes.elevationMargin
                 }
-                width: dashboardWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-                height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
                 focus: GlobalStates.dashboardOpen
                 Keys.onPressed: (event) => {
                     if (event.key === Qt.Key_Escape) dashboardRoot.hide()
