@@ -29,9 +29,8 @@ Singleton {
     Component.onCompleted: {
         ready = true;
         reEvaluate();
-        if (!root.automatic && !root.active && Config.options.display.nightLightEnabled) {
+        if (!root.automatic && !root.active && Config.options.display.nightLightEnabled)
             root.enable();
-        }
     }
 
     onClockMinuteChanged: {
@@ -48,61 +47,34 @@ Singleton {
         root.manualActive = undefined;
         reEvaluate();
     }
-
-    property real appliedTemperature: colorTemperature
-    property int lastSentTemp: -1
-
-    Behavior on appliedTemperature {
-        NumberAnimation { duration: 2000; easing.type: Easing.InOutSine }
-    }
-
-    onAppliedTemperatureChanged: {
-        if (!root.active) return;
-        const t = Math.round(root.appliedTemperature);
-        if (t === root.lastSentTemp) return;
-        root.lastSentTemp = t;
-        Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(t)]);
-    }
-
-    onColorTemperatureChanged: {
-        if (root.active) {
-            root.appliedTemperature = colorTemperature;
-        }
-    }
-
     onAutomaticChanged: {
         if (!ready) return;
         root.manualActive = undefined;
         reEvaluate();
     }
 
+    onColorTemperatureChanged: {
+        if (root.active)
+            Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(colorTemperature)]);
+    }
+
     function reEvaluate() {
         const t = clockHour * 60 + clockMinute;
         const f = fromHour  * 60 + fromMinute;
         const e = toHour    * 60 + toMinute;
-        if (f < e) {
-            root.shouldBeOn = t >= f && t < e;
-        } else {
-            root.shouldBeOn = t >= f || t < e;
-        }
+        root.shouldBeOn = (f < e) ? (t >= f && t < e) : (t >= f || t < e);
         root.ensureState();
     }
 
     function ensureState() {
-        if (!root.automatic || root.manualActive !== undefined)
-            return;
-        if (root.shouldBeOn) {
-            root.enable();
-        } else {
-            root.disable();
-        }
+        if (!root.automatic || root.manualActive !== undefined) return;
+        if (root.shouldBeOn) root.enable(); else root.disable();
     }
 
     function load() { }
 
     function enable() {
         root.active = true;
-        root.lastSentTemp = -1;
         Quickshell.execDetached(["bash", "-c",
             `pidof hyprsunset || hyprsunset --temperature ${root.colorTemperature}`]);
     }
@@ -136,10 +108,6 @@ Singleton {
         if (root.manualActive === undefined)
             root.manualActive = root.active;
         root.manualActive = !root.manualActive;
-        if (root.manualActive) {
-            root.enable();
-        } else {
-            root.disable();
-        }
+        if (root.manualActive) root.enable(); else root.disable();
     }
 }
