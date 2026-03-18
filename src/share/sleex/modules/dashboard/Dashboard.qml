@@ -66,12 +66,14 @@ Scope {
             property string animDir: ""
             property int animDuration: Config.options.dashboard.animationDuration
 
-            // Use full screen dimensions so the panel fully exits the screen
-            // in every direction, regardless of where scaleWrapper is centered.
-            readonly property int targetX: animDir === "left"  ? -dashboardRoot.width
-                                         : animDir === "right" ?  dashboardRoot.width : 0
-            readonly property int targetY: animDir === "up"    ? -dashboardRoot.height
-                                         : animDir === "down"  ?  dashboardRoot.height : 0
+            // Divide by dashboardScale because the Translate operates in
+            // scaleWrapper's local (pre-scale) coordinate space. Without this,
+            // the actual screen movement is target * dashboardScale, which
+            // under-shoots at scale < 1 and over-shoots at scale > 1.
+            readonly property int targetX: animDir === "left"  ? -dashboardRoot.width  / dashboardScale
+                                         : animDir === "right" ?  dashboardRoot.width  / dashboardScale : 0
+            readonly property int targetY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
+                                         : animDir === "down"  ?  dashboardRoot.height / dashboardScale : 0
 
             Component.onCompleted: {
                 animDir = Config.options.dashboard.animationDirection
@@ -112,10 +114,9 @@ Scope {
                 // Keep the layer always primed so the GPU texture is ready
                 // the instant an animation begins — no first-frame stall.
                 layer.enabled: true
-                // Integer-pixel translations need no sub-pixel smoothing;
+                layer.smooth: true
+                
                 // disabling it removes a per-frame GPU filtering pass.
-                layer.smooth: false
-                layer.mipmap: false
 
                 transform: Translate {
                     x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
