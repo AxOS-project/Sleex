@@ -15,7 +15,6 @@ ContentPage {
     property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
     property var brightnessMonitor: Brightness.getMonitorForScreen(focusedScreen)
 
-    // Parse existing "HH:mm" config strings
     property int nlStartHour:   parseInt(Config.options.display.nightLightFrom?.split(":")[0] ?? "20")
     property int nlStartMinute: parseInt(Config.options.display.nightLightFrom?.split(":")[1] ?? "0")
     property int nlEndHour:     parseInt(Config.options.display.nightLightTo?.split(":")[0]   ?? "7")
@@ -23,13 +22,15 @@ ContentPage {
 
     property string nlEditingTarget: "start"
 
-    property string nlStartLabel: DateTime.is24Hour
-        ? String(nlStartHour).padStart(2, '0') + ":" + String(nlStartMinute).padStart(2, '0')
-        : ((nlStartHour % 12) || 12) + ":" + String(nlStartMinute).padStart(2, '0') + (nlStartHour >= 12 ? " PM" : " AM")
+    // Helper — only recomputes when hour/minute args actually change
+    function formatTime(hour, minute) {
+        if (DateTime.is24Hour)
+            return String(hour).padStart(2, '0') + ":" + String(minute).padStart(2, '0')
+        return ((hour % 12) || 12) + ":" + String(minute).padStart(2, '0') + (hour >= 12 ? " PM" : " AM")
+    }
 
-    property string nlEndLabel: DateTime.is24Hour
-        ? String(nlEndHour).padStart(2, '0') + ":" + String(nlEndMinute).padStart(2, '0')
-        : ((nlEndHour % 12) || 12) + ":" + String(nlEndMinute).padStart(2, '0') + (nlEndHour >= 12 ? " PM" : " AM")
+    property string nlStartLabel: formatTime(nlStartHour, nlStartMinute)
+    property string nlEndLabel:   formatTime(nlEndHour,   nlEndMinute)
 
     forceWidth: true
 
@@ -94,14 +95,7 @@ ContentPage {
             visible: enableSwitch.checked || autoSwitch.checked
             opacity: visible ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 160 } }
-            onMoved: commitTimer.restart()
-        }
-
-        Timer {
-            id: commitTimer
-            interval: 400
-            repeat: false
-            onTriggered: Config.options.display.nightLightTemperature = nlSlider.value
+            onMoved: Config.options.display.nightLightTemperature = value
         }
 
         Item { implicitHeight: 4; visible: autoSwitch.checked }
