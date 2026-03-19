@@ -22,26 +22,16 @@ Scope {
     property int dashboardPadding: 15
     property real dashboardScale: Config.options.dashboard.dashboardScale
 
-    function openDashboard(): void {
-        GlobalStates.dashboardOpen = true
-        Notifications.timeoutAll()
-    }
-    function closeDashboard(): void { GlobalStates.dashboardOpen = false }
-    function toggleDashboard(): void {
-        if (GlobalStates.dashboardOpen) closeDashboard()
-        else openDashboard()
-    }
-
     PanelWindow {
         id: dashboardRoot
         visible: true
-        function hide(): void { dashboardScope.closeDashboard() }
 
         exclusiveZone: 0
         implicitWidth: Screen.width
         implicitHeight: Screen.height
         WlrLayershell.namespace: "quickshell:dashboard"
         WlrLayershell.layer: WlrLayer.Overlay
+      
         color: "transparent"
         mask: GlobalStates.dashboardOpen ? null : emptyRegion
 
@@ -51,7 +41,7 @@ Scope {
             id: grab
             windows: [ dashboardRoot ]
             active: GlobalStates.dashboardOpen
-            onCleared: () => { if (!active) dashboardRoot.hide() }
+            onCleared: () => { if (!active) ipc.close() }
         }
 
         Item {
@@ -63,20 +53,20 @@ Scope {
 
             property bool isAnimating: false
             property bool slideAnimEnabled: false
-            property string animDir: ""
+     
+            property string animDir: Config.options.dashboard.animationDirection
             property int animDuration: Config.options.dashboard.animationDuration
 
             // Divide by dashboardScale because the Translate operates in
-            // scaleWrapper's local (pre-scale) coordinate space. Without this,
-            // the actual screen movement is target * dashboardScale, which
+            // scaleWrapper's local (pre-scale) coordinate space.
+            // Without this, the actual screen movement is target * dashboardScale, which
             // under-shoots at scale < 1 and over-shoots at scale > 1.
             readonly property int targetX: animDir === "left"  ? -dashboardRoot.width  / dashboardScale
-                                         : animDir === "right" ?  dashboardRoot.width  / dashboardScale : 0
+                                         : animDir === "right" ? dashboardRoot.width  / dashboardScale : 0
             readonly property int targetY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
-                                         : animDir === "down"  ?  dashboardRoot.height / dashboardScale : 0
+                                         : animDir === "down"  ? dashboardRoot.height / dashboardScale : 0
 
             Component.onCompleted: {
-                animDir = Config.options.dashboard.animationDirection
                 Qt.callLater(() => { slideAnimEnabled = true })
             }
 
@@ -117,7 +107,6 @@ Scope {
                 layer.smooth: true
                 
                 // disabling it removes a per-frame GPU filtering pass.
-
                 transform: Translate {
                     x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
                     y: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetY
@@ -132,7 +121,7 @@ Scope {
                     Behavior on y {
                         enabled: scaleWrapper.slideAnimEnabled
                         NumberAnimation {
-                            duration: scaleWrapper.animDuration
+                             duration: scaleWrapper.animDuration
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
                         }
@@ -151,7 +140,7 @@ Scope {
                 }
                 focus: GlobalStates.dashboardOpen
                 Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) dashboardRoot.hide()
+                    if (event.key === Qt.Key_Escape) ipc.close()
                 }
 
                 sourceComponent: Item {
@@ -225,7 +214,7 @@ Scope {
                                         buttonIcon: "settings"
                                         onClicked: {
                                             Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
-                                            dashboardScope.closeDashboard()
+                                            ipc.close()
                                         }
                                         StyledToolTip { text: qsTr("Settings") }
                                     }
@@ -275,25 +264,32 @@ Scope {
     }
 
     IpcHandler {
+        id: ipc
         target: "dashboard"
-        function toggle(): void { dashboardScope.toggleDashboard() }
-        function close(): void  { dashboardScope.closeDashboard()  }
-        function open(): void   { dashboardScope.openDashboard()   }
+        function toggle(): void {
+            if (GlobalStates.dashboardOpen) close()
+            else open()
+        }
+        function close(): void  { GlobalStates.dashboardOpen = false }
+        function open(): void   {
+            GlobalStates.dashboardOpen = true
+            Notifications.timeoutAll()
+        }
     }
 
     GlobalShortcut {
         name: "dashboardToggle"
         description: qsTr("Toggles dashboard on press")
-        onPressed: dashboardScope.toggleDashboard()
+        onPressed: ipc.toggle()
     }
     GlobalShortcut {
         name: "dashboardOpen"
         description: qsTr("Opens dashboard on press")
-        onPressed: dashboardScope.openDashboard()
+        onPressed: ipc.open()
     }
     GlobalShortcut {
         name: "dashboardClose"
         description: qsTr("Closes dashboard on press")
-        onPressed: dashboardScope.closeDashboard()
+        onPressed: ipc.close()
     }
 }
