@@ -9,7 +9,7 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
+    readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
     property string _selectedFaceImage: ""
 
     FileDialog {
