@@ -18,7 +18,6 @@ ContentPage {
     readonly property var paletteKeys: ["auto", "scheme-content", "scheme-expressive", "scheme-fidelity", "scheme-fruit-salad", "scheme-monochrome", "scheme-neutral", "scheme-rainbow", "scheme-tonal-spot"]
     readonly property var transitionKeys: ["fade", "scale", "wipe"]
     readonly property var wipeOrientationKeys: ["wipe_left", "wipe", "wipe_up", "wipe_down"]
-    readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
 
     readonly property bool isWipeSelected: {
         const t = Config.options.background.wallpaperTransition
@@ -95,46 +94,6 @@ ContentPage {
                             Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${modelData}`])
                         }
                     }
-                }
-            }
-        }
-    }
-
-    ContentSection {
-        title: "Dashboard"
-
-        StyledText {
-            text: "Animation Direction"
-            color: Appearance.colors.colSubtext
-        }
-
-        StyledComboBox {
-            id: dashboardAnimationComboBox
-            model: ["Right", "Left", "Down", "Up"]
-            currentIndex: Math.max(0, dashboardAnimationKeys.indexOf(Config.options.dashboard.animationDirection))
-
-            onActivated: (index) => {
-                const selectedValue = dashboardAnimationKeys[index]
-                if (Config.options.dashboard.animationDirection !== selectedValue) {
-                    Config.options.dashboard.animationDirection = selectedValue
-                }
-            }
-        }
-
-        StyledText {
-            text: "Animation Intensity"
-            color: Appearance.colors.colSubtext
-        }
-
-        StyledSlider {
-            id: dashboardAnimationSlider
-            from: 0
-            to: 1
-            value: Config.options.dashboard.animationDuration / 1500
-
-            onMoved: {
-                if (Config.loaded) {
-                    Config.options.dashboard.animationDuration = value * 1500
                 }
             }
         }

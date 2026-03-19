@@ -11,6 +11,7 @@ ContentPage {
     forceWidth: true
 
     property string _selectedFaceImage: ""
+    readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
 
     FileDialog {
         id: sddmFaceDialog
@@ -284,6 +285,42 @@ ContentPage {
                 checked: Config.options.dashboard.opt.enableAIAssistant
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
+            }
+        }
+
+        StyledText {
+            text: "Animation Direction"
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledComboBox {
+            id: dashboardAnimationComboBox
+            model: ["Right", "Left", "Down", "Up"]
+            currentIndex: Math.max(0, dashboardAnimationKeys.indexOf(Config.options.dashboard.animationDirection))
+
+            onActivated: (index) => {
+                const selectedValue = dashboardAnimationKeys[index]
+                if (Config.options.dashboard.animationDirection !== selectedValue) {
+                    Config.options.dashboard.animationDirection = selectedValue
+                }
+            }
+        }
+
+        StyledText {
+            text: "Animation Intensity"
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledSlider {
+            id: dashboardAnimationSlider
+            from: 0
+            to: 1
+            value: Config.options.dashboard.animationDuration / 1500
+
+            onMoved: {
+                if (Config.loaded) {
+                    Config.options.dashboard.animationDuration = value * 1500
+                }
             }
         }
     }
