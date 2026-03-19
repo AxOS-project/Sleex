@@ -8,7 +8,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
-import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
@@ -17,45 +16,118 @@ import Quickshell.Hyprland
 import Quickshell.Bluetooth
 
 Scope {
+    id: dashboardScope
+
     property int dashboardWidth: Appearance.sizes.dashboardWidth
     property int dashboardPadding: 15
     property real dashboardScale: Config.options.dashboard.dashboardScale
-    
+
     PanelWindow {
         id: dashboardRoot
-        visible: GlobalStates.dashboardOpen
-
-        function hide() {
-            GlobalStates.dashboardOpen = false
-        }
+        visible: true
 
         exclusiveZone: 0
-        implicitWidth: 1500 * dashboardScale
-        implicitHeight: 900 * dashboardScale
+        implicitWidth: Screen.width
+        implicitHeight: Screen.height
         WlrLayershell.namespace: "quickshell:dashboard"
-        // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
-        // WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.layer: WlrLayer.Overlay
+      
         color: "transparent"
+        mask: GlobalStates.dashboardOpen ? null : emptyRegion
+
+        Region { id: emptyRegion }
 
         HyprlandFocusGrab {
             id: grab
             windows: [ dashboardRoot ]
             active: GlobalStates.dashboardOpen
-            onCleared: () => {
-                if (!active) dashboardRoot.hide()
-            }
+            onCleared: () => { if (!active) ipc.close() }
         }
 
         Item {
             id: scaleWrapper
             anchors.centerIn: parent
-            width: parent.width / dashboardScale
-            height: parent.height / dashboardScale
+            width: 1500
+            height: 900
             scale: dashboardScale
+
+            property bool isAnimating: false
+            property bool slideAnimEnabled: false
+     
+            property string animDir: Config.options.dashboard.animationDirection
+            property int animDuration: Config.options.dashboard.animationDuration
+
+            // Divide by dashboardScale because the Translate operates in
+            // scaleWrapper's local (pre-scale) coordinate space.
+            // Without this, the actual screen movement is target * dashboardScale, which
+            // under-shoots at scale < 1 and over-shoots at scale > 1.
+            readonly property int targetX: animDir === "left"  ? -dashboardRoot.width  / dashboardScale
+                                         : animDir === "right" ? dashboardRoot.width  / dashboardScale : 0
+            readonly property int targetY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
+                                         : animDir === "down"  ? dashboardRoot.height / dashboardScale : 0
+
+            Component.onCompleted: {
+                Qt.callLater(() => { slideAnimEnabled = true })
+            }
+
+            // Keep loader visible for the full duration of the close animation.
+            Connections {
+                target: GlobalStates
+                function onDashboardOpenChanged() {
+                    scaleWrapper.isAnimating = true
+                    closeHoldTimer.restart()
+                }
+            }
+            Timer {
+                id: closeHoldTimer
+                interval: Config.options.dashboard.animationDuration + 50
+                onTriggered: scaleWrapper.isAnimating = false
+            }
+
+            Connections {
+                target: Config.options.dashboard
+                function onAnimationDirectionChanged() {
+                    scaleWrapper.slideAnimEnabled = false
+                    scaleWrapper.animDir = Config.options.dashboard.animationDirection
+                    Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
+                }
+            }
 
             Loader {
                 id: dashboardContentLoader
-                active: GlobalStates.dashboardOpen
+                active: true
+                // Load content on a background thread — zero main-thread
+                // blocking at startup, content is ready before first open.
+                asynchronous: true
+                visible: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
+
+                // Keep the layer always primed so the GPU texture is ready
+                // the instant an animation begins — no first-frame stall.
+                layer.enabled: true
+                layer.smooth: true
+                
+                // disabling it removes a per-frame GPU filtering pass.
+                transform: Translate {
+                    x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
+                    y: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetY
+                    Behavior on x {
+                        enabled: scaleWrapper.slideAnimEnabled
+                        NumberAnimation {
+                            duration: scaleWrapper.animDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
+                        }
+                    }
+                    Behavior on y {
+                        enabled: scaleWrapper.slideAnimEnabled
+                        NumberAnimation {
+                             duration: scaleWrapper.animDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
+                        }
+                    }
+                }
+
                 anchors {
                     top: parent.top
                     bottom: parent.bottom
@@ -66,14 +138,9 @@ Scope {
                     bottomMargin: Appearance.sizes.hyprlandGapsOut
                     leftMargin: Appearance.sizes.elevationMargin
                 }
-                width: dashboardWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-                height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-
                 focus: GlobalStates.dashboardOpen
                 Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) {
-                        dashboardRoot.hide();
-                    }
+                    if (event.key === Qt.Key_Escape) ipc.close()
                 }
 
                 sourceComponent: Item {
@@ -108,16 +175,19 @@ Scope {
                                 Item {
                                     implicitWidth: distroIcon.width
                                     implicitHeight: distroIcon.height
+
                                     CustomIcon {
                                         id: distroIcon
                                         width: 30
                                         height: 30
                                         source: SystemInfo.distroIcon
                                     }
-                                    ColorOverlay {
-                                        anchors.fill: distroIcon
+
+                                    MultiEffect {
                                         source: distroIcon
-                                        color: Appearance.colors.colOnLayer0
+                                        anchors.fill: distroIcon
+                                        colorization: 1.0
+                                        colorizationColor: Appearance.colors.colOnLayer0
                                     }
                                 }
 
@@ -144,14 +214,14 @@ Scope {
                                         buttonIcon: "settings"
                                         onClicked: {
                                             Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
-                                            GlobalStates.dashboardOpen = false
+                                            ipc.close()
                                         }
                                         StyledToolTip { text: qsTr("Settings") }
                                     }
                                     QuickToggleButton {
                                         toggled: false
                                         buttonIcon: "power_settings_new"
-                                        onClicked: { Hyprland.dispatch("global quickshell:sessionOpen") }
+                                        onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
                                         StyledToolTip { text: qsTr("Session") }
                                     }
                                 }
@@ -166,6 +236,7 @@ Scope {
 
                                     Loader {
                                         active: Bluetooth.adapters.values.length > 0
+                                        asynchronous: true
                                         sourceComponent: BluetoothToggle {}
                                     }
 
@@ -180,10 +251,9 @@ Scope {
                                 Layout.fillHeight: true
                                 Layout.preferredHeight: 600
                                 Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
-
                                 onCurrentTabChanged: {
                                     if (currentTab === "greetings")
-                                        Notifications.timeoutAll();
+                                        Notifications.timeoutAll()
                                 }
                             }
                         }
@@ -194,39 +264,32 @@ Scope {
     }
 
     IpcHandler {
+        id: ipc
         target: "dashboard"
-
         function toggle(): void {
-            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
-            if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
+            if (GlobalStates.dashboardOpen) close()
+            else open()
         }
-
-        function close(): void { GlobalStates.dashboardOpen = false; }
-        function open(): void {
-            GlobalStates.dashboardOpen = true;
-            Notifications.timeoutAll();
+        function close(): void  { GlobalStates.dashboardOpen = false }
+        function open(): void   {
+            GlobalStates.dashboardOpen = true
+            Notifications.timeoutAll()
         }
     }
 
     GlobalShortcut {
         name: "dashboardToggle"
         description: qsTr("Toggles dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = !GlobalStates.dashboardOpen;
-            if(GlobalStates.dashboardOpen) Notifications.timeoutAll();
-        }
+        onPressed: ipc.toggle()
     }
     GlobalShortcut {
         name: "dashboardOpen"
         description: qsTr("Opens dashboard on press")
-        onPressed: {
-            GlobalStates.dashboardOpen = true;
-            Notifications.timeoutAll();
-        }
+        onPressed: ipc.open()
     }
     GlobalShortcut {
         name: "dashboardClose"
         description: qsTr("Closes dashboard on press")
-        onPressed: { GlobalStates.dashboardOpen = false; }
+        onPressed: ipc.close()
     }
 }
