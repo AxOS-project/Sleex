@@ -72,7 +72,7 @@ Singleton {
 
     onIsCriticalAndNotChargingChanged: {
         if (!available) return
-        if (isCriticalAndNotCharging && !Config.options.battery.overlayEnabled) {
+        if (isCriticalAndNotCharging && !Config.options.overlays.batteryWarningOverlayEnabled) {
             if (Config.options.battery.sound)
                 Audio.playSound("assets/sounds/battery/05_critical.wav")
             sendNotification("Critical Battery Level",
@@ -83,7 +83,7 @@ Singleton {
     onIsLowAndNotChargingChanged: {
         if (!available) return
         // Only fire for low (not critical) to avoid double notification
-        if (isLowAndNotCharging && !isCriticalAndNotCharging && !Config.options.battery.overlayEnabled) {
+        if (isLowAndNotCharging && !isCriticalAndNotCharging && !Config.options.overlays.batteryWarningOverlayEnabled) {
             if (Config.options.battery.sound)
                 Audio.playSound("assets/sounds/battery/04_warn.wav")
             sendNotification("Low Battery Warning",

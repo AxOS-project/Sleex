@@ -252,6 +252,12 @@ Singleton {
             property string position: "top-right" // top-left, top-center, top-right, bottom not supported
         }
 
+        property JsonObject overlays: JsonObject {
+            property bool batteryWarningOverlayEnabled: true
+            property bool chargingOverlayEnabled: true
+            property bool mediaOverlayEnabled: true
+        }
+
         property JsonObject overview: JsonObject {
             property real scale: 0.18 // Relative to screen size
             property real numOfRows: 2

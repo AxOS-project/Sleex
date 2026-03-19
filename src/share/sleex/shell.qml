@@ -23,6 +23,8 @@ import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
 import qs.modules.BatteryPopup
+import qs.modules.ChargingPopup
+import qs.modules.MediaOverlay
 
 import Quickshell
 import QtQuick
@@ -71,6 +73,8 @@ ShellRoot {
     LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
     LazyLoader { active: true; component: BatteryPopup {} }
+    LazyLoader { active: Config.options.overlays.chargingOverlayEnabled; component: ChargingPopup {} }
+    LazyLoader { active: Config.options.overlays.mediaOverlayEnabled; component: MediaOverlay {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
     LazyLoader { active: enableSidebarLeft; component: SidebarLeft {} }

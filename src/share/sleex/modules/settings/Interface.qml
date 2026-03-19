@@ -9,9 +9,8 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
-    property string _selectedFaceImage: ""
     readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
+    property string _selectedFaceImage: ""
 
     FileDialog {
         id: sddmFaceDialog
@@ -87,7 +86,6 @@ ContentPage {
                 Config.options.appearance.opacity = value;
             }
         }
-
     }
 
     ContentSection {
@@ -148,7 +146,6 @@ ContentPage {
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.background = checked;
             }
-
         }
 
         ContentSubsection {
@@ -203,7 +200,6 @@ ContentPage {
                 }
             }
         }   
-
     }
 
     ContentSection {
@@ -241,7 +237,6 @@ ContentPage {
             }
         }
 
-        // Avatar path field with Browse button (merged from doc 1)
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -287,7 +282,7 @@ ContentPage {
                 onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
             }
         }
-
+        
         StyledText {
             text: "Animation Direction"
             color: Appearance.colors.colSubtext
@@ -322,7 +317,7 @@ ContentPage {
                     Config.options.dashboard.animationDuration = value * 1500
                 }
             }
-        }
+        }        
     }
 
     ContentSection {
@@ -367,7 +362,6 @@ ContentPage {
                     Config.options.dock.pinnedOnStartup = checked;
                 }
             }
-
         }
 
         ConfigSpinBox {
@@ -377,9 +371,7 @@ ContentPage {
                 Config.options.dock.hoverRegionHeight = value
             }
         }
-
     }
-
 
     ContentSection {
         title: "Background"
@@ -422,10 +414,9 @@ ContentPage {
                     onClicked: checked = !checked
                     onCheckedChanged: {
                         Config.options.background.enableQuote = checked
-                        Quotes.refresh();    
+                        Quotes.refresh();
                     }
                 }
-
             }
 
             ConfigSwitch {
@@ -471,7 +462,6 @@ ContentPage {
             ContentSubsection {
                 title: "Quote Source"
                 tooltip: "The local quotes are stored in /usr/share/sleex/assets/quotes.json.\nThese quotes are made by the AxOS community and are tech related."
-
                 ConfigSelectionArray {
                     currentValue: Config.options.background.quoteSource
                     configOptionName: "background.quoteSource"
@@ -503,16 +493,35 @@ ContentPage {
                 {"value": "top-right", "displayName": "Top Right"},
             ]
         }
-        
+    }
+
+    ContentSection {
+        title: "Overlays"
+
+        ConfigSwitch {
+            text: "Charging progress"
+            checked: Config.options.overlays.chargingOverlayEnabled
+            onClicked: checked = !checked
+            StyledToolTip { text: "Show a charging animation when the charger is plugged in." }
+            onCheckedChanged: Config.options.overlays.chargingOverlayEnabled = checked
+        }
+
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
-            text: "Battery overlay warnings"
-            checked: Config.options.battery.overlayEnabled
-            onClicked: checked = !checked;
-            onCheckedChanged: {
-                Config.options.battery.overlayEnabled = checked;
-            }
-        }  
+            text: "Battery warnings"
+            checked: Config.options.overlays.batteryWarningOverlayEnabled
+            onClicked: checked = !checked
+            StyledToolTip { text: "Show warning overlays for battery statuses." }
+            onCheckedChanged: Config.options.overlays.batteryWarningOverlayEnabled = checked
+        }
+        
+        ConfigSwitch {
+            text: "Now playing"
+            checked: Config.options.overlays.mediaOverlayEnabled
+            onClicked: checked = !checked
+            StyledToolTip { text: "Show a now-playing bar at the top when media plays." }
+            onCheckedChanged: Config.options.overlays.mediaOverlayEnabled = checked
+        }
     }
 
     ContentSection {
