@@ -197,8 +197,8 @@ Singleton {
 
         property JsonObject dashboard: JsonObject {
             property real dashboardScale: 1.0 // Overall scale of the dashboard
-            property string animationDirection: "up"
-            property int animationDuration: 300
+            property string animationDirection: "down" // "up", "down", "left", "right"
+            property int animationDuration: 374
             property string ghUsername: "levraiardox"
             property string avatarPath: "file:///usr/share/pixmaps/sleex/1024px/white.png"
             property string userDesc: "Today is a good day to have a good day!"
