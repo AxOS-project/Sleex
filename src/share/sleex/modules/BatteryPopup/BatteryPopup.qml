@@ -57,7 +57,7 @@ Scope {
         target: Battery
 
         function onIsLowAndNotChargingChanged() {
-            if (!Config.options.battery.overlayEnabled) return
+            if (!Config.options.overlays.batteryWarningOverlayEnabled) return
             if (Battery.isLowAndNotCharging) {
                 root.isCritical = Battery.isCriticalAndNotCharging
                 overlayLoader.active = false
@@ -73,7 +73,7 @@ Scope {
         }
 
         function onIsCriticalAndNotChargingChanged() {
-            if (!Config.options.battery.overlayEnabled) return
+            if (!Config.options.overlays.batteryWarningOverlayEnabled) return
             if (Battery.isCriticalAndNotCharging) {
                 root.isCritical = true
                 overlayLoader.active = false
