@@ -18,7 +18,7 @@ fi
 
 for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitty starship.toml; do
     if [ ! -f ~/.config/$file ]; then
-        cp /etc/skel/.config/$file ~/.config/$file
+        cp -r /etc/skel/.config/$file ~/.config/$file
         chown $USER:$USER ~/.config/$file
     fi
 done
@@ -55,4 +55,4 @@ fi
 
 
 # Start Hyprland with the Sleex config
-start-hyprland -- --config /etc/sleex/hyprland.conf
+start-hyprland -- --config /etc/sleex/hyprland.conf 2>&1
