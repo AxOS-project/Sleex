@@ -148,5 +148,4 @@ Scope {
             root.showOsdValues = false
         }
     }
-
 }

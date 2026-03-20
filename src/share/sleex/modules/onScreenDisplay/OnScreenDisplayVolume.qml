@@ -200,5 +200,4 @@ Scope {
             root.showOsdValues = false
         }
     }
-
 }

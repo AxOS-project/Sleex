@@ -199,5 +199,4 @@ Scope { // Scope
             root.detach = !root.detach;
         }
     }
-
 }
