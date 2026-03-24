@@ -128,19 +128,19 @@ Singleton {
 
         property JsonObject apps: JsonObject {
             property string bluetooth: "qs -p /usr/share/sleex/settings.qml"
-            property string imageViewer: "loupe"
+            property string imageViewer: "org.gnome.Loupe.desktop"
             property string network: "qs -p /usr/share/sleex/settings.qml"
             property string networkEthernet: "qs -p /usr/share/sleex/settings.qml"
             property string settings: "qs -p /usr/share/sleex/settings.qml"
-            property string taskManager: "missioncenter"
-            property string terminal: "foot"
-            property string webBrowser: "firefox"
-            property string fileManager: "pcmanfm-qt"
-            property string videoPlayer: "mpv"
-            property string archiveManager: "file-roller"
-            property string textEditor: "code"
-            property string audioPlayer: "axuralis"
-            property string documentViewer: "onlyoffice-desktopeditors"
+            property string taskManager: "io.missioncenter.MissionCenter.desktop"
+            property string terminal: "foot.desktop"
+            property string webBrowser: "firefox.desktop"
+            property string fileManager: "pcmanfm-qt.desktop"
+            property string videoPlayer: "mpv.desktop"
+            property string archiveManager: "org.gnome.FileRoller.desktop"
+            property string textEditor: "code.desktop"
+            property string audioPlayer: "axuralis.desktop"
+            property string documentViewer: "onlyoffice-desktopeditors.desktop"
         }
 
         property JsonObject battery: JsonObject {
