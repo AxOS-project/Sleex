@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="1.30"
-pkgrel="1"
+pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -11,7 +11,7 @@ depends=(
   # Basic
   "axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors" "qt5ct" "qt6ct" "sqlite"
   # Cursor
-  "sleex-bibata-modern-classic-bin"
+  "bibata-cursor-theme-bin"
   # Fonts & Themes
   'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'kde-material-you-colors' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
   # Hyprland dependencies
@@ -19,7 +19,7 @@ depends=(
   # QT/KDE dependencies
   'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
   # Microtex
-  "sleex-microtex-git"
+  "microtex-git"
   # Portal
   'xdg-desktop-portal'
   # Python deps
