@@ -1,10 +1,11 @@
 pkgname=sleex-bibata-modern-classic-bin
-pkgver=2.0.6
+pkgver=2.0.7
 pkgrel=3
 pkgdesc="Material Based Cursor Theme, installed for Sleex"
 arch=('any')
 url="https://github.com/ful1e5/Bibata_Cursor"
 license=('GPL-3.0-or-later')
+provides=("bibata-cursor-theme" "bibata-cursor-theme-bin")
 conflicts=("bibata-cursor-theme" "bibata-cursor-theme-bin")
 options=('!strip')
 _variant=Bibata-Modern-Classic
