@@ -1,43 +1,29 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls
+import Sleex.Widgets
 import qs.modules.common
-import qs.modules.common.widgets
 import qs.services
+
 
 Item {
     id: contributionCalendar
     width: 300
     height: 60
 
-    GridLayout {
+    ContributionCalendar {
+        id: calendar
         anchors.centerIn: parent
-        rows: 7
-        columns: 40
-        rowSpacing: 2
-        columnSpacing: 2
 
-        RowLayout {
-            spacing: 2
+        contributions: []
 
-            Repeater {
-                model: 40  // weeks
-                delegate: ColumnLayout {
-                    spacing: 2
+        cellSize: 7
+        gap: 2
+        radius: 2
 
-                    Repeater {
-                        model: 7  // days
-                        delegate: Rectangle {
-                            width: 7
-                            height: 7
-                            radius: 2
-
-                            color: Appearance.colors.colLayer2
-                        }
-                    }
-                }
-            }
-        }
-
+        level0Color: Appearance.colors.colLayer2
+        level1Color: Appearance.colors.colSecondaryContainer
+        level2Color: Appearance.colors.colSecondary
+        level3Color: Appearance.colors.colPrimary
+        level4Color: Appearance.colors.colPrimary
     }
 }

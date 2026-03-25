@@ -96,14 +96,10 @@ Scope {
             Loader {
                 id: dashboardContentLoader
                 active: true
-                // Load content on a background thread — zero main-thread
-                // blocking at startup, content is ready before first open.
                 asynchronous: true
                 visible: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
 
-                // Keep the layer always primed so the GPU texture is ready
-                // the instant an animation begins — no first-frame stall.
-                layer.enabled: true
+                layer.enabled: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
                 layer.smooth: true
                 
                 // disabling it removes a per-frame GPU filtering pass.

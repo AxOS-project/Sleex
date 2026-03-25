@@ -11,6 +11,8 @@ import Quickshell.Io
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Widgets
+import Sleex.Widgets
 
 import Sleex.Services
 
@@ -49,24 +51,14 @@ Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: Appearance.colors.colLayer2
 
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: 150
-                                height: 150
-                                radius: 75
+                        ClippingRectangle {
+                            width: 120; height: 120
+                            radius: 60
+                            Image {
+                                anchors.fill: parent
+                                source: Config.options.dashboard.avatarPath
+                                fillMode: Image.PreserveAspectCrop
                             }
-                        }
-
-                        Image {
-                            id: userAvatarImage
-                            anchors.fill: parent
-                            source: Config.options.dashboard.avatarPath
-                            fillMode: Image.PreserveAspectCrop
-                            cache: false
-                            antialiasing: true
-                            sourceSize.width: 150
-                            sourceSize.height: 150
                         }
                     }
 
