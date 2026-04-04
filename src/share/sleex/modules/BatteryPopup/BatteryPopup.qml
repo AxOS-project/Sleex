@@ -4,6 +4,7 @@ import qs.services
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 Scope {
@@ -18,23 +19,63 @@ Scope {
         opacity: 0.5
     }
 
-    component CardButton: Rectangle {
+    component CardButton: Item {
         id: btn
         required property string label
         required property bool bold
+        property bool roundBottom: false
+        property color hoverColor: Appearance.colors.colLayer2Hover
+        property real hoverProgress: area.containsMouse ? 1 : 0
         signal clicked()
 
         Layout.fillWidth: true
         implicitHeight:   54
-        color: area.containsMouse ? Appearance.colors.colLayer2Hover : "transparent"
-
-        Behavior on color {
-            ColorAnimation {
+        Behavior on hoverProgress {
+            NumberAnimation {
                 duration:           Appearance.animation.elementMoveFast.duration
                 easing.type:        Appearance.animation.elementMoveFast.type
                 easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
             }
         }
+
+        Canvas {
+            id: hoverCanvas
+            anchors.fill: parent
+            antialiasing: true
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+
+                if (btn.hoverProgress <= 0)
+                    return
+
+                const w = width
+                const h = height
+                const r = btn.roundBottom ? Math.min(Appearance.rounding.verylarge, w / 2, h) : 0
+
+                ctx.globalAlpha = btn.hoverProgress
+                ctx.fillStyle = btn.hoverColor
+
+                if (r > 0) {
+                    ctx.beginPath()
+                    ctx.moveTo(0, 0)
+                    ctx.lineTo(w, 0)
+                    ctx.lineTo(w, h - r)
+                    ctx.quadraticCurveTo(w, h, w - r, h)
+                    ctx.lineTo(r, h)
+                    ctx.quadraticCurveTo(0, h, 0, h - r)
+                    ctx.closePath()
+                    ctx.fill()
+                } else {
+                    ctx.fillRect(0, 0, w, h)
+                }
+            }
+        }
+
+        onHoverProgressChanged: hoverCanvas.requestPaint()
+        onRoundBottomChanged: hoverCanvas.requestPaint()
+        onHoverColorChanged: hoverCanvas.requestPaint()
 
         StyledText {
             anchors.centerIn: parent
@@ -224,11 +265,24 @@ Scope {
                             CardButton {
                                 label:     qsTr("Close")
                                 bold:      false
+                                roundBottom: true
                                 onClicked: overlayLoader.active = false
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    IpcHandler {
+        target: "battery"
+
+        function onShowOverlay() {
+            if (Config.options.battery.overlayEnabled) {
+                root.isCritical = Battery.isCriticalAndNotCharging
+                overlayLoader.active = false
+                overlayLoader.loading = true
             }
         }
     }

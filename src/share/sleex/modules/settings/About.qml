@@ -117,7 +117,7 @@ ContentPage {
                 materialIcon: "auto_stories"
                 mainText: "Documentation"
                 onClicked: {
-                    Qt.openUrlExternally("https://www.axos-project.com/docs/guides/sleex")
+                    Qt.openUrlExternally("https://www.axos-project.com/docs/desktops/sleex/")
                 }
             }
             RippleButtonWithIcon {

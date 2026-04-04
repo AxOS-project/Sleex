@@ -43,7 +43,6 @@ public:
     QString security() const { return m_security; }
     
     NMAccessPoint* nmAccessPoint() const { return m_ap; }
-    void updateProperties();
     void updateAccessPoint(NMAccessPoint *newAp);
     void setIsKnown(bool known);
 
@@ -58,6 +57,9 @@ signals:
     void securityChanged();
 
 private:
+    void connectStrengthSignal();
+    void updateProperties();
+
     NMAccessPoint *m_ap;
     NMDeviceWifi *m_device;
     QString m_ssid;
@@ -79,6 +81,7 @@ class Network : public QObject {
     Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
     Q_PROPERTY(bool ethernet READ ethernet NOTIFY ethernetChanged)
     Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged)
+    Q_PROPERTY(QString wifiIcon READ getWifiIcon NOTIFY wifiIconChanged)
     Q_PROPERTY(QString connectingToSsid READ connectingToSsid NOTIFY connectingToSsidChanged)
 
 public:
@@ -102,6 +105,7 @@ public:
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
     Q_INVOKABLE QString getWifiIcon(); // Helper to get appropriate WiFi icon for UI
+    Q_INVOKABLE QString getActiveNetworkIcon(); // Helper to get icon for active network (WiFi or Ethernet)
     Q_INVOKABLE void enableWifi(bool enabled);
     Q_INVOKABLE void toggleWifi();
     Q_INVOKABLE void rescanWifi();
@@ -115,12 +119,15 @@ private slots:
     void verifyDelayedConnection(const QString &ssid);
 
 private:
+    void scheduleConnectionVerification(const QString &ssid);
+    void finalizeConnectionResult(const QString &ssid);
     void emitConnectionSucceededWithVerification(const QString &ssid);
 
 signals:
     void networksChanged();
     void activeChanged();
     void wifiEnabledChanged();
+    void wifiIconChanged();
     void ethernetChanged();
     void scanningChanged();
     void connectingToSsidChanged();

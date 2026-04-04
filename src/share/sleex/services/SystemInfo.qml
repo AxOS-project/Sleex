@@ -13,6 +13,7 @@ Singleton {
     property string distroId: "unknown"
     property string distroIcon: "linux-symbolic"
     property string username: "user"
+    property string osReleaseVersion: "Unknown"
     property string axosVersion: ""
 
     property string sleexVersion: "Unknown"
@@ -34,6 +35,10 @@ Singleton {
             distroName = prettyNameMatch ? prettyNameMatch[1] : (nameMatch ? nameMatch[1].replace(/Linux/i, "").trim() : "Unknown")
 
             if (distroName == "AxOS") axosVersion = axosVersionFile.text()
+
+            // Extract the OS release version (VERSION field, fallback to "Unknown")
+            const versionMatch = textOsRelease.match(/^VERSION="(.+?)"/m)
+            osReleaseVersion = versionMatch ? versionMatch[1] : "Unknown"
 
             // Extract the ID (LOGO field, fallback to "unknown")
             const logoMatch = textOsRelease.match(/^LOGO=(.+)$/m)
@@ -59,10 +64,10 @@ Singleton {
 
     Process {
         id: getSleexVersion
-        command: ["pacman", "-Q", "sleex"]
+        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null"]
         stdout: SplitParser {
             onRead: data => {
-                const versionMatch = data.match(/^sleex\s+(\S+)/);
+                const versionMatch = data.match(/^sleex(?:-git)?\s+(\S+)/);
                 sleexVersion = versionMatch ? versionMatch[1].trim() : "Unknown";
             }
         }

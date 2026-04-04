@@ -48,12 +48,38 @@ Scope {
                 readonly property bool isVerticalWipe:   transitionType === "wipe_down" || transitionType === "wipe_up"
                 readonly property bool isAnyWipe:        isHorizontalWipe || isVerticalWipe
 
-                AnimatedImage {
+                Connections {
+                    target: bgRoot
+                    function onWallpaperPathChanged() {
+                        var path = bgRoot.wallpaperPath
+                        if (path === wallpaperContainer.currentPath) return 
+
+                        previousWallpaper.source = wallpaperContainer.currentPath
+                        currentWallpaper.source = path
+                        
+                        if (wallpaperContainer.isHorizontalWipe) wipeClip.width = 0
+                        if (wallpaperContainer.isVerticalWipe) wipeClip.height = 0
+                        
+                        wallpaperContainer.state = "" 
+                    }
+                }
+
+                Connections {
+                    target: currentWallpaper
+                    function onIsReadyChanged() {
+                        if (currentWallpaper.isReady && currentWallpaper.source !== "") {
+                            wallpaperContainer.state = "animating"
+                            wallpaperContainer.currentPath = currentWallpaper.source
+                        }
+                    }
+                }
+
+                WallpaperDisplay {
                     id: previousWallpaper
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     opacity: 1
-                    playing: true
+                    visible: opacity > 0
                 }
 
                 Rectangle {
@@ -66,18 +92,16 @@ Scope {
                     width:  wallpaperContainer.width
                     height: wallpaperContainer.height
                     color: "transparent"
-                    clip: true
+                    clip: wallpaperContainer.state === "animating" && wallpaperContainer.isAnyWipe
 
-                    AnimatedImage {
+                    WallpaperDisplay {
                         id: currentWallpaper
                         x: wallpaperContainer.transitionType === "wipe_left" ? -wipeClip.x : 0
                         y: wallpaperContainer.transitionType === "wipe_up"   ? -wipeClip.y : 0
-
                         width:  wallpaperContainer.width
                         height: wallpaperContainer.height
                         fillMode: Image.PreserveAspectCrop
                         opacity: 1
-                        playing: true
                     }
                 }
 

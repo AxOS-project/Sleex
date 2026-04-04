@@ -53,7 +53,7 @@ Item {
                     if (SystemInfo.distroId === "axos") {
                         return SystemInfo.axosVersion ? SystemInfo.axosVersion : "";
                     }
-                    return ""; // Explicit return for consistency
+                    return SystemInfo.osReleaseVersion ? SystemInfo.osReleaseVersion : "";
                 }
                 color: "#30ffffff"
                 font.pointSize: 10
