@@ -35,10 +35,11 @@ ContentPage {
         }
 
 
-    forceWidth: true
+    // forceWidth: true
 
     ContentSection {
         title: "Protection"
+        icon: "spatial_audio_off"
 
         ConfigSwitch {
             text: "Earbang protection"
@@ -69,6 +70,7 @@ ContentPage {
 
     ContentSection {
         title: "Devices"
+        icon: "headphones"
 
         AudioDeviceSelectorButton {
             input: false
@@ -80,6 +82,7 @@ ContentPage {
 
     ContentSection {
         title: "Volume mixer"
+        icon: "tune"
 
         // Rectangle {
         //     Layout.fillWidth: true
@@ -120,6 +123,7 @@ ContentPage {
 
     ContentSection {
         title: "System sounds"
+        icon: "graphic_eq"
 
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
@@ -134,6 +138,9 @@ ContentPage {
 
     ContentSection {
         title: "Default Media Player"
+        icon: "play_circle"
+    
+            
         
         MaterialTextField {
             

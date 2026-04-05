@@ -10,7 +10,7 @@ import qs.modules.common.widgets
 
 ContentPage {
     id: root
-    forceWidth: true
+    // forceWidth: true
 
     property var browserApps: []
     property var fileManagerApps: []
@@ -70,6 +70,7 @@ ContentPage {
 
     ContentSection {
         title: "Default Applications"
+        icon: "apps"
 
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter

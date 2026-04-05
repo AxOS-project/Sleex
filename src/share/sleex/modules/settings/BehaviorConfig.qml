@@ -7,10 +7,11 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    forceWidth: true
+    // forceWidth: true
 
     ContentSection {
         title: "Time and date"
+        icon: "schedule"
 
         ColumnLayout {
             // Format
@@ -102,6 +103,7 @@ ContentPage {
 
     ContentSection {
         title: "Power"
+        icon: "battery_android_full"
 
         ConfigRow {
             visible: UPower.displayDevice.isLaptopBattery
@@ -147,6 +149,8 @@ ContentPage {
 
     ContentSection {
         title: "Idle daemon"
+        icon: "timer"
+
 
         ConfigSwitch {
             text: "Enable idle actions"
@@ -275,6 +279,8 @@ ContentPage {
 
     ContentSection {
         title: "AI"
+        icon: "smart_toy"
+
         MaterialTextField {
             id: systemPromptField
             Layout.fillWidth: true

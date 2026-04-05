@@ -32,10 +32,12 @@ ContentPage {
     property string nlStartLabel: formatTime(nlStartHour, nlStartMinute)
     property string nlEndLabel:   formatTime(nlEndHour,   nlEndMinute)
 
-    forceWidth: true
+    // forceWidth: true
 
     ContentSection {
         title: "Monitor arrangement"
+        icon: "display_settings"
+
         DS.DisplaySettings {
             Layout.fillWidth: true
             implicitHeight: 400
@@ -44,6 +46,8 @@ ContentPage {
 
     ContentSection {
         title: "Brightness"
+        icon: "brightness_medium"
+
         StyledSlider {
             id: brightnessSlider
             value: root.brightnessMonitor?.brightness ?? 0.5
@@ -54,6 +58,7 @@ ContentPage {
 
     ContentSection {
         title: "Night light"
+        icon: "nightlight"
 
         ConfigSwitch {
             id: enableSwitch

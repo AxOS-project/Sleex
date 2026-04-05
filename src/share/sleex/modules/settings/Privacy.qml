@@ -6,9 +6,11 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    forceWidth: true
+    // forceWidth: true
     ContentSection {
         title: "Policies"
+        icon: "policy"
+
         ContentSubsectionLabel {
             text: "AI"
         }
@@ -36,6 +38,8 @@ ContentPage {
     
     ContentSection {
         title: "Weather"
+        icon: "cloud"
+
         ConfigSwitch {
             id: weatherSwitch
             text: "Enabled"

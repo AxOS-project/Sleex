@@ -9,11 +9,12 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    forceWidth: true
+    // forceWidth: true
 
     ContentSection {
         visible: SystemInfo.distroName == "AxOS"
         title: "Distro"
+        icon: "info"
         
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
@@ -81,6 +82,8 @@ ContentPage {
     }
     ContentSection {
         title: "Sleex"
+        icon: "info"
+
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
@@ -117,7 +120,7 @@ ContentPage {
                 materialIcon: "auto_stories"
                 mainText: "Documentation"
                 onClicked: {
-                    Qt.openUrlExternally("https://www.axos-project.com/docs/desktops/sleex/")
+                    Qt.openUrlExternally("https://www.axos-project.com/docs/guides/sleex")
                 }
             }
             RippleButtonWithIcon {

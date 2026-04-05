@@ -12,8 +12,8 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 
 ContentPage {
-    baseWidth: lightDarkButtonGroup.implicitWidth
-    forceWidth: true
+    // baseWidth: lightDarkButtonGroup.implicitWidth
+    // forceWidth: true
 
     readonly property var paletteKeys: ["auto", "scheme-content", "scheme-expressive", "scheme-fidelity", "scheme-fruit-salad", "scheme-monochrome", "scheme-neutral", "scheme-rainbow", "scheme-tonal-spot"]
     readonly property var transitionKeys: ["fade", "scale", "wipe"]
@@ -26,6 +26,7 @@ ContentPage {
 
     ContentSection {
         title: "Colors"
+        icon: "palette"
 
         ButtonGroup {
             id: lightDarkButtonGroup
@@ -101,6 +102,7 @@ ContentPage {
 
     ContentSection {
         title: "Wallpaper"
+        icon: "wallpaper"
 
         StyledText {
             text: "Transition Style"

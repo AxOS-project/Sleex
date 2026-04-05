@@ -13,7 +13,7 @@ import Sleex.Services
 
 ContentPage {
     id: root
-    forceWidth: true
+    // forceWidth: true
     
     // Connection error tracking
     property string lastConnectionError: ""
@@ -129,6 +129,7 @@ ContentPage {
 
     ContentSection {
         title: "Wifi settings"
+        icon: "network_wifi"
 
         RowLayout {
             spacing: 10
