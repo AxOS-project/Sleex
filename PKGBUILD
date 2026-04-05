@@ -1,5 +1,5 @@
 pkgname="sleex"
-pkgver="1.30"
+pkgver="1.31"
 pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
