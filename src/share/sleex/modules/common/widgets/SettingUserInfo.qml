@@ -26,6 +26,7 @@ Rectangle {
                 width: 64
                 height: 64
                 radius: 32
+                color: "transparent"
                 Image {
                     anchors.fill: parent
                     source: Config.options.dashboard.avatarPath
