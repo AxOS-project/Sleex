@@ -11,6 +11,12 @@ for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-c
     fi
 done
 
+# Create Sleex custom files
+if [ ! -d ~/.config/hypr/custom ]; then
+    mkdir -p ~/.config/hypr/custom
+    cp -r /etc/skel/.config/hypr/custom/* ~/.config/hypr/custom
+fi
+
 if [ ! -d ~/.local/share/khal/calendars/default ]; then
     mkdir -p ~/.local/share/khal/calendars/default
     chown -R $USER:$USER ~/.local/share/khal
