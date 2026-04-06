@@ -45,6 +45,14 @@ if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
         echo "input:kb_layout = $LAYOUT" >> "$CONFIG_FILE"
     fi
 
+    if [ ! -f /etc/sleex/hyprland/keybinds.conf ]; then
+        if [ "$LAYOUT" = "fr" ]; then
+            cp /etc/sleex/hyprland/keybinds_fr.conf /etc/sleex/hyprland/keybinds.conf
+        else
+            cp /etc/sleex/hyprland/keybinds_us.conf /etc/sleex/hyprland/keybinds.conf
+        fi
+    fi
+
     if lsmod | grep -q '^nvidia'; then
     echo "Nvidia GPU found"
     {
