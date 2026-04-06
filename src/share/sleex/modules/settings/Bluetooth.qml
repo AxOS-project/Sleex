@@ -10,7 +10,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    // forceWidth: true
+    forceSingleColumn: true
 
 
     function getDeviceIcon(modelData) {

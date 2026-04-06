@@ -13,6 +13,7 @@ import Sleex.Services
 
 ContentPage {
     id: root
+    forceSingleColumn: true
     // forceWidth: true
     
     // Connection error tracking

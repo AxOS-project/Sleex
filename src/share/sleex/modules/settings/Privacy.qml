@@ -6,7 +6,8 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    // forceWidth: true
+    forceSingleColumn: true
+    
     ContentSection {
         title: "Policies"
         icon: "policy"

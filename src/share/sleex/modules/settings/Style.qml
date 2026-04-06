@@ -12,8 +12,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 
 ContentPage {
-    // baseWidth: lightDarkButtonGroup.implicitWidth
-    // forceWidth: true
+    forceSingleColumn: true
 
     readonly property var paletteKeys: ["auto", "scheme-content", "scheme-expressive", "scheme-fidelity", "scheme-fruit-salad", "scheme-monochrome", "scheme-neutral", "scheme-rainbow", "scheme-tonal-spot"]
     readonly property var transitionKeys: ["fade", "scale", "wipe"]
