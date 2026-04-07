@@ -347,7 +347,7 @@ Singleton {
 
     Connections {
         target: Config
-        function onReadyChanged() {
+        function onLoadedChanged() {
             if (!Config.ready) return;
             (Config?.options.ai?.extraModels ?? []).forEach(model => {
                 const safeModelName = root.safeModelName(model["model"]);
