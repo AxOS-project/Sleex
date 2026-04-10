@@ -79,15 +79,15 @@ check_and_prompt_upscale() {
 
 is_video() {
     local extension="${1##*.}"
-    [[ "$extension" == "mp4" || "$extension" == "mkv" || "$extension" == "webm" ]] && return 0 || return 1 [cite: 4, 5]
+    [[ "$extension" == "mp4" || "$extension" == "mkv" || "$extension" == "webm" ]] && return 0 || return 1
 }
 
 update_wallpaper_config() {
     local wallpaper_path="$1"
 
     if [[ -f "$DB_CONFIG" ]]; then
-        sqlite3 "$DB_CONFIG" "UPDATE sleex_settings SET config_json = json_set(config_json, '$.wallpaperPath', '$wallpaper_path') WHERE module='background';" [cite: 11]
-        qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$wallpaper_path" [cite: 21, 53]
+        sqlite3 "$DB_CONFIG" "UPDATE sleex_settings SET config_json = json_set(config_json, '$.wallpaperPath', '$wallpaper_path') WHERE module='background';"
+        qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$wallpaper_path"
         qs -p /usr/share/sleex/settings.qml ipc call settings reloadWallpaper "$wallpaper_path"
     fi
 }
