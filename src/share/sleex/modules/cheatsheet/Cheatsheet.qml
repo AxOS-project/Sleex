@@ -161,5 +161,4 @@ Scope { // Scope
             cheatsheetLoader.active = false;
         }
     }
-
 }

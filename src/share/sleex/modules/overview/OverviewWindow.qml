@@ -22,8 +22,8 @@ Item { // Window
     property var availableWorkspaceWidth
     property var availableWorkspaceHeight
     property bool restrictToWorkspace: true
-    property real initX: Math.max((windowData?.at[0] - monitorData?.reserved[0]) * root.scale, 0) + xOffset
-    property real initY: Math.max((windowData?.at[1] - monitorData?.reserved[1]) * root.scale, 0) + yOffset
+    property real initX: Math.max(windowData?.location[0] * root.scale, 0) + xOffset
+    property real initY: Math.max((windowData?.location[1] - Appearance.sizes.barHeight) * root.scale, 0) + yOffset
     property real xOffset: 0
     property real yOffset: 0
     
@@ -35,10 +35,10 @@ Item { // Window
     property var iconToWindowRatio: 0.35
     property var xwaylandIndicatorToIconRatio: 0.35
     property var iconToWindowRatioCompact: 0.6
-    property var iconPath: Quickshell.iconPath(AppSearch.guessIcon(windowData?.class), "image-missing")
+    property var iconPath: Quickshell.iconPath(AppSearch.guessIcon(windowData?.["app-id"]), "image-missing")
     property bool compactMode: Appearance.font.pixelSize.smaller * 4 > targetWindowHeight || Appearance.font.pixelSize.smaller * 4 > targetWindowWidth
 
-    property bool indicateXWayland: (Config.options.overview.showXwaylandIndicator && windowData?.xwayland) ?? false
+    // property bool indicateXWayland: (Config.options.overview.showXwaylandIndicator && windowData?.xwayland) ?? false
     
     x: initX
     y: initY
@@ -70,7 +70,7 @@ Item { // Window
     ScreencopyView {
         id: windowPreview
         anchors.fill: parent
-        captureSource: GlobalStates.overviewOpen ? root.toplevel : null
+        captureSource: null // GlobalStates.overviewOpen ? root.toplevel : null
         live: true
 
         Rectangle {

@@ -193,5 +193,4 @@ Scope {
             GlobalStates.wppselectorOpen = false;
         }
     }
-
 }

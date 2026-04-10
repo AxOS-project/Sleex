@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: overviewScope
@@ -20,14 +21,14 @@ Scope {
             id: root
             required property var modelData
             property string searchingText: ""
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            required property ShellScreen screen
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
             screen: modelData
             visible: GlobalStates.overviewOpen && monitorIsFocused
 
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
-            // WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
             color: "transparent"
 
             mask: Region {
@@ -203,7 +204,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.clipboard
@@ -226,7 +227,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.emojis
@@ -237,5 +238,4 @@ Scope {
             }
         }
     }
-
 }
