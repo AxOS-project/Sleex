@@ -44,11 +44,10 @@ FocusScope {
     }
 
     // Wallpaper & Scrim
-    Image {
+    WallpaperDisplay {
         id: wallpaper
         anchors.fill: parent
         source: Config.options.background.wallpaperPath
-        fillMode: Image.PreserveAspectCrop
         
         opacity: root.visualsReady ? 1 : 0
         Behavior on opacity {
@@ -64,7 +63,7 @@ FocusScope {
             radius: 15
             opacity: parent.opacity
         }
-        
+
         MouseArea {
             anchors.fill: parent
             onClicked: passwordInput.forceActiveFocus()
