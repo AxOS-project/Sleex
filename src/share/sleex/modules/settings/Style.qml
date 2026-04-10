@@ -4,7 +4,9 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
+import QtMultimedia
 import qs
 import qs.services
 import qs.modules.common
@@ -180,28 +182,22 @@ ContentPage {
             }
         }
 
-        Rectangle {
+        ClippingRectangle {
             id: imageContainer
-            Layout.preferredHeight: 200
-            Layout.preferredWidth: 360
+            height: 200
+            width: 360
             Layout.alignment: Qt.AlignHCenter
             radius: Appearance.rounding.medium
-            color: "transparent"
-            clip: true
 
-            Image {
+            property bool isVideo: {
+                return source.endsWith(".mp4") || source.endsWith(".mkv") || source.endsWith(".webm")
+            }
+
+            WallpaperDisplay {
+                id: wallpaperPreview
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
-                source: Config.options.background.wallpaperPath || ""
-                visible: source !== ""
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: 360
-                        height: 200
-                        radius: Appearance.rounding.normal
-                    }
-                }
+                source: Config.options.background.wallpaperPath
             }
 
             StyledText {

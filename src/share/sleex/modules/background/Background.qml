@@ -49,22 +49,6 @@ Scope {
                 readonly property bool isAnyWipe:        isHorizontalWipe || isVerticalWipe
 
                 Connections {
-                    target: bgRoot
-                    function onWallpaperPathChanged() {
-                        var path = bgRoot.wallpaperPath
-                        if (path === wallpaperContainer.currentPath) return 
-
-                        previousWallpaper.source = wallpaperContainer.currentPath
-                        currentWallpaper.source = path
-                        
-                        if (wallpaperContainer.isHorizontalWipe) wipeClip.width = 0
-                        if (wallpaperContainer.isVerticalWipe) wipeClip.height = 0
-                        
-                        wallpaperContainer.state = "" 
-                    }
-                }
-
-                Connections {
                     target: currentWallpaper
                     function onIsReadyChanged() {
                         if (currentWallpaper.isReady && currentWallpaper.source !== "") {
