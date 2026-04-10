@@ -100,18 +100,17 @@ ShellRoot {
         color: "transparent"
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        Image {
+        WallpaperDisplay {
             id: backgroundImage
             anchors.fill: parent
             source: Config.options.background.wallpaperPath
-            fillMode: Image.PreserveAspectCrop
 
-            GaussianBlur {
-                anchors.fill: parent
-                source: backgroundImage
-                radius: 10
-                opacity: parent.opacity
-            }
+            // GaussianBlur {
+            //     anchors.fill: parent
+            //     source: backgroundImage
+            //     radius: 10
+            //     opacity: parent.opacity
+            // }
         }
 
         RippleButton {
