@@ -4,7 +4,9 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
+import QtMultimedia
 import qs
 import qs.services
 import qs.modules.common
@@ -12,8 +14,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 
 ContentPage {
-    baseWidth: lightDarkButtonGroup.implicitWidth
-    forceWidth: true
+    forceSingleColumn: true
 
     readonly property var paletteKeys: ["auto", "scheme-content", "scheme-expressive", "scheme-fidelity", "scheme-fruit-salad", "scheme-monochrome", "scheme-neutral", "scheme-rainbow", "scheme-tonal-spot"]
     readonly property var transitionKeys: ["fade", "scale", "wipe"]
@@ -26,6 +27,7 @@ ContentPage {
 
     ContentSection {
         title: "Colors"
+        icon: "palette"
 
         ButtonGroup {
             id: lightDarkButtonGroup
@@ -101,6 +103,7 @@ ContentPage {
 
     ContentSection {
         title: "Wallpaper"
+        icon: "wallpaper"
 
         StyledText {
             text: "Transition Style"
@@ -179,28 +182,22 @@ ContentPage {
             }
         }
 
-        Rectangle {
+        ClippingRectangle {
             id: imageContainer
-            Layout.preferredHeight: 200
-            Layout.preferredWidth: 360
+            height: 200
+            width: 360
             Layout.alignment: Qt.AlignHCenter
             radius: Appearance.rounding.medium
-            color: "transparent"
-            clip: true
 
-            Image {
+            property bool isVideo: {
+                return source.endsWith(".mp4") || source.endsWith(".mkv") || source.endsWith(".webm")
+            }
+
+            WallpaperDisplay {
+                id: wallpaperPreview
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
-                source: Config.options.background.wallpaperPath || ""
-                visible: source !== ""
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: 360
-                        height: 200
-                        radius: Appearance.rounding.normal
-                    }
-                }
+                source: Config.options.background.wallpaperPath
             }
 
             StyledText {

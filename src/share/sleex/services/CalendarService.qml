@@ -136,6 +136,7 @@ Singleton {
                     "start": start_time,
                     "end": end_time,
                     "title": title,
+                    "date": Qt.formatDateTime(evt["startDate"], "yyyy-MM-dd"),
                     "color": evt['color'],
                     "uid": evt['uid']
                 })

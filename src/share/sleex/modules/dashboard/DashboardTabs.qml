@@ -72,8 +72,8 @@ Item {
             Rectangle {
                 id: indicator
                 property int tabCount: root.tabButtonList.length
-                property real fullTabSize: root.width / tabCount;
-                property real targetWidth: tabBar.contentItem.children[0].children[tabBar.currentIndex].tabContentWidth
+                property real fullTabSize: tabCount > 0 ? root.width / tabCount : 0
+                property real targetWidth: tabBar.currentItem ? tabBar.currentItem.tabContentWidth : 0
 
                 implicitWidth: targetWidth
                 anchors {

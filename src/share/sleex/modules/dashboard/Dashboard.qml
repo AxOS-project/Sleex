@@ -22,234 +22,260 @@ Scope {
     property int dashboardPadding: 15
     property real dashboardScale: Config.options.dashboard.dashboardScale
 
-    PanelWindow {
-        id: dashboardRoot
-        visible: true
+    Variants {
+        model: Quickshell.screens
 
-        exclusiveZone: 0
-        implicitWidth: Screen.width
-        implicitHeight: Screen.height
-        WlrLayershell.namespace: "quickshell:dashboard"
-        WlrLayershell.layer: WlrLayer.Overlay
+        PanelWindow {
+            id: dashboardRoot
+            required property var modelData
+            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
+            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            screen: modelData
+            visible: GlobalStates.dashboardOpen && monitorIsFocused
+
+            exclusiveZone: 0
+            implicitWidth: Screen.width
+            implicitHeight: Screen.height
+            WlrLayershell.namespace: "quickshell:dashboard"
+            WlrLayershell.layer: WlrLayer.Overlay
       
-        color: "transparent"
-        mask: GlobalStates.dashboardOpen ? null : emptyRegion
+            color: "transparent"
+            mask: GlobalStates.dashboardOpen ? null : emptyRegion
 
-        Region { id: emptyRegion }
+            Region { id: emptyRegion }
 
-        HyprlandFocusGrab {
-            id: grab
-            windows: [ dashboardRoot ]
-            active: GlobalStates.dashboardOpen
-            onCleared: () => { if (!active) ipc.close() }
-        }
-
-        Item {
-            id: scaleWrapper
-            anchors.centerIn: parent
-            width: 1500
-            height: 900
-            scale: dashboardScale
-
-            property bool isAnimating: false
-            property bool slideAnimEnabled: false
-     
-            property string animDir: Config.options.dashboard.animationDirection
-            property int animDuration: Config.options.dashboard.animationDuration
-
-            // Divide by dashboardScale because the Translate operates in
-            // scaleWrapper's local (pre-scale) coordinate space.
-            // Without this, the actual screen movement is target * dashboardScale, which
-            // under-shoots at scale < 1 and over-shoots at scale > 1.
-            readonly property int targetX: animDir === "left"  ? -dashboardRoot.width  / dashboardScale
-                                         : animDir === "right" ? dashboardRoot.width  / dashboardScale : 0
-            readonly property int targetY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
-                                         : animDir === "down"  ? dashboardRoot.height / dashboardScale : 0
-
-            Component.onCompleted: {
-                Qt.callLater(() => { slideAnimEnabled = true })
+            HyprlandFocusGrab {
+                id: grab
+                windows: [ dashboardRoot ]
+                property bool canBeActive: dashboardRoot.monitorIsFocused
+                active: false
+                onCleared: () => { if (!active) ipc.close() }
             }
 
-            // Keep loader visible for the full duration of the close animation.
             Connections {
                 target: GlobalStates
                 function onDashboardOpenChanged() {
-                    scaleWrapper.isAnimating = true
-                    closeHoldTimer.restart()
+                    if (!GlobalStates.dashboardOpen) {
+                        grab.active = false
+                    } else {
+                        delayedGrabTimer.start()
+                    }
                 }
             }
+
             Timer {
-                id: closeHoldTimer
-                interval: Config.options.dashboard.animationDuration + 50
-                onTriggered: scaleWrapper.isAnimating = false
-            }
-
-            Connections {
-                target: Config.options.dashboard
-                function onAnimationDirectionChanged() {
-                    scaleWrapper.slideAnimEnabled = false
-                    scaleWrapper.animDir = Config.options.dashboard.animationDirection
-                    Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
+                id: delayedGrabTimer
+                interval: Config.options.hacks.arbitraryRaceConditionDelay
+                repeat: false
+                onTriggered: {
+                    if (!grab.canBeActive) return
+                    grab.active = GlobalStates.dashboardOpen
                 }
             }
 
-            Loader {
-                id: dashboardContentLoader
-                active: true
-                asynchronous: true
-                visible: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
+            Item {
+                id: scaleWrapper
+                anchors.centerIn: parent
+                width: 1500
+                height: 900
+                scale: dashboardScale
 
-                layer.enabled: GlobalStates.dashboardOpen || scaleWrapper.isAnimating
-                layer.smooth: true
-                
-                // disabling it removes a per-frame GPU filtering pass.
-                transform: Translate {
-                    x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
-                    y: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetY
-                    Behavior on x {
-                        enabled: scaleWrapper.slideAnimEnabled
-                        NumberAnimation {
-                            duration: scaleWrapper.animDuration
-                            easing.type: Appearance.animation.elementMove.type
-                            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-                        }
+                property bool isAnimating: false
+                property bool slideAnimEnabled: false
+        
+                property string animDir: Config.options.dashboard.animationDirection
+                property int animDuration: Config.options.dashboard.animationDuration
+
+                // Divide by dashboardScale because the Translate operates in
+                // scaleWrapper's local (pre-scale) coordinate space.
+                // Without this, the actual screen movement is target * dashboardScale, which
+                // under-shoots at scale < 1 and over-shoots at scale > 1.
+                readonly property int targetX: animDir === "left"  ? -dashboardRoot.width  / dashboardScale
+                                            : animDir === "right" ? dashboardRoot.width  / dashboardScale : 0
+                readonly property int targetY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
+                                            : animDir === "down"  ? dashboardRoot.height / dashboardScale : 0
+
+                Component.onCompleted: {
+                    Qt.callLater(() => { slideAnimEnabled = true })
+                }
+
+                // Keep loader visible for the full duration of the close animation.
+                Connections {
+                    target: GlobalStates
+                    function onDashboardOpenChanged() {
+                        scaleWrapper.isAnimating = true
+                        closeHoldTimer.restart()
                     }
-                    Behavior on y {
-                        enabled: scaleWrapper.slideAnimEnabled
-                        NumberAnimation {
-                             duration: scaleWrapper.animDuration
-                            easing.type: Appearance.animation.elementMove.type
-                            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-                        }
+                }
+                Timer {
+                    id: closeHoldTimer
+                    interval: Config.options.dashboard.animationDuration + 50
+                    onTriggered: scaleWrapper.isAnimating = false
+                }
+
+                Connections {
+                    target: Config.options.dashboard
+                    function onAnimationDirectionChanged() {
+                        scaleWrapper.slideAnimEnabled = false
+                        scaleWrapper.animDir = Config.options.dashboard.animationDirection
+                        Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
                     }
                 }
 
-                anchors {
-                    top: parent.top
-                    bottom: parent.bottom
-                    right: parent.right
-                    left: parent.left
-                    topMargin: Appearance.sizes.hyprlandGapsOut
-                    rightMargin: Appearance.sizes.hyprlandGapsOut
-                    bottomMargin: Appearance.sizes.hyprlandGapsOut
-                    leftMargin: Appearance.sizes.elevationMargin
-                }
-                focus: GlobalStates.dashboardOpen
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) ipc.close()
-                }
+                Loader {
+                    id: dashboardContentLoader
+                    active: true
+                    asynchronous: true
+                    visible: (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) || scaleWrapper.isAnimating
 
-                sourceComponent: Item {
-                    implicitHeight: dashboardBackground.implicitHeight
-                    implicitWidth: dashboardBackground.implicitWidth
-
-                    StyledRectangularShadow {
-                        target: dashboardBackground
-                        visible: Config.options.appearance.transparency
-                    }
-
-                    Rectangle {
-                        id: dashboardBackground
-                        anchors.fill: parent
-                        implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-                        implicitWidth: dashboardWidth - Appearance.sizes.hyprlandGapsOut * 2
-                        color: Appearance.colors.colLayer0
-                        radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
-
-                        ColumnLayout {
-                            spacing: dashboardPadding
-                            anchors.fill: parent
-                            anchors.margins: dashboardPadding
-
-                            RowLayout {
-                                Layout.fillHeight: false
-                                spacing: 10
-                                Layout.margins: 10
-                                Layout.topMargin: 5
-                                Layout.bottomMargin: 0
-
-                                Item {
-                                    implicitWidth: distroIcon.width
-                                    implicitHeight: distroIcon.height
-
-                                    CustomIcon {
-                                        id: distroIcon
-                                        width: 30
-                                        height: 30
-                                        source: SystemInfo.distroIcon
-                                    }
-
-                                    MultiEffect {
-                                        source: distroIcon
-                                        anchors.fill: distroIcon
-                                        colorization: 1.0
-                                        colorizationColor: Appearance.colors.colOnLayer0
-                                    }
-                                }
-
-                                StyledText {
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer0
-                                    text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
-                                }
-
-                                Item { Layout.fillWidth: true }
-
-                                ButtonGroup {
-                                    QuickToggleButton {
-                                        toggled: false
-                                        buttonIcon: "restart_alt"
-                                        onClicked: {
-                                            Hyprland.dispatch("reload")
-                                            Quickshell.reload(true)
-                                        }
-                                        StyledToolTip { text: qsTr("Reload Hyprland & Quickshell") }
-                                    }
-                                    QuickToggleButton {
-                                        toggled: false
-                                        buttonIcon: "settings"
-                                        onClicked: {
-                                            Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
-                                            ipc.close()
-                                        }
-                                        StyledToolTip { text: qsTr("Settings") }
-                                    }
-                                    QuickToggleButton {
-                                        toggled: false
-                                        buttonIcon: "power_settings_new"
-                                        onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
-                                        StyledToolTip { text: qsTr("Session") }
-                                    }
-                                }
-
-                                ButtonGroup {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    spacing: 5
-                                    padding: 5
-                                    color: Appearance.colors.colLayer1
-
-                                    NetworkToggle {}
-
-                                    Loader {
-                                        active: Bluetooth.adapters.values.length > 0
-                                        asynchronous: true
-                                        sourceComponent: BluetoothToggle {}
-                                    }
-
-                                    NightLight {}
-                                    IdleInhibitor {}
-                                }
+                    layer.enabled: (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) || scaleWrapper.isAnimating
+                    layer.smooth: true
+                    
+                    // disabling it removes a per-frame GPU filtering pass.
+                    transform: Translate {
+                        x: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetX
+                        y: GlobalStates.dashboardOpen ? 0 : scaleWrapper.targetY
+                        Behavior on x {
+                            enabled: scaleWrapper.slideAnimEnabled
+                            NumberAnimation {
+                                duration: scaleWrapper.animDuration
+                                easing.type: Appearance.animation.elementMove.type
+                                easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
                             }
+                        }
+                        Behavior on y {
+                            enabled: scaleWrapper.slideAnimEnabled
+                            NumberAnimation {
+                                duration: scaleWrapper.animDuration
+                                easing.type: Appearance.animation.elementMove.type
+                                easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                            }
+                        }
+                    }
 
-                            DashboardTabs {
-                                id: dashboardTabs
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                Layout.preferredHeight: 600
-                                Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
-                                onCurrentTabChanged: {
-                                    if (currentTab === "greetings")
-                                        Notifications.timeoutAll()
+                    anchors {
+                        top: parent.top
+                        bottom: parent.bottom
+                        right: parent.right
+                        left: parent.left
+                        topMargin: Appearance.sizes.hyprlandGapsOut
+                        rightMargin: Appearance.sizes.hyprlandGapsOut
+                        bottomMargin: Appearance.sizes.hyprlandGapsOut
+                        leftMargin: Appearance.sizes.elevationMargin
+                    }
+                    focus: GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Escape) ipc.close()
+                    }
+
+                    sourceComponent: Item {
+                        implicitHeight: dashboardBackground.implicitHeight
+                        implicitWidth: dashboardBackground.implicitWidth
+
+                        StyledRectangularShadow {
+                            target: dashboardBackground
+                            visible: Config.options.appearance.transparency
+                        }
+
+                        Rectangle {
+                            id: dashboardBackground
+                            anchors.fill: parent
+                            implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
+                            implicitWidth: dashboardWidth - Appearance.sizes.hyprlandGapsOut * 2
+                            color: Appearance.colors.colLayer0
+                            radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+
+                            ColumnLayout {
+                                spacing: dashboardPadding
+                                anchors.fill: parent
+                                anchors.margins: dashboardPadding
+
+                                RowLayout {
+                                    Layout.fillHeight: false
+                                    spacing: 10
+                                    Layout.margins: 10
+                                    Layout.topMargin: 5
+                                    Layout.bottomMargin: 0
+
+                                    Item {
+                                        implicitWidth: distroIcon.width
+                                        implicitHeight: distroIcon.height
+
+                                        CustomIcon {
+                                            id: distroIcon
+                                            width: 30
+                                            height: 30
+                                            source: SystemInfo.distroIcon
+                                        }
+
+                                        MultiEffect {
+                                            source: distroIcon
+                                            anchors.fill: distroIcon
+                                            colorization: 1.0
+                                            colorizationColor: Appearance.colors.colOnLayer0
+                                        }
+                                    }
+
+                                    StyledText {
+                                        font.pixelSize: Appearance.font.pixelSize.normal
+                                        color: Appearance.colors.colOnLayer0
+                                        text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    ButtonGroup {
+                                        QuickToggleButton {
+                                            toggled: false
+                                            buttonIcon: "restart_alt"
+                                            onClicked: {
+                                                Hyprland.dispatch("reload")
+                                                Quickshell.reload(true)
+                                            }
+                                            StyledToolTip { text: qsTr("Reload Hyprland & Quickshell") }
+                                        }
+                                        QuickToggleButton {
+                                            toggled: false
+                                            buttonIcon: "settings"
+                                            onClicked: {
+                                                Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/settings.qml"])
+                                                ipc.close()
+                                            }
+                                            StyledToolTip { text: qsTr("Settings") }
+                                        }
+                                        QuickToggleButton {
+                                            toggled: false
+                                            buttonIcon: "power_settings_new"
+                                            onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
+                                            StyledToolTip { text: qsTr("Session") }
+                                        }
+                                    }
+
+                                    ButtonGroup {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        spacing: 5
+                                        padding: 5
+                                        color: Appearance.colors.colLayer1
+
+                                        NetworkToggle {}
+
+                                        Loader {
+                                            active: Bluetooth.adapters.values.length > 0
+                                            asynchronous: true
+                                            sourceComponent: BluetoothToggle {}
+                                        }
+
+                                        NightLight {}
+                                        IdleInhibitor {}
+                                    }
+                                }
+
+                                DashboardTabs {
+                                    id: dashboardTabs
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.preferredHeight: 600
+                                    Layout.preferredWidth: dashboardWidth - dashboardPadding * 2
                                 }
                             }
                         }

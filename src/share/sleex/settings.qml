@@ -1,8 +1,6 @@
 //@ pragma UseQApplication
 //@ pragma Env QS_NO_RELOAD_POPUP=1
 //@ pragma Env QT_QUICK_CONTROLS_STYLE=Basic
-
-// Adjust this to make the app smaller or larger
 //@ pragma Env QT_SCALE_FACTOR=1
 
 import Qt5Compat.GraphicalEffects
@@ -13,6 +11,7 @@ import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import qs
 import qs.services
 import qs.modules.common
@@ -21,199 +20,176 @@ import qs.modules.common.functions
 
 ApplicationWindow {
     id: root
+
+    // Layout
+    minimumWidth: 750
+    minimumHeight: 730
+    width: 850
+    height: 700
+    color: Appearance.colors.colLayer1
+
+    // State
     property real contentPadding: 8
     property bool showNextTime: false
-    property var pages: [
-        {
-            name: "Style",
-            icon: "palette",
-            component: "modules/settings/Style.qml"
-        },
-        {
-            name: "Interface",
-            icon: "space_dashboard",
-            component: "modules/settings/Interface.qml"
-        },
-        {
-            name: "Behavior",
-            icon: "settings",
-            component: "modules/settings/BehaviorConfig.qml"
-        },
-        {
-            name: "Sound",
-            icon: "brand_awareness",
-            component: "modules/settings/Sound.qml"
-        },
-        {
-            name: "Bluetooth",
-            icon: "bluetooth",
-            component: "modules/settings/Bluetooth.qml"
-        },
-        {
-            name: "Wifi",
-            icon: "wifi",
-            component: "modules/settings/Wifi.qml"
-        },
-        {
-            name: "Applications",
-            icon: "apps",
-            component: "modules/settings/Applications.qml"
-        },
-        {
-            name: "Display",
-            icon: "display_settings",
-            component: "modules/settings/Display.qml"
-        },
-        {
-            name: "Privacy",
-            icon: "lock",
-            component: "modules/settings/Privacy.qml"
-        },
-        {
-            name: "About",
-            icon: "info",
-            component: "modules/settings/About.qml"
-        }
-    ]
     property int currentPage: 0
+    property var pages: [
+        { name: "Style",       icon: "palette",          component: "modules/settings/Style.qml",         type: "item" },
+        { name: "Interface",   icon: "space_dashboard",  component: "modules/settings/Interface.qml",     type: "item" },
+        { type: "divider" },
+        { name: "Behavior",    icon: "settings",         component: "modules/settings/BehaviorConfig.qml", type: "item" },
+        { name: "Sound",       icon: "brand_awareness",  component: "modules/settings/Sound.qml",         type: "item" },
+        { name: "Bluetooth",   icon: "bluetooth",        component: "modules/settings/Bluetooth.qml",     type: "item" },
+        { name: "Wifi",        icon: "wifi",             component: "modules/settings/Wifi.qml",          type: "item" },
+        { name: "Applications",icon: "apps",             component: "modules/settings/Applications.qml",  type: "item" },
+        { name: "Display",     icon: "display_settings", component: "modules/settings/Display.qml",       type: "item" },
+        { type: "divider" },
+        { name: "Privacy",     icon: "lock",             component: "modules/settings/Privacy.qml",       type: "item" },
+        { name: "About",       icon: "info",             component: "modules/settings/About.qml",         type: "item" }
+    ]
 
     visible: true
-    onClosing: Qt.quit()
     title: "Sleex Settings"
+
+    onClosing: Qt.quit()
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
-        Idle.init();
+        Idle.init()
     }
 
-    minimumWidth: 650
-    minimumHeight: 730
-    width: 850
-    height: 730
-    color: Appearance.colors.colLayer1
-
+    // Root layout
     ColumnLayout {
-        anchors {
-            fill: parent
-            margins: contentPadding
-        }
+        anchors.fill: parent
+        anchors.margins: 0
 
-        // Item { // Titlebar
-        //     visible: Config.options?.windows.showTitlebar
-        //     Layout.fillWidth: true
-        //     Layout.fillHeight: false
-        //     implicitHeight: Math.max(titleText.implicitHeight, windowControlsRow.implicitHeight)
-        //     StyledText {
-        //         id: titleText
-        //         anchors {
-        //             left: Config.options.windows.centerTitle ? undefined : parent.left
-        //             horizontalCenter: Config.options.windows.centerTitle ? parent.horizontalCenter : undefined
-        //             verticalCenter: parent.verticalCenter
-        //             leftMargin: 12
-        //         }
-        //         color: Appearance.colors.colOnLayer0
-        //         text: "Settings"
-        //         font.pixelSize: Appearance.font.pixelSize.title
-        //         font.family: Appearance.font.family.title
-        //     }
-        //     RowLayout { // Window controls row
-        //         id: windowControlsRow
-        //         anchors.verticalCenter: parent.verticalCenter
-        //         anchors.right: parent.right
-        //         RippleButton {
-        //             buttonRadius: Appearance.rounding.full
-        //             implicitWidth: 35
-        //             implicitHeight: 35
-        //             onClicked: root.close()
-        //             contentItem: MaterialSymbol {
-        //                 anchors.centerIn: parent
-        //                 horizontalAlignment: Text.AlignHCenter
-        //                 text: "close"
-        //                 iconSize: 20
-        //             }
-        //         }
-        //     }
-        // }
-
-        RowLayout { // Window content with navigation rail and content pane
+        Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: contentPadding
+            color: Appearance.colors.colLayer1
+
+            // Sidebar
             Item {
-                id: navRailWrapper
-                Layout.fillHeight: true
-                Layout.margins: 5
-                implicitWidth: navRail.expanded ? 150 : fab.baseSize
-                Behavior on implicitWidth {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
-                NavigationRail { // Window content with navigation rail and content pane
-                    id: navRail
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                    }
+                id: menuContainer
+                anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+                implicitWidth: 250
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
                     spacing: 10
-                    expanded: root.width > 800
+                    
+                    SettingUserInfo {}
 
-                    NavigationRailExpandButton {}
-
-                    FloatingActionButton {
-                        id: fab
-                        iconText: "edit"
-                        buttonText: "Edit config"
-                        expanded: navRail.expanded
-                        onClicked: {
-                            Qt.openUrlExternally(`${Directories.config}/illogical-impulse/config.json`);
-                        }
-
-                        StyledToolTip {
-                            extraVisibleCondition: !navRail.expanded
-                            text: "Edit shell config file"
-                        }
-                    }
-
-                    NavigationRailTabArray {
+                    ListView {
+                        id: sidebar
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        spacing: 8
+                        clip: true
+                        model: root.pages
                         currentIndex: root.currentPage
-                        expanded: navRail.expanded
-                        Repeater {
-                            model: root.pages
-                            NavigationRailButton {
-                                required property var index
-                                required property var modelData
-                                toggled: root.currentPage === index
-                                onClicked: root.currentPage = index;
-                                expanded: navRail.expanded
-                                buttonIcon: modelData.icon
-                                buttonText: modelData.name
-                                showToggledHighlight: false
+                        highlightMoveDuration: 100
+
+                        onCurrentIndexChanged: root.currentPage = currentIndex
+
+                        highlight: Rectangle {
+                            color: Appearance.colors.colPrimaryContainer
+                            radius: Appearance.rounding.small
+                            visible: modelData.type !== "divider"
+
+                            Rectangle {
+                                anchors {
+                                    left: parent.left
+                                    leftMargin: 10
+                                    verticalCenter: parent.verticalCenter
+                                }
+                                width: 3
+                                height: 15
+                                radius: Appearance.rounding.full
+                                color: Appearance.colors.colPrimary
+                                z: 2
+                            }
+
+                            NumberAnimation on y {
+                                duration: 250
+                                easing.type: Appearance.animation.elementMoveEnter.type
+                                easing.bezierCurve: Appearance.animationCurves.emphasizedLastHalf
+                            }
+                        }
+
+                        delegate: Item {
+                            id: row
+                            width: ListView.view.width
+                            height: modelData.type === "divider" ? 1 : 44
+
+                            // Divider line
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: sidebar.width
+                                height: 1
+                                color: Appearance.colors.colOutline
+                                visible: modelData.type === "divider"
+                            }
+
+                            // Nav item
+                            RowLayout {
+                                anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 24 }
+                                spacing: 12
+                                visible: modelData.type !== "divider"
+
+                                MaterialSymbol { text: modelData.icon; iconSize: 20 }
+                                Label {
+                                    text: modelData.name
+                                    color: Appearance.colors.colOnLayer0
+                                }
+                            }
+
+                            // Hover background
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Appearance.rounding.small
+                                color: ma.containsMouse && sidebar.currentIndex !== index
+                                    ? Appearance.colors.colSurfaceContainerHigh
+                                    : "transparent"
+                                z: -1
+                                visible: modelData.type !== "divider"
+                            }
+
+                            MouseArea {
+                                id: ma
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: modelData.type !== "divider"
+                                onClicked: sidebar.currentIndex = index
                             }
                         }
                     }
-
-                    Item {
-                        Layout.fillHeight: true
-                    }
                 }
             }
-            Rectangle { // Content container
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+
+            // Content pane
+            Rectangle {
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    left: menuContainer.right
+                    right: parent.right
+                    leftMargin: 6
+                    margins: root.contentPadding
+                }
                 color: Appearance.colors.colLayer0
                 radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 Loader {
                     id: pageLoader
                     anchors.fill: parent
-                    opacity: 1.0
                     source: root.pages[0].component
+
                     Connections {
                         target: root
                         function onCurrentPageChanged() {
-                            if (pageLoader.sourceComponent !== root.pages[root.currentPage].component) {
-                                switchAnim.restart();
-                            }
+                            if (pageLoader.sourceComponent !== root.pages[root.currentPage].component)
+                                switchAnim.restart()
                         }
                     }
 
@@ -222,9 +198,8 @@ ApplicationWindow {
 
                         NumberAnimation {
                             target: pageLoader
-                            properties: "opacity"
-                            from: 1
-                            to: 0
+                            property: "opacity"
+                            from: 1; to: 0
                             duration: 150
                             easing.type: Appearance.animation.elementMoveExit.type
                             easing.bezierCurve: Appearance.animationCurves.emphasizedFirstHalf
@@ -236,9 +211,8 @@ ApplicationWindow {
                         }
                         NumberAnimation {
                             target: pageLoader
-                            properties: "opacity"
-                            from: 0
-                            to: 1
+                            property: "opacity"
+                            from: 0; to: 1
                             duration: 250
                             easing.type: Appearance.animation.elementMoveEnter.type
                             easing.bezierCurve: Appearance.animationCurves.emphasizedLastHalf
@@ -251,7 +225,6 @@ ApplicationWindow {
 
     IpcHandler {
         target: "settings"
-
         function reloadWallpaper(newPath: string): void {
             Config.options.background.wallpaperPath = newPath
         }

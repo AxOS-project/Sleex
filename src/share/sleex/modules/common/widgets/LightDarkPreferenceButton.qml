@@ -30,9 +30,10 @@ GroupButton {
         ColumnLayout {
             id: buttonContentLayout
             anchors.centerIn: parent
+            width: parent.width
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
-                implicitWidth: 250
+                Layout.fillWidth: true
                 implicitHeight: skeletonColumnLayout.implicitHeight + 10 * 2
                 radius: lightDarkButtonRoot.buttonRadius - lightDarkButtonRoot.padding
                 color: lightDarkButtonRoot.previewBg

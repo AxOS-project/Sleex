@@ -44,6 +44,18 @@ Switch {
         anchors.left: parent.left
         anchors.leftMargin: root.checked ? ((root.pressed || root.down) ? (22 * root.scale) : 24 * root.scale) : ((root.pressed || root.down) ? (2 * root.scale) : 8 * root.scale)
 
+        MaterialSymbol {
+            text: root.checked ? "check" : "close"
+            anchors.centerIn: parent
+            color: root.checked ? root.activeColor : root.inactiveColor
+            fill: 1
+            font.pixelSize: 16 * root.scale
+
+            Behavior on opacity {
+                animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+            }
+        }
+
         Behavior on anchors.leftMargin {
             animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
         }

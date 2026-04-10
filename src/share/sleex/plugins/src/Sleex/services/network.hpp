@@ -105,7 +105,6 @@ public:
     
     Q_INVOKABLE QString getNetworkIcon(int strength);
     Q_INVOKABLE QString getWifiIcon(); // Helper to get appropriate WiFi icon for UI
-    Q_INVOKABLE QString getActiveNetworkIcon(); // Helper to get icon for active network (WiFi or Ethernet)
     Q_INVOKABLE void enableWifi(bool enabled);
     Q_INVOKABLE void toggleWifi();
     Q_INVOKABLE void rescanWifi();

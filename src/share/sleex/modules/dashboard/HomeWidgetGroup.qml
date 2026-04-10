@@ -54,6 +54,7 @@ Rectangle {
                         ClippingRectangle {
                             width: 120; height: 120
                             radius: 60
+                            color: "transparent"
                             Image {
                                 anchors.fill: parent
                                 source: Config.options.dashboard.avatarPath

@@ -10,7 +10,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    forceWidth: true
+    forceSingleColumn: true
 
 
     function getDeviceIcon(modelData) {
@@ -35,6 +35,7 @@ ContentPage {
 
     ContentSection {
         title: "Bluetooth settings"
+        icon: "bluetooth"
         visible: Bluetooth.adapters.values.length > 0
 
         RowLayout {

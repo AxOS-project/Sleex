@@ -8,7 +8,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 
 ContentPage {
-    forceWidth: true
+    // forceWidth: true
 
     property string _selectedFaceImage: ""
     readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
@@ -68,6 +68,7 @@ ContentPage {
 
     ContentSection {
         title: "Shell style"
+        icon: "style"
 
         ConfigSwitch {
             text: "Transparency"
@@ -92,6 +93,7 @@ ContentPage {
 
     ContentSection {
         title: "Bar"
+        icon: "toolbar"
 
         RowLayout {
             spacing: 10
@@ -208,6 +210,7 @@ ContentPage {
 
     ContentSection {
         title: "Dashboard"
+        icon: "dashboard"
 
         ConfigSpinBox {
             text: "Scale"
@@ -327,6 +330,7 @@ ContentPage {
 
     ContentSection {
         title: "Dock"
+        icon: "dock"
 
         ConfigRow {
             uniform: true
@@ -383,6 +387,7 @@ ContentPage {
 
     ContentSection {
         title: "Background"
+        icon: "wallpaper"
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -490,6 +495,7 @@ ContentPage {
 
     ContentSection {
         title: "Notifications"
+        icon: "notifications"
 
         ConfigSelectionArray {
             currentValue: Config.options.notifications.position
@@ -517,6 +523,7 @@ ContentPage {
 
     ContentSection {
         title: "Lock Screen"
+        icon: "lock"
 
         ConfigSwitch {
             text: "Scrim background"
@@ -528,6 +535,7 @@ ContentPage {
 
     ContentSection {
         title: "Login Screen"
+        icon: "key"
 
         RowLayout {
             Layout.fillWidth: true
@@ -570,6 +578,7 @@ ContentPage {
 
     ContentSection {
         title: "Calendar"
+        icon: "event"
 
         ContentSubsection {
             title: "Advanced"
