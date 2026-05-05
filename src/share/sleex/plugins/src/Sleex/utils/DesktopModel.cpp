@@ -35,6 +35,17 @@ QHash<int, QByteArray> DesktopModel::roleNames() const {
 }
 
 void DesktopModel::loadDirectory(const QString &path) {
+    m_watchedPath = path;
+
+    if (!m_watcher.directories().isEmpty())
+        m_watcher.removePaths(m_watcher.directories());
+
+    m_watcher.addPath(path);
+
+    connect(&m_watcher, &QFileSystemWatcher::directoryChanged,
+            this, &DesktopModel::onDirectoryChanged,
+            Qt::UniqueConnection);
+
     beginResetModel();
     m_items.clear();
 
@@ -63,6 +74,10 @@ void DesktopModel::loadDirectory(const QString &path) {
         m_items.append(item);
     }
     endResetModel();
+}
+
+void DesktopModel::onDirectoryChanged() {
+    loadDirectory(m_watchedPath);
 }
 
 void DesktopModel::moveIcon(int index, int newX, int newY) {
