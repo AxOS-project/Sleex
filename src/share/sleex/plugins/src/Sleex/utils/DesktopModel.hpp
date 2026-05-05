@@ -4,6 +4,7 @@
 #include <QList>
 #include <QString>
 #include <QQmlEngine>
+#include <QFileSystemWatcher>
 
 struct DesktopItem {
     QString fileName;
@@ -38,5 +39,8 @@ public:
 
 private:
     QList<DesktopItem> m_items;
+    QString m_watchedPath;
+    QFileSystemWatcher m_watcher;
     void saveCurrentLayout();
+    void onDirectoryChanged();
 };
