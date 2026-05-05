@@ -10,6 +10,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Sleex.Utils
 
 Scope {
     id: root
@@ -184,6 +185,8 @@ Scope {
 
             Watermark { visibleWatermark: Config.options.background.showWatermark }
             Quote { visibleQuote: Config.options.background.enableQuote }
+            PostIt { id: postItManager; z: 50 }
+
         }
     }
 }
