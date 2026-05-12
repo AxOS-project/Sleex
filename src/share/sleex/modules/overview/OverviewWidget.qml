@@ -161,8 +161,8 @@ Item {
 
                     property int workspaceColIndex: (modelData?.["workspace-id"] ?? 0) % Config.options.overview.numOfCols
                     property int workspaceRowIndex: Math.floor((modelData?.["workspace-id"] ?? 0) % root.workspacesShown / Config.options.overview.numOfCols)
-                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex - ((root.focusedScreen?.x ?? 0) * root.scale)
-                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex - ((root.focusedScreen?.y ?? 0) * root.scale)
+                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
+                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
 
                     Timer {
                         id: updateWindowPosition
