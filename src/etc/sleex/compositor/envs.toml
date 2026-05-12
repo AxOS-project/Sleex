@@ -1,0 +1,19 @@
+[env]
+#  Themes
+QT_QPA_PLATFORM = "wayland"
+QT_QPA_PLATFORMTHEME = "kde"
+QT_STYLE_OVERRIDE = "kvantum"
+WLR_NO_HARDWARE_CURSORS = "1"
+
+XDG_SESSION_TYPE = "wayland"
+GDK_BACKEND = "wayland"
+SDL_VIDEODRIVER = "wayland"
+CLUTTER_BACKEND = "wayland"
+MOZ_ENABLE_WAYLAND = "1"
+
+#  Screen tearing
+# WLR_DRM_NO_ATOMIC, 1
+
+#  Others
+
+SLEEX_VIRTUAL_ENV = "~/.local/state/sleex/.venv"

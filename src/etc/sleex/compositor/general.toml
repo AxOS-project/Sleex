@@ -1,0 +1,76 @@
+# You can find everything you want by reading the wiki!
+# https://nferhat.github.io/fht-compositor
+
+# Input configuration.
+# SEE: man 7 xkeyboard-config
+[input.keyboard]
+layout = "us"
+rules = ""
+repeat-rate = 50
+repeat-delay = 250
+options = "numpad:mac" # This makes the numpad keys work as expected when numlock is off.
+
+[input.touchpad]
+natural-scrolling = true
+
+[cursor]
+name = "Bibata-Modern-Classic"
+size = 24
+
+
+# ---------------------------------------------------------
+
+# Output configuration (examples)
+
+# [outputs.HDMI-A-1]
+# mode = "1920x1080@144"
+
+# [outputs.DP-1]
+# mode = "1920x1080@75"
+# position.x = 1920
+
+# ---------------------------------------------------------
+
+# General compositor behaviour
+[general]
+cursor-warps = true         # Move the cursor to newly opened windows
+focus-new-windows = true    # Give newly inserted windows keyboard focus
+focus-follows-mouse = true  # When true, hovering over a window will focus it without clicking
+
+layouts = ["tile", "floating"]
+nmaster = 1                 # Only one master client
+mwfact = 0.5                # And share the screen size between the master and slave equally
+inner-gaps = 7              # gaps between tiles
+outer-gaps = 7              # gaps around the screen
+
+# ---------------------------------------------------------
+
+# Decorations: I.E the pretty
+# All the decorations can be overriden on a per-window basis using window rules.
+[decorations]
+decoration-mode = "force-server-side"
+
+# Border around windows!
+[decorations.border]
+thickness = 0
+radius = 10
+focused-color = "#ffffff"
+normal-color = "#222230"
+
+# Shadows! Very useful for floating windows.
+[decorations.shadow]
+color = "black" # by default its rgba(black, 0.5)
+floating-only = false # Up to you, I don't judge!
+
+# Blur, because yes!
+[decorations.blur]
+disable = false
+passes = 4
+radius = 5
+noise = 0.05
+
+# ---------------------------------------------------------
+
+# Animations. Makes everything smooooooooooooooth!
+[animations]
+disable = false

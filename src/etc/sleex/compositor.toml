@@ -1,0 +1,7 @@
+imports = [
+	"/etc/sleex/compositor/general.toml",
+	"/etc/sleex/compositor/keybinds.toml",
+	"/etc/sleex/compositor/rules.toml",
+	"/etc/sleex/compositor/execs.toml",
+	"/etc/sleex/compositor/envs.toml",
+]

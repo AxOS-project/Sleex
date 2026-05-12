@@ -1,0 +1,115 @@
+# Key bindings.
+[keybinds]
+
+
+Super-Ctrl-q = "quit"
+Super-Ctrl-r = "reload-config"
+
+Super-Return = { action = "run-command", arg = "foot" }
+Super-Shift-s = { action = "run-command", arg = """grim -g "`slurp -o`" - | wl-copy --type image/png""" }
+Super-w = { action = "run-command", arg = "firefox" }
+Super-c = { action = "run-command", arg = "code --enable-features=UseOzonePlatform --ozone-platform=wayland" }
+# Super-a = { action = "run-command", arg = "waydroid show-full-ui" }
+Super-e = { action = "run-command", arg = "pcmanfm-qt" }
+
+Super-a = { action = "run-command", arg = "qs -p Documents/sleex/src/share/sleex/ ipc call overview toggle" }
+
+# If you need to run an action even when the compositor is locked, here's how you can achieve this.
+XF86AudioRaiseVolume.action = "run-command"
+XF86AudioRaiseVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
+XF86AudioRaiseVolume.allow-while-locked = true
+XF86AudioLowerVolume.action = "run-command"
+XF86AudioLowerVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-"
+XF86AudioLowerVolume.allow-while-locked = true
+XF86AudioMute.action = "run-command"
+XF86AudioMute.arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+
+# Focus management, defaults are similar to what DWM provides
+Super-Right = "focus-next-window"
+Super-Left = "focus-previous-window"
+
+# Window management
+Super-m = "maximize-focused-window"
+Super-f = "fullscreen-focused-window"
+Super-q = "close-focused-window"
+Super-Ctrl-Space = "float-focused-window"
+Super-Shift-Right = "swap-with-next-window"
+Super-Shift-Left = "swap-with-previous-window"
+# Super-Ctrl-p = "pin-focused-window"
+
+# Transient layout changes.
+Super-Space = "select-next-layout"
+Super-Ctrl-Left = { action = "change-mwfact", arg = -0.1 }
+Super-Ctrl-Right = { action = "change-mwfact", arg = +0.1 }
+Super-Shift-h = { action = "change-nmaster", arg = +1 }
+Super-Shift-l = { action = "change-nmaster", arg = -1 }
+Super-i = { action = "change-window-proportion", arg = +0.5 }
+Super-o = { action = "change-window-proportion", arg = -0.5 }
+
+# Workspaces
+Super-ampersand = { action = "focus-workspace", arg = 0 }
+Super-eacute = { action = "focus-workspace", arg = 1 }
+Super-quotedbl = { action = "focus-workspace", arg = 2 }
+Super-apostrophe = { action = "focus-workspace", arg = 3 }
+Super-parenleft = { action = "focus-workspace", arg = 4 }
+Super-minus = { action = "focus-workspace", arg = 5 }
+Super-egrave = { action = "focus-workspace", arg = 6 }
+Super-underscore = { action = "focus-workspace", arg = 7 }
+Super-agrave = { action = "focus-workspace", arg = 8 }
+# For QWERTY users
+Super-1 = { action = "focus-workspace", arg = 0 }
+Super-2 = { action = "focus-workspace", arg = 1 }
+Super-3 = { action = "focus-workspace", arg = 2 }
+Super-4 = { action = "focus-workspace", arg = 3 }
+Super-5 = { action = "focus-workspace", arg = 4 }
+Super-6 = { action = "focus-workspace", arg = 5 }
+Super-7 = { action = "focus-workspace", arg = 6 }
+Super-8 = { action = "focus-workspace", arg = 7 }
+Super-9 = { action = "focus-workspace", arg = 8 } 
+
+# Sending windows to workspaces
+Super-Ctrl-ampersand = { action = "send-to-workspace", arg = 0 }
+Super-Ctrl-eacute = { action = "send-to-workspace", arg = 1 }
+Super-Ctrl-quotedbl = { action = "send-to-workspace", arg = 2 }
+Super-Ctrl-apostrophe = { action = "send-to-workspace", arg = 3 }
+Super-Ctrl-parenleft = { action = "send-to-workspace", arg = 4 }
+Super-Ctrl-minus = { action = "send-to-workspace", arg = 5 }
+Super-Ctrl-egrave = { action = "send-to-workspace", arg = 6 }
+Super-Ctrl-underscore = { action = "send-to-workspace", arg = 7 }
+Super-Ctrl-agrave = { action = "send-to-workspace", arg = 8 }
+# For QWERTY users
+Super-Ctrl-1 = { action = "send-to-workspace", arg = 0 }
+Super-Ctrl-2 = { action = "send-to-workspace", arg = 1 }
+Super-Ctrl-3 = { action = "send-to-workspace", arg = 2 }
+Super-Ctrl-4 = { action = "send-to-workspace", arg = 3 }
+Super-Ctrl-5 = { action = "send-to-workspace", arg = 4 }
+Super-Ctrl-6 = { action = "send-to-workspace", arg = 5 }
+Super-Ctrl-7 = { action = "send-to-workspace", arg = 6 }
+Super-Ctrl-8 = { action = "send-to-workspace", arg = 7 }
+Super-Ctrl-9 = { action = "send-to-workspace", arg = 8 }
+
+# Sleex shell
+Super-d = { action = "global-shortcut", arg = "quickshell:dashboardToggle" }
+Super-Super_L = { action = "global-shortcut", arg = "quickshell:overviewToggleReleaseInterrupt" }
+Super-v = { action = "global-shortcut", arg = "quickshell:overviewClipboardToggle" }
+Super-semicolon = { action = "global-shortcut", arg = "quickshell:overviewEmojiToggle" }
+Super-f1 = { action = "global-shortcut", arg = "quickshell:cheatsheetToggle" }
+Ctrl-Alt-Delete = { action = "global-shortcut", arg = "quickshell:sessionToggle" }
+Super-t = { action = "global-shortcut", arg = "quickshell:wppselectorToggle" }
+Super-l = { action = "global-shortcut", arg = "quickshell:lockScreen" }
+
+# ---------------------------------------------------------
+
+# Mouse bindings
+# Refer to section 2.4: mousebinds
+[mousebinds]
+Super-Left = "swap-tile"
+Super-Right = "resize-tile"
+Super-scrollup = "focus-next-workspace"
+Super-scrolldown = "focus-previous-workspace"
+
+[gesturebinds]
+focus-next-workspace = { fingers = 4, direction = "left" }
+focus-previous-workspace = { fingers = 4, direction = "right" }
+fullscreen-focused-window = { fingers = 4, direction = "up" }
+float-focused-window = { fingers = 4, direction = "down" }
