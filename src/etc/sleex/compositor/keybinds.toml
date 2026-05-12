@@ -5,12 +5,7 @@
 Super-Ctrl-q = "quit"
 Super-Ctrl-r = "reload-config"
 
-Super-Return = { action = "run-command", arg = "foot" }
 Super-Shift-s = { action = "run-command", arg = """grim -g "`slurp -o`" - | wl-copy --type image/png""" }
-Super-w = { action = "run-command", arg = "firefox" }
-Super-c = { action = "run-command", arg = "code --enable-features=UseOzonePlatform --ozone-platform=wayland" }
-# Super-a = { action = "run-command", arg = "waydroid show-full-ui" }
-Super-e = { action = "run-command", arg = "pcmanfm-qt" }
 
 Super-a = { action = "run-command", arg = "qs -p Documents/sleex/src/share/sleex/ ipc call overview toggle" }
 

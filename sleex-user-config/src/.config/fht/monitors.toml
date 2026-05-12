@@ -1,0 +1,9 @@
+# Output configuration (examples)
+# https://nferhat.github.io/fht-compositor/configuration/outputs.html
+
+# [outputs.HDMI-A-1]
+# mode = "1920x1080@144"
+
+# [outputs.DP-1]
+# mode = "1920x1080@75"
+# position.x = 1920

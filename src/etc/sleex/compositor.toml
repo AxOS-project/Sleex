@@ -4,4 +4,7 @@ imports = [
 	"/etc/sleex/compositor/rules.toml",
 	"/etc/sleex/compositor/execs.toml",
 	"/etc/sleex/compositor/envs.toml",
+
+	"~/.config/fht/monitors.toml",
+	"~/.config/fht/apps.toml",
 ]
