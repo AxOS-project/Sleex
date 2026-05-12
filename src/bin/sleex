@@ -1,10 +1,9 @@
 #!/bin/sh
 export XDG_CURRENT_DESKTOP="Sleex"
-export HYPRLAND_INSTANCE_SIGNATURE=""
 systemctl --user import-environment XDG_CURRENT_DESKTOP
 
 # Check if config dirs/files exist, if not copy them from /etc/skel
-for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
+for dir in fish fht anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
     if [ ! -d ~/.config/$dir ]; then
         cp -r /etc/skel/.config/$dir ~/.config/$dir
         chown -R $USER:$USER ~/.config/$dir
@@ -12,9 +11,9 @@ for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-c
 done
 
 # Create Sleex custom files
-if [ ! -d ~/.config/hypr/custom ]; then
-    mkdir -p ~/.config/hypr/custom
-    cp -r /etc/skel/.config/hypr/custom/* ~/.config/hypr/custom
+if [ ! -d ~/.config/fht/custom ]; then
+    mkdir -p ~/.config/fht/custom
+    cp -r /etc/skel/.config/fht/custom/* ~/.config/fht/custom
 fi
 
 if [ ! -d ~/.local/share/khal/calendars/default ]; then
@@ -32,17 +31,19 @@ done
 # First run setup
 if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
     # Sets up the user's environment to use Sleex.
-    CONFIG_FILE="$HOME/.config/hypr/custom/general.conf"
+    CONFIG_FILE="$HOME/.config/fht/custom/general.conf"
     VC_KEYMAP=$(grep -i KEYMAP /etc/vconsole.conf | cut -d= -f2 | tr -d '"')
     LAYOUT=$(echo "$VC_KEYMAP" | awk '{print tolower($0)}')
 
 
     echo "Setting keyboard layout to '$LAYOUT' in $CONFIG_FILE."
 
-    if grep -q "^input:kb_layout" "$CONFIG_FILE"; then
-        sed -i "s/^input:kb_layout.*/input:kb_layout = $LAYOUT/" "$CONFIG_FILE"
+    if grep -q "^\[input\.keyboard\]" "$CONFIG_FILE"; then
+        sed -i "/^\[input\.keyboard\]/,/^\[/ s/^layout = .*/layout = \"$LAYOUT\"/" "$CONFIG_FILE"
     else
-        echo "input:kb_layout = $LAYOUT" >> "$CONFIG_FILE"
+        echo "" >> "$CONFIG_FILE"
+        echo "[input.keyboard]" >> "$CONFIG_FILE"
+        echo "layout = \"$LAYOUT\"" >> "$CONFIG_FILE"
     fi
 
     if lsmod | grep -q '^nvidia'; then
@@ -50,7 +51,7 @@ if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
     {
         echo "env = LIBVA_DRIVER_NAME,nvidia"
         echo "env = __GLX_VENDOR_LIBRARY_NAME,nvidia"
-    } >> ~/.config/hypr/custom/env.conf
+    } >> ~/.config/fht/custom/env.conf
     fi
 fi
 
@@ -60,5 +61,5 @@ if [ ! -f ~/.config/user-dirs.dirs ]; then
 fi
 
 
-# Start Hyprland with the Sleex config
-start-hyprland -- --config /etc/sleex/hyprland.conf > /dev/null 2>&1
+# Start with the Sleex config
+fht-compositor -c /etc/sleex/compositor.toml > /dev/null 2>&1
