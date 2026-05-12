@@ -52,18 +52,7 @@ Scope {
                         if (!overviewScope.dontAutoCancelSearch) {
                             searchWidget.cancelSearch()
                         }
-                        delayedGrabTimer.start()
                     }
-                }
-            }
-
-            Timer {
-                id: delayedGrabTimer
-                interval: Config.options.hacks.arbitraryRaceConditionDelay
-                repeat: false
-                onTriggered: {
-                    if (!grab.canBeActive) return
-                    grab.active = GlobalStates.overviewOpen
                 }
             }
 
