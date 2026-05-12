@@ -5,10 +5,6 @@ pkgdesc="User configuration for Sleex desktop environment"
 arch=("x86_64")
 depend=("sleex")
 
-provides=("axskel-hypr")
-replaces=("axskel-hypr")
-conflicts=("axskel-hypr")
-
 package(){
    mkdir -p ${pkgdir}/etc/skel/
    cp -r ${srcdir}/.config/ ${pkgdir}/etc/skel/

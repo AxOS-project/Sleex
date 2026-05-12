@@ -2,41 +2,8 @@
   <a href="https://axos-project.github.io"><img src="https://github.com/user-attachments/assets/a64a60d1-c4ec-4fdf-a1df-ce4bde3890ce" width="512" alt="AxOS"></a>
 </p>
 
-Sleex is the third desktop environement of AxOS. It is based on Hyprland with Quickshell.
+# [WIP] Sleex with the Fht compositor
 
-## Features
-- AI chat integration with external providers (Gemini, OpenAI...)
-- Smooth animations
-- Tiling window management for seamless multitasking
-- Adaptative color scheme based on the wallpaper
-- Ready to use
-- Multiple available built in tools
-- Looks good
+Not yet ready for public use. This branch is for testing the Fht compositor with Sleex (and get rid of Hyprland).
 
-|      |
-|------|
-| ![preview](preview.mp4) |
-
-## Installation
-
-> [!IMPORTANT]
-> If you already have an hyprland config, this will erase it.
-
-If you are using AxOS, you can simply use epsilon:
-```
-epsi i sleex
-```
-
-### Other arch-based distributions
-
-Sleex is available on the AUR as `sleex-git`. [See the page](https://aur.archlinux.org/packages/sleex-git).
-You can install it using an aur helper such as `yay` or `paru`.
-
-Then, you can start sleex by selecting the sleex session on your greeter
-
-## License
-Sleex is licensed under the GNU General Public License v3.0
-
-## Special thanks
-- [@end-4](https://github.com/end-4/): Great inspiration | Sleex is based on his work
-- [@xHyperVoid](https://github.com/xHyperVoid): Designer | Made the logo and the wallpapers
+[Fht compositor](https://nferhat.github.io/fht-compositor/) is a new Wayland compositor written in Rust. It is designed to be fast, lightweight, and easy to use. It is also highly customizable, allowing users to create their own unique desktop experience.
