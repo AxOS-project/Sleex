@@ -34,26 +34,12 @@ Scope {
             mask: Region {
                 item: GlobalStates.overviewOpen ? columnLayout : null
             }
-            HyprlandWindow.visibleMask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
-            }
-
 
             anchors {
                 top: true
                 left: true
                 right: true
                 bottom: true
-            }
-
-            HyprlandFocusGrab {
-                id: grab
-                windows: [ root ]
-                property bool canBeActive: root.monitorIsFocused
-                active: false
-                onCleared: () => {
-                    if (!active) GlobalStates.overviewOpen = false
-                }
             }
 
             Connections {
@@ -102,9 +88,9 @@ Scope {
                     if (event.key === Qt.Key_Escape) {
                         GlobalStates.overviewOpen = false;
                     } else if (event.key === Qt.Key_Left) {
-                        if (!root.searchingText) Hyprland.dispatch("workspace -1");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-previous-workspace");
                     } else if (event.key === Qt.Key_Right) {
-                        if (!root.searchingText) Hyprland.dispatch("workspace +1");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-next-workspace");
                     }
                 }
 
