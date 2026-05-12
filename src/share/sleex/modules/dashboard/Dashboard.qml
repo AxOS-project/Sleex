@@ -14,6 +14,7 @@ import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Bluetooth
+import Sleex.Fhtc
 
 Scope {
     id: dashboardScope
@@ -28,8 +29,8 @@ Scope {
         PanelWindow {
             id: dashboardRoot
             required property var modelData
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            required property ShellScreen screen
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
             screen: modelData
             visible: GlobalStates.dashboardOpen && monitorIsFocused
 
@@ -44,13 +45,13 @@ Scope {
 
             Region { id: emptyRegion }
 
-            HyprlandFocusGrab {
-                id: grab
-                windows: [ dashboardRoot ]
-                property bool canBeActive: dashboardRoot.monitorIsFocused
-                active: false
-                onCleared: () => { if (!active) ipc.close() }
-            }
+            // HyprlandFocusGrab {
+            //     id: grab
+            //     windows: [ dashboardRoot ]
+            //     property bool canBeActive: dashboardRoot.monitorIsFocused
+            //     active: false
+            //     onCleared: () => { if (!active) ipc.close() }
+            // }
 
             Connections {
                 target: GlobalStates
@@ -158,10 +159,6 @@ Scope {
                         bottom: parent.bottom
                         right: parent.right
                         left: parent.left
-                        topMargin: Appearance.sizes.hyprlandGapsOut
-                        rightMargin: Appearance.sizes.hyprlandGapsOut
-                        bottomMargin: Appearance.sizes.hyprlandGapsOut
-                        leftMargin: Appearance.sizes.elevationMargin
                     }
                     focus: GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused
                     Keys.onPressed: (event) => {
@@ -180,10 +177,10 @@ Scope {
                         Rectangle {
                             id: dashboardBackground
                             anchors.fill: parent
-                            implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-                            implicitWidth: dashboardWidth - Appearance.sizes.hyprlandGapsOut * 2
+                            implicitHeight: parent.height
+                            implicitWidth: dashboardWidth
                             color: Appearance.colors.colLayer0
-                            radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+                            radius: Appearance.rounding.screenRounding
 
                             ColumnLayout {
                                 spacing: dashboardPadding
@@ -229,10 +226,10 @@ Scope {
                                             toggled: false
                                             buttonIcon: "restart_alt"
                                             onClicked: {
-                                                Hyprland.dispatch("reload")
+                                                FhtcIpc.dispatch("reload-config")
                                                 Quickshell.reload(true)
                                             }
-                                            StyledToolTip { text: qsTr("Reload Hyprland & Quickshell") }
+                                            StyledToolTip { text: qsTr("Reload Fhtc & Quickshell") }
                                         }
                                         QuickToggleButton {
                                             toggled: false
@@ -246,7 +243,10 @@ Scope {
                                         QuickToggleButton {
                                             toggled: false
                                             buttonIcon: "power_settings_new"
-                                            onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
+                                            onClicked: () => {
+                                                Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/", "ipc", "call", "session", "open"])
+                                                ipc.close()
+                                            }
                                             StyledToolTip { text: qsTr("Session") }
                                         }
                                     }
