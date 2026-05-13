@@ -18,7 +18,6 @@ import qs.modules.polkit
 import qs.modules.screenCorners
 import qs.modules.session
 import qs.modules.dashboard
-import qs.modules.sidebarLeft
 import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
@@ -46,7 +45,6 @@ ShellRoot {
     property bool enableReloadPopup: true
     property bool enableScreenCorners: false
     property bool enableSession: true
-    property bool enableSidebarLeft: false
     property bool enableDashboard: true
     property bool enableWallSelector: true
     property bool enableBackground: true
@@ -73,7 +71,6 @@ ShellRoot {
     LazyLoader { active: true; component: BatteryPopup {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
-    LazyLoader { active: enableSidebarLeft; component: SidebarLeft {} }
     LazyLoader { active: enableDashboard; component: Dashboard {} }
     LazyLoader { active: enableWallSelector; component: WallpaperSelector {} }
     LazyLoader { active: enableBackground; component: Background {} }

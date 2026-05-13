@@ -2,7 +2,6 @@ import qs.modules.common
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
-import Quickshell.Hyprland
 
 pragma Singleton
 pragma ComponentBehavior: Bound
@@ -49,10 +48,8 @@ Singleton {
         }
     }
 
-    // Reverted to Hyprland.dispatch, which is the idiomatic method for this shell.
     function playSound(relativeSoundPath) {
         const fullPath = "/usr/share/sleex/" + relativeSoundPath;
-        // Use the absolute path to paplay to be safe.
         const command = ["/usr/bin/paplay", `${fullPath}`];
         Quickshell.execDetached(command);
     }

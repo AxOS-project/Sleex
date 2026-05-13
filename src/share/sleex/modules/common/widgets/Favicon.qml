@@ -10,7 +10,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Io
 import Quickshell.Widgets
-import Quickshell.Hyprland
 
 IconImage {
     id: root

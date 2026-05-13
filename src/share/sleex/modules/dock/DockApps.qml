@@ -24,7 +24,7 @@ Item {
     property bool requestDockShow: previewPopup.show
 
     Layout.fillHeight: true
-    Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
+    Layout.topMargin: Appearance.sizes.gapsOut // why does this work
     implicitWidth: listView.implicitWidth
     
     StyledListView {

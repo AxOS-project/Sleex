@@ -35,14 +35,14 @@ Scope { // Scope
             }
 
             exclusiveZone: root.pinned ? implicitHeight
-                - (Appearance.sizes.hyprlandGapsOut)
-                - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
+                - (Appearance.sizes.gapsOut)
+                - (Appearance.sizes.elevationMargin - Appearance.sizes.gapsOut) : 0
 
             implicitWidth: dockBackground.implicitWidth
             WlrLayershell.namespace: "quickshell:dock"
             color: "transparent"
 
-            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
+            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.gapsOut
 
             mask: Region {
                 item: dockMouseArea
@@ -79,7 +79,7 @@ Scope { // Scope
                         }
 
                         implicitWidth: dockRow.implicitWidth + 5 * 2
-                        height: parent.height - Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut
+                        height: parent.height - Appearance.sizes.elevationMargin - Appearance.sizes.gapsOut
 
                         StyledRectangularShadow {
                             target: dockVisualBackground
@@ -89,7 +89,7 @@ Scope { // Scope
                             property real margin: Appearance.sizes.elevationMargin
                             anchors.fill: parent
                             anchors.topMargin: Appearance.sizes.elevationMargin
-                            anchors.bottomMargin: Appearance.sizes.hyprlandGapsOut
+                            anchors.bottomMargin: Appearance.sizes.gapsOut
                             color: Appearance.colors.colLayer0
                             border.width: 1
                             border.color: Appearance.m3colors.m3outlineVariant
@@ -105,7 +105,7 @@ Scope { // Scope
                             property real padding: 5
 
                             VerticalButtonGroup {
-                                Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
+                                Layout.topMargin: Appearance.sizes.gapsOut // why does this work
                                 GroupButton { // Pin button
                                     baseWidth: 35
                                     baseHeight: 35

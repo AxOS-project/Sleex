@@ -7,7 +7,6 @@ import qs.modules.common.functions
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 import Qt.labs.platform
 
 /**
@@ -104,7 +103,6 @@ Singleton {
             } else {
                 root.applyConfig(configFileView.text())
                 if (!root.preventNextNotification) {
-                    // Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration reloaded")}" "${root.filePath}"`)
                 } else {
                     root.preventNextNotification = false;
                 }

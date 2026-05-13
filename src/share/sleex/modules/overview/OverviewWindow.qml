@@ -11,7 +11,6 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Item { // Window
     id: root

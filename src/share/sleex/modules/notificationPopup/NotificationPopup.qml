@@ -7,7 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: notificationPopup
@@ -17,7 +17,7 @@ Scope {
     PanelWindow {
         id: root
         visible: (Notifications.popupList.length > 0)
-        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+        screen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName === screen.name) ?? null
 
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay

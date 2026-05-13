@@ -267,7 +267,7 @@ Item {
                             target === "None" ? "" : target
                         )
                         
-                        // If un-mirroring, give Hyprland more time to re-expose the monitor
+                        // If un-mirroring, give the compositor more time to re-expose the monitor
                         if (target === "None") {
                             Qt.callLater(() => {
                                 Qt.createQmlObject('import QtQuick 2.0; Timer { interval: 1000; running: true; onTriggered: Monitors.refresh() }', root)

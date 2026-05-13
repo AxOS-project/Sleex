@@ -51,8 +51,8 @@ post_process() {
 
 check_and_prompt_upscale() {
     local img="$1"
-    min_width_desired="$(hyprctl monitors -j | jq '([.[].width] | max)' | xargs)"
-    min_height_desired="$(hyprctl monitors -j | jq '([.[].height] | max)' | xargs)"
+    min_width_desired="$(fht-compositor ipc -j outputs | jq '[.[] | .size[0]] | max' | xargs)"
+    min_height_desired="$(fht-compositor ipc -j outputs | jq '[.[] | .size[1]] | max' | xargs)"
 
     if command -v identify &>/dev/null && [ -f "$img" ]; then
         local img_width img_height
@@ -100,12 +100,7 @@ switch() {
     local color="$5"
     local actual_wallpaper_path="$imgpath"
 
-    read scale screenx screeny screensizey < <(hyprctl monitors -j | jq '.[] | select(.focused) | .scale, .x, .y, .height' | xargs)
-    cursorposx=$(hyprctl cursorpos -j | jq '.x' 2>/dev/null) || cursorposx=960
-    cursorposx=$(bc <<< "scale=0; ($cursorposx - $screenx) * $scale / 1")
-    cursorposy=$(hyprctl cursorpos -j | jq '.y' 2>/dev/null) || cursorposy=540
-    cursorposy=$(bc <<< "scale=0; ($cursorposy - $screeny) * $scale / 1")
-    cursorposy_inverted=$((screensizey - cursorposy))
+    read scale screenx screeny screensizey < <(fht-compositor ipc -j outputs | jq --arg act "$(fht-compositor ipc -j space | jq -r '.monitors[] | select(.active).output')" '.[$act] | .scale, .position[0], .position[1], .size[1]' | xargs)
 
     if [[ "$color_flag" == "1" ]]; then
         matugen_args=(color hex "$color")
@@ -163,8 +158,8 @@ switch() {
         > "$STATE_DIR"/user/generated/material_colors.scss
     "$SCRIPT_DIR"/applycolor.sh
 
-    max_width_desired="$(hyprctl monitors -j | jq '([.[].width] | min)' | xargs)"
-    max_height_desired="$(hyprctl monitors -j | jq '([.[].height] | min)' | xargs)"
+    max_width_desired="$(fht-compositor ipc -j outputs | jq '[.[] | .size[0]] | min' | xargs)"
+    max_height_desired="$(fht-compositor ipc -j outputs | jq '[.[] | .size[1]] | min' | xargs)"
     post_process "$max_width_desired" "$max_height_desired" "$actual_wallpaper_path"
 }
 

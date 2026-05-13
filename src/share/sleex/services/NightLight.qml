@@ -4,11 +4,6 @@ import qs.modules.common
 import Quickshell
 import Quickshell.Io
 
-/**
- * Simple hyprsunset service with automatic mode.
- * In theory we don't need this because hyprsunset has a config file, but it somehow doesn't work.
- * It should also be possible to control it via hyprctl, but it doesn't work consistently either so we're just killing and launching.
- */
 Singleton {
     id: root
     property bool ready: false
@@ -55,7 +50,7 @@ Singleton {
 
     onColorTemperatureChanged: {
         if (root.active)
-            Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(colorTemperature)]);
+            Quickshell.execDetached(["gammastep", "-O", String(colorTemperature)]);
     }
 
     function reEvaluate() {
@@ -76,12 +71,12 @@ Singleton {
     function enable() {
         root.active = true;
         Quickshell.execDetached(["bash", "-c",
-            `pidof hyprsunset || hyprsunset --temperature ${root.colorTemperature}`]);
+            `pidof gammastep || gammastep -O ${root.colorTemperature}`]);
     }
 
     function disable() {
         root.active = false;
-        Quickshell.execDetached(["bash", "-c", "pkill hyprsunset"]);
+        Quickshell.execDetached(["bash", "-c", "pkill gammastep"]);
     }
 
     function fetchState() {
@@ -91,7 +86,7 @@ Singleton {
     Process {
         id: fetchProc
         running: true
-        command: ["bash", "-c", "hyprctl hyprsunset temperature"]
+        command: ["bash", "-c", "hyprctl hyprsunset temperature"] // TODO: use gammastep
         stdout: StdioCollector {
             id: stateCollector
             onStreamFinished: {

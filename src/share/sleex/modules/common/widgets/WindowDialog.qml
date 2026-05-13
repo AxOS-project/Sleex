@@ -33,7 +33,7 @@ Rectangle {
         dialogBackground.implicitHeight = show ? backgroundHeight : 0
     }
 
-    radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+    radius: Appearance.rounding.screenRounding - Appearance.sizes.gapsOut + 1
 
     MouseArea { // Clicking outside the dialog should dismiss
         anchors.fill: parent

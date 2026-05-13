@@ -5,7 +5,6 @@ import qs.modules.common.functions
 import Qt.labs.platform
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 
 Singleton {
     // XDG Dirs, with "file://"

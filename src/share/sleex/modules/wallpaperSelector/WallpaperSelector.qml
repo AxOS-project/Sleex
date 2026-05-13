@@ -30,18 +30,8 @@ Scope {
         implicitWidth: 1920
         implicitHeight: 200
         WlrLayershell.namespace: "quickshell:wppselector"
-        // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
-        // WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.onDemand
         color: "transparent"
-
-        HyprlandFocusGrab {
-            id: grab
-            windows: [ wppselectorRoot ]
-            active: GlobalStates.wppselectorOpen
-            onCleared: () => {
-                if (!active) wppselectorRoot.hide()
-            }
-        }
 
         anchors {
             top: true
@@ -54,13 +44,13 @@ Scope {
                 bottom: parent.bottom
                 right: parent.right
                 left: parent.left
-                topMargin: Appearance.sizes.hyprlandGapsOut
-                rightMargin: Appearance.sizes.hyprlandGapsOut
-                bottomMargin: Appearance.sizes.hyprlandGapsOut
+                topMargin: Appearance.sizes.gapsOut
+                rightMargin: Appearance.sizes.gapsOut
+                bottomMargin: Appearance.sizes.gapsOut
                 leftMargin: Appearance.sizes.elevationMargin
             }
-            width: wppselectorWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-            height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
+            width: wppselectorWidth - Appearance.sizes.gapsOut - Appearance.sizes.elevationMargin
+            height: parent.height - Appearance.sizes.gapsOut * 2
 
             focus: GlobalStates.wppselectorOpen
             Keys.onPressed: (event) => {
@@ -77,10 +67,10 @@ Scope {
                     id: wppselectorBackground
 
                     anchors.fill: parent
-                    implicitHeight: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-                    implicitWidth: wppselectorWidth - Appearance.sizes.hyprlandGapsOut * 2
+                    implicitHeight: parent.height - Appearance.sizes.gapsOut * 2
+                    implicitWidth: wppselectorWidth - Appearance.sizes.gapsOut * 2
                     color: Appearance.colors.colLayer0
-                    radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+                    radius: Appearance.rounding.screenRounding - Appearance.sizes.gapsOut + 1
 
                     Rectangle {
                         id: flickableBg

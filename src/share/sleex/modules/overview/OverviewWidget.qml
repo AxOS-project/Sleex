@@ -10,7 +10,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import Sleex.Fhtc
 
 Item {

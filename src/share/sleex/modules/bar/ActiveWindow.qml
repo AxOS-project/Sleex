@@ -4,13 +4,11 @@ import qs.services
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import Sleex.Fhtc
 
 Item {
     id: root
     required property var bar
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
 
     implicitWidth: colLayout.implicitWidth
 

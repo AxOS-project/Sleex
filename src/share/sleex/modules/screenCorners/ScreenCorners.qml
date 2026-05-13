@@ -5,7 +5,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope {
     id: screenCorners
@@ -25,20 +24,6 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             mask: Region {
                 item: null
-            }
-            HyprlandWindow.visibleMask: Region {
-                Region {
-                    item: topLeftCorner
-                }
-                Region {
-                    item: topRightCorner
-                }
-                Region {
-                    item: bottomLeftCorner
-                }
-                Region {
-                    item: bottomRightCorner
-                }
             }
             WlrLayershell.namespace: "quickshell:screenCorners"
             WlrLayershell.layer: WlrLayer.Overlay

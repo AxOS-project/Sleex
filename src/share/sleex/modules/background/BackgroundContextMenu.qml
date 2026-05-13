@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import Quickshell.Hyprland
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
@@ -112,7 +111,7 @@ Item {
                 }
                 
                 onClicked: {
-                    Hyprland.dispatch("global quickshell:sessionOpen")
+                    Quickshell.execDetached(["qs", "-p", "/usr/share/sleex", "ipc", "call", "session", "toggle"])
                     bgMenu.close()
                 }
             }

@@ -3,7 +3,6 @@ import qs.modules.common.widgets
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
 
 Item {
@@ -26,38 +25,25 @@ Item {
     }
 
     function grabFocus() {
-        focusGrab.active = true;
+        // focusGrab.active = true;
     }
 
     function setExtraWindowAndGrabFocus(window) {
         root.activeMenu = window;
-        root.grabFocus();
+        // root.grabFocus();
     }
 
     function releaseFocus() {
-        focusGrab.active = false;
+        // focusGrab.active = false;
     }
 
     function closeOverflowMenu() {
-        focusGrab.active = false;
+        // focusGrab.active = false;
     }
 
     onTrayOverflowOpenChanged: {
         if (root.trayOverflowOpen) {
             root.grabFocus();
-        }
-    }
-
-    HyprlandFocusGrab {
-        id: focusGrab
-        active: false
-        windows: [trayOverflowLayout.QsWindow?.window, root.activeMenu]
-        onCleared: {
-            root.trayOverflowOpen = false;
-            if (root.activeMenu) {
-                root.activeMenu.close();
-                root.activeMenu = null;
-            }
         }
     }
 
