@@ -4,6 +4,10 @@
 
 # [WIP] Sleex with the Fht compositor
 
-Not yet ready for public use. This branch is for testing the Fht compositor with Sleex (and get rid of Hyprland).
+If you want to test this very very unstable branch, you can build and install the package:
+
+```bash
+makepkg -si
+```
 
 [Fht compositor](https://nferhat.github.io/fht-compositor/) is a new Wayland compositor written in Rust. It is designed to be fast, lightweight, and easy to use. It is also highly customizable, allowing users to create their own unique desktop experience.
