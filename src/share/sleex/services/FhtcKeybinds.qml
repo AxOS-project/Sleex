@@ -7,17 +7,16 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 /**
- * A service that provides access to Hyprland keybinds.
+ * A service that provides access to keybinds.
  * Uses the `get_keybinds.py` script to parse comments in config files in a certain format and convert to JSON.
  */
 Singleton {
     id: root
-    property string keybindParserPath: FileUtils.trimFileProtocol(`/usr/share/sleex/scripts/hyprland/get_keybinds.py`)
-    property string defaultKeybindConfigPath: FileUtils.trimFileProtocol(`/etc/sleex/hyprland/keybinds.conf`)
-    property string userKeybindConfigPath: FileUtils.trimFileProtocol(`${Directories.config}/hypr/custom/keybinds.conf`)
+    property string keybindParserPath: FileUtils.trimFileProtocol(`/usr/share/sleex/scripts/fht/get_keybinds.py`)
+    property string defaultKeybindConfigPath: FileUtils.trimFileProtocol(`/etc/sleex/compositor/keybinds.toml`)
+    property string userKeybindConfigPath: FileUtils.trimFileProtocol(`${Directories.config}/fht/custom/keybinds.toml`)
     property var defaultKeybinds: {"children": []}
     property var userKeybinds: {"children": []}
     property var keybinds: ({
@@ -26,17 +25,6 @@ Singleton {
             ...(userKeybinds.children ?? []),
         ]
     })
-
-    Connections {
-        target: Hyprland
-
-        function onRawEvent(event) {
-            if (event.name == "configreloaded") {
-                getDefaultKeybinds.running = true
-                getUserKeybinds.running = true
-            }
-        }
-    }
 
     Process {
         id: getDefaultKeybinds

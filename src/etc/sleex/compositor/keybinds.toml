@@ -1,89 +1,92 @@
-# Key bindings.
+# Lines ending with `# [hidden]` won't be shown on cheatsheet
+# Lines starting with #! are section headings
+
 [keybinds]
 
+#!
+##! Basic
+Super-Shift-s = { action = "run-command", arg = 'grim -g "$(slurp -o)" - | wl-copy --type image/png' } # [hidden]
+Super-a = { action = "run-command", arg = "qs -p /usr/share/sleex ipc call overview toggle" } # [hidden]
 
-Super-Ctrl-q = "quit"
-Super-Ctrl-r = "reload-config"
-
-Super-Shift-s = { action = "run-command", arg = """grim -g "`slurp -o`" - | wl-copy --type image/png""" }
-
-Super-a = { action = "run-command", arg = "qs -p Documents/sleex/src/share/sleex/ ipc call overview toggle" }
-
-# If you need to run an action even when the compositor is locked, here's how you can achieve this.
+#!
+##! Multimedia
 XF86AudioRaiseVolume.action = "run-command"
-XF86AudioRaiseVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
+XF86AudioRaiseVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" # Increase volume by 5%
 XF86AudioRaiseVolume.allow-while-locked = true
 XF86AudioLowerVolume.action = "run-command"
-XF86AudioLowerVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-"
+XF86AudioLowerVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-" # Decrease volume by 5%
 XF86AudioLowerVolume.allow-while-locked = true
 XF86AudioMute.action = "run-command"
-XF86AudioMute.arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+XF86AudioMute.arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle" # Toggle mute
 
-# Focus management, defaults are similar to what DWM provides
-Super-Right = "focus-next-window"
-Super-Left = "focus-previous-window"
+#!
+##! Focus and window management
+Super-Right = "focus-next-window" # Focus the next window in the current workspace
+Super-Left = "focus-previous-window" # Focus the previous window in the current workspace
 
-# Window management
-Super-m = "maximize-focused-window"
-Super-f = "fullscreen-focused-window"
-Super-q = "close-focused-window"
-Super-Ctrl-Space = "float-focused-window"
-Super-Shift-Right = "swap-with-next-window"
-Super-Shift-Left = "swap-with-previous-window"
+Super-m = "maximize-focused-window" # Toggle maximize the focused window
+Super-f = "fullscreen-focused-window" # Toggle fullscreen the focused window
+Super-q = "close-focused-window" # Close the focused window
+Super-Ctrl-Space = "float-focused-window" # Toggle floating the focused window
+Super-Shift-Right = "swap-with-next-window" # Swap the focused window with the next window in the current workspace
+Super-Shift-Left = "swap-with-previous-window" # Swap the focused window with the previous window in the current workspace
 # Super-Ctrl-p = "pin-focused-window"
 
 # Transient layout changes.
-Super-Space = "select-next-layout"
-Super-Ctrl-Left = { action = "change-mwfact", arg = -0.1 }
-Super-Ctrl-Right = { action = "change-mwfact", arg = +0.1 }
-Super-Shift-h = { action = "change-nmaster", arg = +1 }
-Super-Shift-l = { action = "change-nmaster", arg = -1 }
-Super-i = { action = "change-window-proportion", arg = +0.5 }
-Super-o = { action = "change-window-proportion", arg = -0.5 }
+Super-Space = "select-next-layout" # Cycle to the next layout in the current workspace
+Super-Ctrl-Left = { action = "change-mwfact", arg = -0.1 } # Decrease the master area size by 10%
+Super-Ctrl-Right = { action = "change-mwfact", arg = 0.1 } # Increase the master area size by 10%
+Super-Shift-h = { action = "change-nmaster", arg = 1 } # Increase the number of windows in the master area by 1
+Super-Shift-l = { action = "change-nmaster", arg = -1 } # Decrease the number of windows in the master area by 1
+Super-i = { action = "change-window-proportion", arg = 0.5 } # Increase the size of the focused window
+Super-o = { action = "change-window-proportion", arg = -0.5 } # Decrease the size of the focused window
 
 # Workspaces
-Super-ampersand = { action = "focus-workspace", arg = 0 }
-Super-eacute = { action = "focus-workspace", arg = 1 }
-Super-quotedbl = { action = "focus-workspace", arg = 2 }
-Super-apostrophe = { action = "focus-workspace", arg = 3 }
-Super-parenleft = { action = "focus-workspace", arg = 4 }
-Super-minus = { action = "focus-workspace", arg = 5 }
-Super-egrave = { action = "focus-workspace", arg = 6 }
-Super-underscore = { action = "focus-workspace", arg = 7 }
-Super-agrave = { action = "focus-workspace", arg = 8 }
+#/# Super-[1-9] = { action = "focus-workspace", arg = N } # Focus workspace N (0-indexed)
+Super-ampersand = { action = "focus-workspace", arg = 0 } # [hidden]
+Super-eacute = { action = "focus-workspace", arg = 1 } # [hidden]
+Super-quotedbl = { action = "focus-workspace", arg = 2 } # [hidden]
+Super-apostrophe = { action = "focus-workspace", arg = 3 } # [hidden]
+Super-parenleft = { action = "focus-workspace", arg = 4 } # [hidden]
+Super-minus = { action = "focus-workspace", arg = 5 } # [hidden]
+Super-egrave = { action = "focus-workspace", arg = 6 } # [hidden]
+Super-underscore = { action = "focus-workspace", arg = 7 } # [hidden]
+Super-agrave = { action = "focus-workspace", arg = 8 } # [hidden]
 # For QWERTY users
-Super-1 = { action = "focus-workspace", arg = 0 }
-Super-2 = { action = "focus-workspace", arg = 1 }
-Super-3 = { action = "focus-workspace", arg = 2 }
-Super-4 = { action = "focus-workspace", arg = 3 }
-Super-5 = { action = "focus-workspace", arg = 4 }
-Super-6 = { action = "focus-workspace", arg = 5 }
-Super-7 = { action = "focus-workspace", arg = 6 }
-Super-8 = { action = "focus-workspace", arg = 7 }
-Super-9 = { action = "focus-workspace", arg = 8 } 
+Super-1 = { action = "focus-workspace", arg = 0 } # [hidden]
+Super-2 = { action = "focus-workspace", arg = 1 } # [hidden]
+Super-3 = { action = "focus-workspace", arg = 2 } # [hidden]
+Super-4 = { action = "focus-workspace", arg = 3 } # [hidden]
+Super-5 = { action = "focus-workspace", arg = 4 } # [hidden]
+Super-6 = { action = "focus-workspace", arg = 5 } # [hidden]
+Super-7 = { action = "focus-workspace", arg = 6 } # [hidden]
+Super-8 = { action = "focus-workspace", arg = 7 } # [hidden]
+Super-9 = { action = "focus-workspace", arg = 8 } # [hidden]
 
 # Sending windows to workspaces
-Super-Ctrl-ampersand = { action = "send-to-workspace", arg = 0 }
-Super-Ctrl-eacute = { action = "send-to-workspace", arg = 1 }
-Super-Ctrl-quotedbl = { action = "send-to-workspace", arg = 2 }
-Super-Ctrl-apostrophe = { action = "send-to-workspace", arg = 3 }
-Super-Ctrl-parenleft = { action = "send-to-workspace", arg = 4 }
-Super-Ctrl-minus = { action = "send-to-workspace", arg = 5 }
-Super-Ctrl-egrave = { action = "send-to-workspace", arg = 6 }
-Super-Ctrl-underscore = { action = "send-to-workspace", arg = 7 }
-Super-Ctrl-agrave = { action = "send-to-workspace", arg = 8 }
+#/#! Super-Shift-[1-9] = { action = "send-to-workspace", arg = N } # Send the focused window to workspace N (0-indexed)
+Super-Ctrl-ampersand = { action = "send-to-workspace", arg = 0 } # [hidden]
+Super-Ctrl-eacute = { action = "send-to-workspace", arg = 1 } # [hidden]
+Super-Ctrl-quotedbl = { action = "send-to-workspace", arg = 2 } # [hidden]
+Super-Ctrl-apostrophe = { action = "send-to-workspace", arg = 3 } # [hidden]
+Super-Ctrl-parenleft = { action = "send-to-workspace", arg = 4 } # [hidden]
+Super-Ctrl-minus = { action = "send-to-workspace", arg = 5 } # [hidden]
+Super-Ctrl-egrave = { action = "send-to-workspace", arg = 6 } # [hidden]
+Super-Ctrl-underscore = { action = "send-to-workspace", arg = 7 } # [hidden]
+Super-Ctrl-agrave = { action = "send-to-workspace", arg = 8 } # [hidden]
 # For QWERTY users
-Super-Ctrl-1 = { action = "send-to-workspace", arg = 0 }
-Super-Ctrl-2 = { action = "send-to-workspace", arg = 1 }
-Super-Ctrl-3 = { action = "send-to-workspace", arg = 2 }
-Super-Ctrl-4 = { action = "send-to-workspace", arg = 3 }
-Super-Ctrl-5 = { action = "send-to-workspace", arg = 4 }
-Super-Ctrl-6 = { action = "send-to-workspace", arg = 5 }
-Super-Ctrl-7 = { action = "send-to-workspace", arg = 6 }
-Super-Ctrl-8 = { action = "send-to-workspace", arg = 7 }
-Super-Ctrl-9 = { action = "send-to-workspace", arg = 8 }
+Super-Ctrl-1 = { action = "send-to-workspace", arg = 0 } # [hidden]
+Super-Ctrl-2 = { action = "send-to-workspace", arg = 1 } # [hidden]
+Super-Ctrl-3 = { action = "send-to-workspace", arg = 2 } # [hidden]
+Super-Ctrl-4 = { action = "send-to-workspace", arg = 3 } # [hidden]
+Super-Ctrl-5 = { action = "send-to-workspace", arg = 4 } # [hidden]
+Super-Ctrl-6 = { action = "send-to-workspace", arg = 5 } # [hidden]
+Super-Ctrl-7 = { action = "send-to-workspace", arg = 6 } # [hidden]
+Super-Ctrl-8 = { action = "send-to-workspace", arg = 7 } # [hidden]
+Super-Ctrl-9 = { action = "send-to-workspace", arg = 8 } # [hidden]
 
-# Sleex shell
+#!
+##! Shell
 Super-d = { action = "global-shortcut", arg = "quickshell:dashboardToggle" }
 Super-Super_L = { action = "global-shortcut", arg = "quickshell:overviewToggleReleaseInterrupt" }
 Super-v = { action = "global-shortcut", arg = "quickshell:overviewClipboardToggle" }
@@ -95,8 +98,7 @@ Super-l = { action = "global-shortcut", arg = "quickshell:lockScreen" }
 
 # ---------------------------------------------------------
 
-# Mouse bindings
-# Refer to section 2.4: mousebinds
+## [hidden]
 [mousebinds]
 Super-Left = "swap-tile"
 Super-Right = "resize-tile"

@@ -9,11 +9,10 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
-import Quickshell.Hyprland
 
 Item {
     id: root
-    readonly property var keybinds: HyprlandKeybinds.keybinds
+    readonly property var keybinds: FhtcKeybinds.keybinds
     property real spacing: 16
     property real titleSpacing: 8
     width: 800
