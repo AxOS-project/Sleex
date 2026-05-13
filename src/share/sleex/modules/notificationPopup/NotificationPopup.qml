@@ -17,7 +17,7 @@ Scope {
     PanelWindow {
         id: root
         visible: (Notifications.popupList.length > 0)
-        screen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName === screen.name) ?? null
+        screen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName) ?? null
 
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay
