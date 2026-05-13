@@ -5,19 +5,13 @@
 
 #!
 ##! Basic
-Super-Shift-s = { action = "run-command", arg = 'grim -g "$(slurp -o)" - | wl-copy --type image/png' } # [hidden]
-Super-a = { action = "run-command", arg = "qs -p /usr/share/sleex ipc call overview toggle" } # [hidden]
+Super-Shift-s = { action = "run-command", arg = 'grim -g "$(slurp -o)" - | wl-copy --type image/png' } # Screenshot a selected area and copy to clipboard
 
 #!
 ##! Multimedia
-XF86AudioRaiseVolume.action = "run-command"
-XF86AudioRaiseVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" # Increase volume by 5%
-XF86AudioRaiseVolume.allow-while-locked = true
-XF86AudioLowerVolume.action = "run-command"
-XF86AudioLowerVolume.arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-" # Decrease volume by 5%
-XF86AudioLowerVolume.allow-while-locked = true
-XF86AudioMute.action = "run-command"
-XF86AudioMute.arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle" # Toggle mute
+XF86AudioRaiseVolume = { action = "run-command", arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+", allow-while-locked = true } # Increase volume by 5%
+XF86AudioLowerVolume = { action = "run-command", arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-", allow-while-locked = true } # Decrease volume by 5%
+XF86AudioMute = { action = "run-command", arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle", allow-while-locked = true } # Toggle mute
 
 #!
 ##! Focus and window management
@@ -87,14 +81,14 @@ Super-Ctrl-9 = { action = "send-to-workspace", arg = 8 } # [hidden]
 
 #!
 ##! Shell
-Super-d = { action = "global-shortcut", arg = "quickshell:dashboardToggle" }
-Super-Super_L = { action = "global-shortcut", arg = "quickshell:overviewToggleReleaseInterrupt" }
-Super-v = { action = "global-shortcut", arg = "quickshell:overviewClipboardToggle" }
-Super-semicolon = { action = "global-shortcut", arg = "quickshell:overviewEmojiToggle" }
-Super-f1 = { action = "global-shortcut", arg = "quickshell:cheatsheetToggle" }
-Ctrl-Alt-Delete = { action = "global-shortcut", arg = "quickshell:sessionToggle" }
-Super-t = { action = "global-shortcut", arg = "quickshell:wppselectorToggle" }
-Super-l = { action = "global-shortcut", arg = "quickshell:lockScreen" }
+Super-d = { action = "global-shortcut", arg = "quickshell:dashboardToggle" } # Toggle the dashboard
+Super-Super_L = { action = "global-shortcut", arg = "quickshell:overviewToggleReleaseInterrupt" } # Toggle the overview
+Super-v = { action = "global-shortcut", arg = "quickshell:overviewClipboardToggle" } # Toggle the clipboard overview
+Super-semicolon = { action = "global-shortcut", arg = "quickshell:overviewEmojiToggle" } # Toggle the emoji overview
+Super-f1 = { action = "global-shortcut", arg = "quickshell:cheatsheetToggle" } # Toggle the cheatsheet
+Ctrl-Alt-Delete = { action = "global-shortcut", arg = "quickshell:sessionToggle" } # Toggle the session overview
+Super-t = { action = "global-shortcut", arg = "quickshell:wppselectorToggle" } # Toggle the wpp selector
+Super-l = { action = "global-shortcut", arg = "quickshell:lockScreen" } # Lock the screen
 
 # ---------------------------------------------------------
 

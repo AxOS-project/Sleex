@@ -88,4 +88,4 @@ def parse_toml_config(path: str):
 
 if __name__ == "__main__":
     result = parse_toml_config(args.path)
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result))
