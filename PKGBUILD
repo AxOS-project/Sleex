@@ -1,6 +1,6 @@
 pkgname="sleex"
-pkgver="1.31"
-pkgrel="4"
+pkgver="2.0-beta.1"
+pkgrel="1"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -23,7 +23,7 @@ depends=(
   # Portal
   'xdg-desktop-portal'
   # Python deps
-  'clang' 'uv' 'gtk4' 'libadwaita' 'libsoup3' 'libportal-gtk4' 'gobject-introspection' 'sassc' 'python-setproctitle' 'python-pywayland'
+  'clang' 'uv' 'gtk4' 'libadwaita' 'libsoup3' 'libportal-gtk4' 'gobject-introspection' 'sassc' 'python-setproctitle' 'python-pywayland' 'python-toml'
   # Screencast/Screenrecord
   'ksnip' 'wf-recorder' 'slurp' 'grim' 'tesseract' 'tesseract-data-eng'
   # Tools
