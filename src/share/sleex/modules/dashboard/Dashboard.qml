@@ -39,19 +39,12 @@ Scope {
             implicitHeight: Screen.height
             WlrLayershell.namespace: "quickshell:dashboard"
             WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
       
             color: "transparent"
             mask: GlobalStates.dashboardOpen ? null : emptyRegion
 
             Region { id: emptyRegion }
-
-            // HyprlandFocusGrab {
-            //     id: grab
-            //     windows: [ dashboardRoot ]
-            //     property bool canBeActive: dashboardRoot.monitorIsFocused
-            //     active: false
-            //     onCleared: () => { if (!active) ipc.close() }
-            // }
 
             Connections {
                 target: GlobalStates
