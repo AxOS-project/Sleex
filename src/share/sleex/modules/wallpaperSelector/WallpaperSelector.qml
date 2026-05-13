@@ -30,7 +30,7 @@ Scope {
         implicitWidth: 1920
         implicitHeight: 200
         WlrLayershell.namespace: "quickshell:wppselector"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.onDemand
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         color: "transparent"
 
         anchors {
