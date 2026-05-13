@@ -1,5 +1,5 @@
 pkgname="sleex"
-pkgver="2.0-beta.1"
+pkgver="2.0_beta.1"
 pkgrel="1"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
