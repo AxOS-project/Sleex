@@ -1,0 +1,1 @@
+hl.window_rule({ match = { class = "blueberry.py" }, float = true })
