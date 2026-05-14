@@ -58,7 +58,7 @@ build() {
   cd "$srcdir/share/sleex"
   rm -rf build/
   cmake -B build -DCMAKE_BUILD_TYPE=Release
-  cmake --build build -j
+  cmake --build build -j$(nproc --ignore=2)
 }
 
 package() {
