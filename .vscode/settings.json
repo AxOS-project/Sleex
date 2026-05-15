@@ -1,3 +1,6 @@
 {
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
+    "Lua.workspace.library": [
+        "/usr/share/hypr/stubs"
+    ]
 }
