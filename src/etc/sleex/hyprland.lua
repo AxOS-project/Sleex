@@ -1,24 +1,37 @@
 -- This file sources other files in `hyprland` and `custom` folders
 -- You wanna add your stuff in file in `custom`
-hl.dsp.exec_cmd("hyprctl dispatch submap global"),
+hl.dsp.exec_cmd("hyprctl dispatch submap global")
 hl.dsp.submap("global")
 
 -- Defaults
-require("/etc/sleex/hyprland/env.lua")
-require("/etc/sleex/hyprland/execs.lua")
-require("/etc/sleex/hyprland/general.lua")
-require("/etc/sleex/hyprland/rules.lua")
-require("/etc/sleex/hyprland/colors.lua")
-require("/etc/sleex/hyprland/keybinds.lua")
+require("hyprland/env")
+require("hyprland/execs")
+require("hyprland/general")
+require("hyprland/rules")
+require("hyprland/colors")
+require("hyprland/keybinds")
 
--- Custom 
-require("~/.config/hypr/custom/env.lua")
-require("~/.config/hypr/custom/execs.lua")
-require("~/.config/hypr/custom/general.lua")
-require("~/.config/hypr/custom/rules.lua")
-require("~/.config/hypr/custom/keybinds.lua")
+-- Custom
+local home_dir = os.getenv("HOME")
+local function safe_require_absolute(path)
+    local absolute_path = path:gsub("^~", home_dir)
+    
+    local file_to_check = absolute_path .. ".lua"
+    local file = io.open(file_to_check, "r")
+    if file then
+        file:close()
+        
+        dofile(file_to_check)
+    end
+end
 
-require("~/.config/hypr/monitors.lua")
+safe_require_absolute("~/.config/hypr/custom/env")
+safe_require_absolute("~/.config/hypr/custom/execs")
+safe_require_absolute("~/.config/hypr/custom/genera")
+safe_require_absolute("~/.config/hypr/custom/rules")
+safe_require_absolute("~/.config/hypr/custom/keybinds")
+
+safe_require_absolute("~/.config/hypr/monitors")
 
 -- Applications bindings
-require("~/.config/hypr/apps.lua")
+safe_require_absolute("~/.config/hypr/apps")

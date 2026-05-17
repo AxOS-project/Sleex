@@ -26,3 +26,4 @@ hl.env("MOZ_ENABLE_WAYLAND", "1")
 ------------- Others -------------
 
 hl.env("SLEEX_VIRTUAL_ENV", "~/.local/state/sleex/.venv")
+
