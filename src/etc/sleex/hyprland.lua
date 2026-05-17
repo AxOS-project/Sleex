@@ -12,8 +12,11 @@ require("hyprland/colors")
 require("hyprland/keybinds")
 
 -- Custom
+
+-- What this function does:
+-- Loads the configuration only if it exists
 local home_dir = os.getenv("HOME")
-local function safe_require_absolute(path)
+local function safe_load(path)
     local absolute_path = path:gsub("^~", home_dir)
     
     local file_to_check = absolute_path .. ".lua"
@@ -25,13 +28,13 @@ local function safe_require_absolute(path)
     end
 end
 
-safe_require_absolute("~/.config/hypr/custom/env")
-safe_require_absolute("~/.config/hypr/custom/execs")
-safe_require_absolute("~/.config/hypr/custom/genera")
-safe_require_absolute("~/.config/hypr/custom/rules")
-safe_require_absolute("~/.config/hypr/custom/keybinds")
+safe_load("~/.config/hypr/custom/env")
+safe_load("~/.config/hypr/custom/execs")
+safe_load("~/.config/hypr/custom/genera")
+safe_load("~/.config/hypr/custom/rules")
+safe_load("~/.config/hypr/custom/keybinds")
 
-safe_require_absolute("~/.config/hypr/monitors")
+safe_load("~/.config/hypr/monitors")
 
 -- Applications bindings
-safe_require_absolute("~/.config/hypr/apps")
+safe_load("~/.config/hypr/apps")
