@@ -3,6 +3,7 @@ import qs.modules.common.widgets
 import qs.services
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -38,44 +39,40 @@ Scope {
             }
         }
 
-        Canvas {
-            id: hoverCanvas
+        Shape {
+            id: hoverShape
             anchors.fill: parent
             antialiasing: true
+            visible: btn.hoverProgress > 0
+            opacity: Math.max(0, btn.hoverProgress)
 
-            onPaint: {
-                const ctx = getContext("2d")
-                ctx.reset()
+            readonly property real r: btn.roundBottom ? Math.min(Appearance.rounding.verylarge, width / 2, height) : 0
 
-                if (btn.hoverProgress <= 0)
-                    return
+            ShapePath {
+                fillColor: btn.hoverColor
+                strokeWidth: 0
+                strokeColor: "transparent"
 
-                const w = width
-                const h = height
-                const r = btn.roundBottom ? Math.min(Appearance.rounding.verylarge, w / 2, h) : 0
-
-                ctx.globalAlpha = btn.hoverProgress
-                ctx.fillStyle = btn.hoverColor
-
-                if (r > 0) {
-                    ctx.beginPath()
-                    ctx.moveTo(0, 0)
-                    ctx.lineTo(w, 0)
-                    ctx.lineTo(w, h - r)
-                    ctx.quadraticCurveTo(w, h, w - r, h)
-                    ctx.lineTo(r, h)
-                    ctx.quadraticCurveTo(0, h, 0, h - r)
-                    ctx.closePath()
-                    ctx.fill()
-                } else {
-                    ctx.fillRect(0, 0, w, h)
+                startX: 0; startY: 0
+                
+                PathLine { x: hoverShape.width; y: 0 }
+                PathLine { x: hoverShape.width; y: hoverShape.height - hoverShape.r }
+                PathQuad { 
+                    x: hoverShape.width - hoverShape.r; y: hoverShape.height 
+                    controlX: hoverShape.width; controlY: hoverShape.height 
                 }
+                PathLine { x: hoverShape.r; y: hoverShape.height }
+                PathQuad { 
+                    x: 0; y: hoverShape.height - hoverShape.r 
+                    controlX: 0; controlY: hoverShape.height 
+                }
+                PathLine { x: 0; y: 0 }
             }
         }
 
-        onHoverProgressChanged: hoverCanvas.requestPaint()
-        onRoundBottomChanged: hoverCanvas.requestPaint()
-        onHoverColorChanged: hoverCanvas.requestPaint()
+        onHoverProgressChanged: hoverShape.requestPaint()
+        onRoundBottomChanged: hoverShape.requestPaint()
+        onHoverColorChanged: hoverShape.requestPaint()
 
         StyledText {
             anchors.centerIn: parent

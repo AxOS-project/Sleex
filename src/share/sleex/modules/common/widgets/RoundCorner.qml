@@ -1,14 +1,11 @@
-import QtQuick 2.9
+import QtQuick
+import QtQuick.Shapes
 
 Item {
     id: root
 
     property int size: 25
     property color color
-
-    onColorChanged: {
-        canvas.requestPaint();
-    }
 
     property QtObject cornerEnum: QtObject {
         property int topLeft: 0
@@ -19,56 +16,47 @@ Item {
 
     property int corner: cornerEnum.topLeft // Default to TopLeft
 
+    readonly property bool isTL: corner === cornerEnum.topLeft
+    readonly property bool isTR: corner === cornerEnum.topRight
+    readonly property bool isBL: corner === cornerEnum.bottomLeft
+    readonly property bool isBR: corner === cornerEnum.bottomRight
+
     width: size
     height: size
 
-    Canvas {
-        id: canvas
-
+    Shape {
         anchors.fill: parent
         antialiasing: true
-        
-        onPaint: {
-            var ctx = getContext("2d");
-            var r = root.size;
 
-            // Clear previous contents to avoid compositing artifacts
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ShapePath {
+            fillColor: root.color
+            strokeWidth: 0
+            strokeColor: "transparent"
 
-            ctx.beginPath();
-            switch (root.corner) {
-                case cornerEnum.topLeft:
-                    ctx.arc(r, r, r, Math.PI, 3 * Math.PI / 2);
-                    ctx.lineTo(0, 0);
-                    break;
-                case cornerEnum.topRight:
-                    ctx.arc(0, r, r, 3 * Math.PI / 2, 2 * Math.PI);
-                    ctx.lineTo(r, 0);
-                    break;
-                case cornerEnum.bottomLeft:
-                    ctx.arc(r, 0, r, Math.PI / 2, Math.PI);
-                    ctx.lineTo(0, r);
-                    break;
-                case cornerEnum.bottomRight:
-                    ctx.arc(0, 0, r, 0, Math.PI / 2);
-                    ctx.lineTo(r, r);
-                    break;
+            startX: root.isTL || root.isTR ? 0 : root.size
+            startY: root.isTL || root.isBL ? root.size : 0
+
+            PathArc {
+                x: root.isTL || root.isTR ? root.size : 0
+                y: root.isTR || root.isBR ? root.size : 0
+                radiusX: root.size
+                radiusY: root.size
+                direction: PathArc.Clockwise
             }
-            ctx.closePath();
 
-            // Build an explicit rgba() color string from the QML color components so alpha is preserved
-            var cr = Math.round(root.color.r * 255);
-            var cg = Math.round(root.color.g * 255);
-            var cb = Math.round(root.color.b * 255);
-            var ca = root.color.a;
-            ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
+            PathLine {
+                x: root.isTR || root.isBR ? root.size : 0
+                y: root.isBL || root.isBR ? root.size : 0
+            }
 
-            ctx.fill();
+            PathLine {
+                x: root.isTL || root.isTR ? 0 : root.size
+                y: root.isTL || root.isBL ? root.size : 0
+            }
         }
     }
 
     Behavior on size {
         animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
     }
-
 }

@@ -6,6 +6,7 @@ import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
@@ -168,34 +169,32 @@ Scope {
                     property int bottomRadius: Appearance.rounding.screenRounding
                     property int topRadius: 0
 
-                    Canvas {
+                    Shape {
+                        id: middleShape
                         anchors.fill: parent
                         z: 1
+                        antialiasing: true
 
                         property color bgColor: Appearance.colors.colLayer0
 
-                        onBgColorChanged: requestPaint()
+                        ShapePath {
+                            fillColor: middleShape.bgColor
+                            strokeWidth: 0
+                            strokeColor: "transparent"
 
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.lineTo(width, 0);
-                            ctx.lineTo(width, height - middleBg.bottomRadius);
-                            ctx.quadraticCurveTo(width, height, width - middleBg.bottomRadius, height);
-                            ctx.lineTo(middleBg.bottomRadius, height);
-                            ctx.quadraticCurveTo(0, height, 0, height - middleBg.bottomRadius);
-                            ctx.lineTo(0, 0);
-                            ctx.closePath();
-                            
-                            // Build an explicit rgba() color string from the QML color components so alpha is preserved
-                            var cr = Math.round(bgColor.r * 255);
-                            var cg = Math.round(bgColor.g * 255);
-                            var cb = Math.round(bgColor.b * 255);
-                            var ca = bgColor.a;
-                            ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
-                            ctx.fill();
+                            startX: 0; startY: 0
+                            PathLine { x: middleShape.width; y: 0 }
+                            PathLine { x: middleShape.width; y: middleShape.height - middleBg.bottomRadius }
+                            PathQuad { 
+                                x: middleShape.width - middleBg.bottomRadius; y: middleShape.height 
+                                controlX: middleShape.width; controlY: middleShape.height 
+                            }
+                            PathLine { x: middleBg.bottomRadius; y: middleShape.height }
+                            PathQuad { 
+                                x: 0; y: middleShape.height - middleBg.bottomRadius 
+                                controlX: 0; controlY: middleShape.height 
+                            }
+                            PathLine { x: 0; y: 0 }
                         }
                     }
                     visible: true
@@ -272,39 +271,33 @@ Scope {
                                 }
                             }
 
-                            Canvas {
+                            Shape {
                                 id: workspacesBgCanvas
                                 anchors.fill: parent
                                 z: -1
+                                antialiasing: true
 
                                 property color bgColor: Appearance.colors.colLayer1
-                                
-                                onBgColorChanged: requestPaint()
 
-                                onPaint: {
-                                    var ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
+                                ShapePath {
+                                    fillColor: workspacesBgCanvas.bgColor
+                                    strokeWidth: 0
+                                    strokeColor: "transparent"
 
-                                    ctx.beginPath();
-                                    ctx.moveTo(0, 0);
-                                    ctx.lineTo(width, 0);
-                                    ctx.lineTo(width, height - 20);
-                                    ctx.quadraticCurveTo(width, height, width - 20, height); // bottom-right
-                                    ctx.lineTo(20, height);
-                                    ctx.quadraticCurveTo(0, height, 0, height - 20);         // bottom-left
-                                    ctx.lineTo(0, 0);
-                                    ctx.closePath();
-
-                                    // Build an explicit rgba() color string from the QML color components so alpha is preserved
-                                    var cr = Math.round(bgColor.r * 255);
-                                    var cg = Math.round(bgColor.g * 255);
-                                    var cb = Math.round(bgColor.b * 255);
-                                    var ca = bgColor.a;
-                                    ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
-
-                                    ctx.fill();
+                                    startX: 0; startY: 0
+                                    PathLine { x: workspacesBgCanvas.width; y: 0 }
+                                    PathLine { x: workspacesBgCanvas.width; y: workspacesBgCanvas.height - 20 }
+                                    PathQuad { 
+                                        x: workspacesBgCanvas.width - 20; y: workspacesBgCanvas.height 
+                                        controlX: workspacesBgCanvas.width; controlY: workspacesBgCanvas.height 
+                                    }
+                                    PathLine { x: 20; y: workspacesBgCanvas.height }
+                                    PathQuad { 
+                                        x: 0; y: workspacesBgCanvas.height - 20 
+                                        controlX: 0; controlY: workspacesBgCanvas.height 
+                                    }
+                                    PathLine { x: 0; y: 0 }
                                 }
-
                             }
                         }
 

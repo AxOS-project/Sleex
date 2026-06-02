@@ -3,6 +3,7 @@ import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Shapes
 import QtQuick.Controls.Material
 
 ComboBox {
@@ -30,24 +31,25 @@ ComboBox {
         anchors.leftMargin: 12
     }
 
-    indicator: Canvas {
+    indicator: Shape {
         width: 16
         height: 16
         anchors.right: parent.right
         anchors.rightMargin: 12
         anchors.verticalCenter: parent.verticalCenter
-        contextType: "2d"
+        antialiasing: true
 
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = Appearance.m3colors.m3onSurface;
-            ctx.beginPath();
-            ctx.moveTo(4, 6);
-            ctx.lineTo(8, 10);
-            ctx.lineTo(12, 6);
-            ctx.closePath();
-            ctx.fill();
+        ShapePath {
+            fillColor: Appearance.m3colors.m3onSurface
+            strokeWidth: 0
+            strokeColor: "transparent"
+
+            startX: 4
+            startY: 6
+
+            PathLine { x: 8; y: 10 }
+            PathLine { x: 12; y: 6 }
+            PathLine { x: 4; y: 6 }
         }
     }
 
