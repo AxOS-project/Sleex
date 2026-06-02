@@ -36,6 +36,7 @@ Item {
         anchors.fill: parent
         fillMode: root.fillMode
         source: root._isAnimated || root._isVideo ? "" : root.source
+        sourceSize: Qt.size(Screen.width * Screen.devicePixelRatio, Screen.height * Screen.devicePixelRatio)
         visible: !root._isAnimated && !root._isVideo
         cache: false
     }
@@ -45,6 +46,7 @@ Item {
         anchors.fill: parent
         fillMode: root.fillMode
         source: root._isAnimated ? root.source : ""
+        sourceSize: Qt.size(Screen.width * Screen.devicePixelRatio, Screen.height * Screen.devicePixelRatio)
         visible: root._isAnimated
         playing: root._isAnimated && root.playing
         cache: false
