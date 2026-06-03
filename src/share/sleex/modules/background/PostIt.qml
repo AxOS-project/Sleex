@@ -36,7 +36,7 @@ Item {
             "posY": spawnY, 
             "text": ""
         })
-        saveNotes()
+        postItManager.saveNotes()
     }
 
     Repeater {
@@ -47,24 +47,26 @@ Item {
             required property string text
             required property int index
             
+            property var manager: postItManager 
+            
             x: posX
             y: posY
             noteText: text
             
             onDeleteRequested: {
                 postItModel.remove(index)
-                postItManager.saveNotes()
+                manager.saveNotes()
             }
             
             onPositionUpdated: (newX, newY) => {
                 postItModel.setProperty(index, "posX", newX)
                 postItModel.setProperty(index, "posY", newY)
-                postItManager.saveNotes()
+                manager.saveNotes()
             }
             
             onTextUpdated: (newText) => {
                 postItModel.setProperty(index, "text", newText)
-                postItManager.saveNotes()
+                manager.saveNotes()
             }
         }
     }
