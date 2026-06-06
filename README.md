@@ -2,7 +2,7 @@
   <a href="https://axos-project.github.io"><img src="https://github.com/user-attachments/assets/a64a60d1-c4ec-4fdf-a1df-ce4bde3890ce" width="512" alt="AxOS"></a>
 </p>
 
-Sleex is the third desktop environement of AxOS. It is based on Hyprland with Quickshell.
+Sleex is the third desktop environment of AxOS. It is based on Hyprland with Quickshell.
 
 ## Features
 - AI chat integration with external providers (Gemini, OpenAI...)
