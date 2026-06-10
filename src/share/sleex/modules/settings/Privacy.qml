@@ -7,76 +7,90 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceSingleColumn: true
-    
-    ContentSection {
-        title: "Policies"
-        icon: "policy"
 
-        ContentSubsectionLabel {
-            text: "AI"
-        }
-        ConfigSelectionArray {
-            currentValue: Config.options.policies.ai
-            onSelected: newValue => {
-                Config.options.policies.ai = newValue;
+        ContentSection {
+            title: "Policies"
+            icon: "policy"
+
+            ContentSubsectionLabel {
+                text: "AI"
             }
-            options: [
-                {
-                    displayName: "No",
-                    value: 0
-                },
-                {
-                    displayName: "Yes",
-                    value: 1
-                },
-                {
-                    displayName: "Local only",
-                    value: 2
+            ConfigSelectionArray {
+                currentValue: Config.options.policies.ai
+                onSelected: newValue => {
+                    Config.options.policies.ai = newValue;
                 }
-            ]
+                options: [
+                    {
+                        displayName: "No",
+                        value: 0
+                    },
+                    {
+                        displayName: "Yes",
+                        value: 1
+                    },
+                    {
+                        displayName: "Local only",
+                        value: 2
+                    }
+                ]
+            }
         }
-    }
-    
-    ContentSection {
-        title: "Weather"
-        icon: "cloud"
 
-        ConfigSwitch {
-            id: weatherSwitch
-            text: "Enabled"
-            checked: Config.options.dashboard.enableWeather
-            onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.enableWeather = checked
-            StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider." }
-        }
-        
-        ConfigSwitch {
-            id: autoLocationSwitch
-            visible: weatherSwitch.checked
-            text: "Automatic Location"
-            checked: Config.options.dashboard.autoWeatherLocation ?? true
-            onClicked: checked = !checked;
-            onCheckedChanged: {
-                Config.options.dashboard.autoWeatherLocation = checked;
-                Weather.updateWeather();
+        ContentSection {
+            title: "Weather"
+            icon: "cloud"
+
+            ConfigSwitch {
+                id: weatherSwitch
+                text: "Enabled"
+                checked: Config.options.dashboard.enableWeather
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.enableWeather = checked
+                StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider." }
             }
-            StyledToolTip { text: "IP-based approximate location." }
-        }
-        
-        MaterialTextField {
-            id: weatherLocation
-            visible: weatherSwitch.checked && !autoLocationSwitch.checked
-            Layout.fillWidth: true
-            placeholderText: "Weather Location"
-            text: Config.options.dashboard.weatherLocation
-            wrapMode: TextEdit.Wrap
-            onEditingFinished: {
-                Config.options.dashboard.weatherLocation = text;
+
+            ConfigSwitch {
+                id: autoLocationSwitch
+                visible: weatherSwitch.checked
+                text: "Automatic Location"
+                checked: Config.options.dashboard.autoWeatherLocation ?? true
+                onClicked: checked = !checked;
+                onCheckedChanged: {
+                    Config.options.dashboard.autoWeatherLocation = checked;
+                    Weather.updateWeather();
+                }
+                StyledToolTip { text: "IP-based approximate location." }
+            }
+
+            MaterialTextField {
+                id: weatherLocation
+                visible: weatherSwitch.checked && !autoLocationSwitch.checked
+                Layout.fillWidth: true
+                placeholderText: "Weather Location"
+                text: Config.options.dashboard.weatherLocation
+                wrapMode: TextEdit.Wrap
+                onEditingFinished: {
+                    Config.options.dashboard.weatherLocation = text;
+                }
             }
         }
-    }
-    
-    Item {
-        implicitHeight: 24
-    }
+
+        ContentSection {
+            title: "Lyrics"
+            icon: "music_note"
+
+            ConfigSwitch {
+                id: lyricsSwitch
+                text: "Enabled"
+                checked: Config.options.dashboard.enableLyrics
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.dashboard.enableLyrics = checked
+                 StyledToolTip { text: "View lyrics directly in your dashboard.\nIt uses the LRCLIB provider." }
+            }
+        }
+
+        Item {
+            implicitHeight: 24
+        }
 }
