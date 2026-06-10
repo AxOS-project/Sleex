@@ -205,6 +205,7 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
+            property bool enableLyrics: true
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
