@@ -1,6 +1,6 @@
 ------- Shell Dispatcher -------
 
-hl.bind("SUPER_L", hl.dsp.global("quickshell:searchToggleRelease"), { desc = "Shell: Toggle search" })
+hl.bind("SUPER+Super_L", hl.dsp.global("quickshell:overviewToggleRelease"), { desc = "Toggle overview/launcher" })
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true, release = true })
 
