@@ -37,8 +37,8 @@ RippleButton {
     implicitWidth: rowLayout.implicitWidth + root.buttonHorizontalPadding * 2
     buttonRadius: Appearance.rounding.normal
     colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colSecondaryContainerActive :
-        ((root.hovered || root.focus) ? Appearance.colors.colSecondaryContainer :
-        ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 1))
+    ((root.hovered || root.focus) ? Appearance.colors.colSecondaryContainer :
+    ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 1))
     colBackgroundHover: Appearance.colors.colSecondaryContainer
     colRipple: Appearance.colors.colSecondaryContainerActive
 
@@ -120,9 +120,9 @@ RippleButton {
             id: iconLoader
             active: true
             sourceComponent: root.materialSymbol !== "" ? materialSymbolComponent :
-                root.bigText ? bigTextComponent :
-                root.itemIcon !== "" ? iconImageComponent :
-                null
+            root.bigText ? bigTextComponent :
+            root.itemIcon !== "" ? iconImageComponent :
+            null
         }
 
         Component {
@@ -161,7 +161,7 @@ RippleButton {
             StyledText {
                 font.pixelSize: Appearance.font.pixelSize.smaller
                 color: Appearance.colors.colSubtext
-                visible: root.itemType && root.itemType != "App" && !root.cliphistRawString
+                visible: root.itemType && root.itemType != "App"
                 text: root.itemType
             }
 
