@@ -56,9 +56,8 @@ hl.bind(
 	{ locked = true, repeating = true }
 )
 
-------- Terminal and Stuff -------
+------- Stuff -------
 
-hl.bind("SUPER+Return", hl.dsp.exec_cmd("foot"), { desc = "Launch foot (terminal)" })
 hl.bind("SUPER", hl.dsp.exec_cmd("true"), { desc = "Open app launcher" })
 hl.bind("CTRL+SUPER+T", hl.dsp.exec_cmd("/usr/share/sleex/scripts/colors/switchwall.sh"), { desc = "Change wallpaper" })
 

@@ -14,15 +14,6 @@ if file then
     file:close()
 end
 
-
--- MONITOR CONFIG
-hl.monitor({
-    output = "",
-    mode = "preferred",
-    position = "auto",
-    scale = 1
-})
-
 hl.gesture({
     fingers = 4,
     direction = "horizontal",
