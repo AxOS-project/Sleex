@@ -23,31 +23,6 @@ for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitt
     fi
 done
 
-# First run setup
-if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
-    # Sets up the user's environment to use Sleex.
-    CONFIG_FILE="$HOME/.config/hypr/custom/general.conf"
-    VC_KEYMAP=$(grep -i KEYMAP /etc/vconsole.conf | cut -d= -f2 | tr -d '"')
-    LAYOUT=$(echo "$VC_KEYMAP" | awk '{print tolower($0)}')
-
-
-    echo "Setting keyboard layout to '$LAYOUT' in $CONFIG_FILE."
-
-    if grep -q "^input:kb_layout" "$CONFIG_FILE"; then
-        sed -i "s/^input:kb_layout.*/input:kb_layout = $LAYOUT/" "$CONFIG_FILE"
-    else
-        echo "input:kb_layout = $LAYOUT" >> "$CONFIG_FILE"
-    fi
-
-    if lsmod | grep -q '^nvidia'; then
-    echo "Nvidia GPU found"
-    {
-        echo "env = LIBVA_DRIVER_NAME,nvidia"
-        echo "env = __GLX_VENDOR_LIBRARY_NAME,nvidia"
-    } >> ~/.config/hypr/custom/env.conf
-    fi
-fi
-
 # Check if XDG_USER_DIRS is set up
 if [ ! -f ~/.config/user-dirs.dirs ]; then
     xdg-user-dirs-update --force # Force create user dirs

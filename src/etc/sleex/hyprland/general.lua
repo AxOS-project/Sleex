@@ -1,3 +1,20 @@
+local layout
+local file = io.open("/etc/vconsole.conf", "r")
+if file then
+    for line in file:lines() do
+        -- Match KEYMAP=value (ignoring case for KEYMAP)
+        local match = line:match("^%s*[Kk][Ee][Yy][Mm][Aa][Pp]%s*=%s*(.-)%s*$")
+        if match then
+            layout = match:gsub("^['\"]", ""):gsub("['\"]$", ""):lower()
+            break
+        else
+            layout = "us" -- Default to "us" if no match is found
+        end
+    end
+    file:close()
+end
+
+
 -- MONITOR CONFIG
 hl.monitor({
     output = "",
@@ -216,7 +233,7 @@ hl.animation({
 
 hl.config({
     input = {
-        kb_layout = "us",
+        kb_layout = layout,
         numlock_by_default = true,
         repeat_delay = 250,
         repeat_rate = 35,

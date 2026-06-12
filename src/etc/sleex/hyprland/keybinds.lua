@@ -1,44 +1,15 @@
 ------- Shell Dispatcher -------
 
-hl.bind("SUPER+Super_L", hl.dsp.global("quickshell:overviewToggleRelease"), { desc = "Toggle overview/launcher" })
-hl.bind("SUPER", hl.dsp.submap("qs-overview"))
-hl.define_submap("qs-overview", function()
-	hl.bind("catchall", hl.dsp.global("quickshell:overviewToggleReleaseInterrupt"))
-end)
-hl.bind("CTRL+Super_L", hl.dsp.global("quickshell:overviewToggleReleaseInterrupt"))
+hl.bind("SUPER_L", hl.dsp.global("quickshell:searchToggleRelease"), { desc = "Shell: Toggle search" })
+hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
+hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true, release = true })
 
-local overview_mouse_keys = {
-	"mouse:272",
-	"mouse:273",
-	"mouse:274",
-	"mouse:275",
-	"mouse:276",
-	"mouse:277",
-	"mouse_up",
-	"mouse_down",
-}
-for _, btn in ipairs(overview_mouse_keys) do
-	hl.bind("SUPER+" .. btn, hl.dsp.global("quickshell:overviewToggleReleaseInterrupt"))
-end
-
-hl.bind("Super_L", hl.dsp.global("quickshell:workspaceNumber"))
 hl.bind("SUPER+V", hl.dsp.global("quickshell:overviewClipboardToggle"), { desc = "Clipboard history >> clipboard" })
 hl.bind("SUPER+semicolon", hl.dsp.global("quickshell:overviewEmojiToggle"), { desc = "Emoji >> clipboard" })
 hl.bind("SUPER+D", hl.dsp.global("quickshell:dashboardToggle"), { desc = "Toggle dashboard" })
 hl.bind("SUPER+F1", hl.dsp.global("quickshell:cheatsheetToggle"), { desc = "Toggle cheatsheet" })
 hl.bind("CTRL+ALT+Delete", hl.dsp.global("quickshell:sessionToggle"), { desc = "Toggle session menu" })
 hl.bind("SUPER+T", hl.dsp.global("quickshell:wppselectorToggle"), { desc = "Toggle wallpaper selector" })
-
-hl.bind(
-	"CTRL+SUPER+Minus",
-	hl.dsp.exec_cmd("qs -p /usr/share/sleex/ ipc call zoom zoomOut"),
-	{ repeating = true, desc = "Zoom out" }
-)
-hl.bind(
-	"CTRL+SUPER+Equal",
-	hl.dsp.exec_cmd("qs -p /usr/share/sleex/ ipc call zoom zoomIn"),
-	{ repeating = true, desc = "Zoom in" }
-)
 
 ------- Notifications & Quick System Scripts -------
 
@@ -156,14 +127,16 @@ hl.bind("SUPER+J", hl.dsp.layout("togglesplit"), { desc = "Toggle split" })
 ------- Workspace -------
 
 for i = 1, 10 do
-	local code_num = 9 + i
+	local code_num = (i % 10) + 9 -- Maps 1-10 to keycodes 10-19 (1-9 and 0)
 	hl.bind(
 		"SUPER+code:" .. code_num,
-		hl.dsp.exec_cmd("/usr/share/sleex/scripts/hyprland/workspace_action.sh workspace " .. i)
+		hl.dsp.focus({ workspace = i, follow = false }),
+		{ desc = "Switch to workspace " .. i }
 	)
 	hl.bind(
 		"SUPER+CTRL+code:" .. code_num,
-		hl.dsp.exec_cmd("/usr/share/sleex/scripts/hyprland/workspace_action.sh movetoworkspacesilent " .. i)
+		hl.dsp.window.move({ workspace = i, follow = false }),
+		{ desc = "Move window to workspace " .. i }
 	)
 end
 
