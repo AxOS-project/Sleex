@@ -10,7 +10,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-Item { // Wrapper
+Item {
     id: root
     readonly property string xdgConfigHome: Directories.config
     property string searchingText: ""
@@ -21,6 +21,7 @@ Item { // Wrapper
 
     property string mathResult: ""
     property bool clipboardWorkSafetyActive: false
+    property int clipboardRefreshCounter: 0
 
     property var searchActions: [
         {
@@ -46,10 +47,10 @@ Item { // Wrapper
         {
             action: "superpaste",
             execute: args => {
-                if (!/^(\d+)/.test(args.trim())) { // Invalid if doesn't start with numbers
+                if (!/^(\d+)/.test(args.trim())) {
                     Quickshell.execDetached([
-                        "notify-send", 
-                        "Superpaste", 
+                        "notify-send",
+                        "Superpaste",
                         "Usage: <tt>%1superpaste NUM_OF_ENTRIES[i]</tt>\nSupply <tt>i</tt> when you want images\nExamples:\n<tt>%1superpaste 4i</tt> for the last 4 images\n<tt>%1superpaste 7</tt> for the last 7 entries".arg(Config.options.search.prefix.action),
                         "-a", "Shell"
                     ]);
@@ -100,6 +101,10 @@ Item { // Wrapper
         root.searchingText = text;
     }
 
+    function refreshClipboardModel() {
+        root.clipboardRefreshCounter++;
+    }
+
     function containsUnsafeLink(entry) {
         if (entry == undefined) return false;
         const unsafeKeywords = Config.options.workSafety.triggerCondition.linkKeywords;
@@ -135,20 +140,16 @@ Item { // Wrapper
     }
 
     Keys.onPressed: event => {
-        // Prevent Esc and Backspace from registering
         if (event.key === Qt.Key_Escape)
             return;
 
-        // Handle Backspace: focus and delete character if not focused
         if (event.key === Qt.Key_Backspace) {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
                 if (event.modifiers & Qt.ControlModifier) {
-                    // Delete word before cursor
                     let text = searchInput.text;
                     let pos = searchInput.cursorPosition;
                     if (pos > 0) {
-                        // Find the start of the previous word
                         let left = text.slice(0, pos);
                         let match = left.match(/(\s*\S+)\s*$/);
                         let deleteLen = match ? match[0].length : 1;
@@ -156,26 +157,20 @@ Item { // Wrapper
                         searchInput.cursorPosition = pos - deleteLen;
                     }
                 } else {
-                    // Delete character before cursor if any
                     if (searchInput.cursorPosition > 0) {
                         searchInput.text = searchInput.text.slice(0, searchInput.cursorPosition - 1) + searchInput.text.slice(searchInput.cursorPosition);
                         searchInput.cursorPosition -= 1;
                     }
                 }
-                // Always move cursor to end after programmatic edit
                 searchInput.cursorPosition = searchInput.text.length;
                 event.accepted = true;
             }
-            // If already focused, let TextField handle it
             return;
         }
 
-        // Only handle visible printable characters (ignore control chars, arrows, etc.)
-        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) // ignore control chars like Backspace, Tab, etc.
-        {
+        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
-                // Insert the character at the cursor position
                 searchInput.text = searchInput.text.slice(0, searchInput.cursorPosition) + event.text + searchInput.text.slice(searchInput.cursorPosition);
                 searchInput.cursorPosition += 1;
                 event.accepted = true;
@@ -187,7 +182,8 @@ Item { // Wrapper
     StyledRectangularShadow {
         target: searchWidgetContent
     }
-    Rectangle { // Background
+
+    Rectangle {
         id: searchWidgetContent
         anchors.centerIn: parent
         implicitWidth: columnLayout.implicitWidth
@@ -202,12 +198,11 @@ Item { // Wrapper
             anchors.centerIn: parent
             spacing: 0
 
-            // clip: true
             layer.enabled: true
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: searchWidgetContent.width
-                    height: searchWidgetContent.width
+                    height: searchWidgetContent.height
                     radius: searchWidgetContent.radius
                 }
             }
@@ -222,11 +217,10 @@ Item { // Wrapper
                     color: Appearance.m3colors.m3onSurface
                     text: root.searchingText.startsWith(Config.options.search.prefix.clipboard) ? 'content_paste_search' : 'search'
                 }
-                TextField { // Search box
+                TextField {
                     id: searchInput
-
                     focus: GlobalStates.overviewOpen
-                    Layout.rightMargin: 15
+                    Layout.fillWidth: true
                     padding: 15
                     renderType: Text.NativeRendering
                     font {
@@ -255,7 +249,6 @@ Item { // Wrapper
 
                     onAccepted: {
                         if (appResults.count > 0) {
-                            // Get the first visible delegate and trigger its click
                             let firstItem = appResults.itemAtIndex(0);
                             if (firstItem && firstItem.clicked) {
                                 firstItem.clicked();
@@ -271,17 +264,44 @@ Item { // Wrapper
                         radius: 1
                     }
                 }
+
+                RippleButton {
+                    id: wipeClipboardButton
+                    visible: root.searchingText.startsWith(Config.options.search.prefix.clipboard)
+                    Layout.rightMargin: 8
+                    implicitWidth: 45
+                    implicitHeight: 30
+                    buttonRadius: Appearance.rounding.full
+                    colBackgroundHover: Appearance.colors.colSecondaryContainer
+                    colRipple: Appearance.colors.colSecondaryContainerActive
+
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "clear_all"
+                        font.pixelSize: 25
+                        color: Appearance.m3colors.m3onSurface
+                    }
+
+                    onClicked: {
+                        Cliphist.wipe();
+                        root.refreshClipboardModel();
+                        Quickshell.execDetached(["bash", "-c", "sleep 2 && rm ~/.cache/cliphist/db"]);
+                    }
+
+                    StyledToolTip {
+                        text: "Clear clipboard history"
+                    }
+                }
             }
 
             Rectangle {
-                // Separator
                 visible: root.showResults
                 Layout.fillWidth: true
                 height: 1
                 color: Appearance.colors.colOutlineVariant
             }
 
-            ListView { // App results
+            ListView {
                 id: appResults
                 visible: root.showResults
                 Layout.fillWidth: true
@@ -310,54 +330,69 @@ Item { // Wrapper
                     id: model
                     objectProp: "key"
                     values: {
-                        // Search results are handled here
-                        ////////////////// Skip? //////////////////
+                        // Reading clipboardRefreshCounter here makes this binding depend on it,
+                        // forcing re-evaluation after clipboard mutations (wipe, delete).
+                        const _refresh = root.clipboardRefreshCounter;
+
                         if (root.searchingText == "")
                             return [];
 
-                        ///////////// Special cases ///////////////
                         if (root.searchingText.startsWith(Config.options.search.prefix.clipboard)) {
-                            // Clipboard
                             const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.clipboard);
                             return Cliphist.fuzzyQuery(searchString).map((entry, index, array) => {
-                                const mightBlurImage = Cliphist.entryIsImage(entry) && root.clipboardWorkSafetyActive;
+                                const isImage = Cliphist.entryIsImage(entry);
+                                const mightBlurImage = isImage && root.clipboardWorkSafetyActive;
                                 let shouldBlurImage = mightBlurImage;
                                 if (mightBlurImage) {
                                     shouldBlurImage = shouldBlurImage && (containsUnsafeLink(array[index - 1]) || containsUnsafeLink(array[index + 1]));
                                 }
-                                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`
+                                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+
+                                const actions = [];
+                                if (isImage) {
+                                    actions.push({
+                                        name: "Extract Text",
+                                        materialIcon: "document_scanner",
+                                        execute: () => {
+                                            GlobalStates.overviewOpen = true;
+                                            Quickshell.execDetached(["bash", "-c", 'printf "%s" "$1" | cliphist decode | tesseract stdin stdout | wl-copy', "ocr", entry]);
+                                        }
+                                    });
+                                }
+                                actions.push(
+                                    {
+                                        name: "Copy",
+                                        materialIcon: "content_copy",
+                                        execute: () => {
+                                            Cliphist.copy(entry);
+                                        }
+                                    },
+                                    {
+                                        name: "Delete",
+                                        materialIcon: "delete",
+                                        execute: () => {
+                                            Cliphist.deleteEntry(entry);
+                                            root.refreshClipboardModel();
+                                        }
+                                    }
+                                );
+
                                 return {
                                     key: type,
                                     cliphistRawString: entry,
-                                    name: StringUtils.cleanCliphistEntry(entry),
+                                    name: isImage ? "" : StringUtils.cleanCliphistEntry(entry),
                                     clickActionName: "",
                                     type: type,
                                     execute: () => {
                                         Cliphist.copy(entry)
                                     },
-                                    actions: [
-                                        {
-                                            name: "Copy",
-                                            materialIcon: "content_copy",
-                                            execute: () => {
-                                                Cliphist.copy(entry);
-                                            }
-                                        },
-                                        {
-                                            name: "Delete",
-                                            materialIcon: "delete",
-                                            execute: () => {
-                                                Cliphist.deleteEntry(entry);
-                                            }
-                                        }
-                                    ],
+                                    actions: actions,
                                     blurImage: shouldBlurImage,
                                     blurImageText: "Work safety"
                                 };
                             }).filter(Boolean);
                         }
                         else if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
-                            // Clipboard
                             const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.emojis);
                             return Emojis.fuzzyQuery(searchString).map(entry => {
                                 const emoji = entry.match(/^\s*(\S+)/)?.[1] || ""
@@ -375,7 +410,6 @@ Item { // Wrapper
                             }).filter(Boolean);
                         }
 
-                        ////////////////// Init ///////////////////
                         nonAppResultsTimer.restart();
                         const mathResultObject = {
                             key: `Math result: ${root.mathResult}`,
@@ -442,7 +476,6 @@ Item { // Wrapper
                             return null;
                         }).filter(Boolean);
 
-                        //////// Prioritized by prefix /////////
                         let result = [];
                         const startsWithNumber = /^\d/.test(root.searchingText);
                         const startsWithMathPrefix = root.searchingText.startsWith(Config.options.search.prefix.math);
@@ -456,13 +489,9 @@ Item { // Wrapper
                             result.push(webSearchResultObject);
                         }
 
-                        //////////////// Apps //////////////////
                         result = result.concat(appResultObjects);
-
-                        ////////// Launcher actions ////////////
                         result = result.concat(launcherActionObjects);
 
-                        /// Math result, command, web search ///
                         if (Config.options.search.prefix.showDefaultActionsWithoutPrefix) {
                             if (!startsWithShellCommandPrefix) result.push(commandResultObject);
                             if (!startsWithNumber && !startsWithMathPrefix) result.push(mathResultObject);
@@ -474,7 +503,6 @@ Item { // Wrapper
                 }
 
                 delegate: SearchItem {
-                    // The selectable item for each search result
                     required property var modelData
                     anchors.left: parent?.left
                     anchors.right: parent?.right
