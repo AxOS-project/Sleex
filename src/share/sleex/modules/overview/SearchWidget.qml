@@ -52,7 +52,7 @@ Item {
                         "notify-send",
                         "Superpaste",
                         "Usage: <tt>%1superpaste NUM_OF_ENTRIES[i]</tt>\nSupply <tt>i</tt> when you want images\nExamples:\n<tt>%1superpaste 4i</tt> for the last 4 images\n<tt>%1superpaste 7</tt> for the last 7 entries".arg(Config.options.search.prefix.action),
-                        "-a", "Shell"
+                                            "-a", "Shell"
                     ]);
                     return;
                 }
@@ -346,7 +346,8 @@ Item {
                                 if (mightBlurImage) {
                                     shouldBlurImage = shouldBlurImage && (containsUnsafeLink(array[index - 1]) || containsUnsafeLink(array[index + 1]));
                                 }
-                                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+                                const entryId = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+                                const counter = `#${array.length - index}`;
 
                                 const actions = [];
                                 if (isImage) {
@@ -378,17 +379,17 @@ Item {
                                 );
 
                                 return {
-                                    key: type,
+                                    key: entryId,
                                     cliphistRawString: entry,
                                     name: isImage ? "" : StringUtils.cleanCliphistEntry(entry),
-                                    clickActionName: "",
-                                    type: type,
-                                    execute: () => {
-                                        Cliphist.copy(entry)
-                                    },
-                                    actions: actions,
-                                    blurImage: shouldBlurImage,
-                                    blurImageText: "Work safety"
+                                                                         clickActionName: "",
+                                                                         type: counter,
+                                                                         execute: () => {
+                                                                             Cliphist.copy(entry)
+                                                                         },
+                                                                         actions: actions,
+                                                                         blurImage: shouldBlurImage,
+                                                                         blurImageText: "Work safety"
                                 };
                             }).filter(Boolean);
                         }
@@ -401,11 +402,11 @@ Item {
                                     cliphistRawString: entry,
                                     bigText: emoji,
                                     name: entry.replace(/^\s*\S+\s+/, ""),
-                                    clickActionName: "",
-                                    type: "Emoji",
-                                    execute: () => {
-                                        Quickshell.clipboardText = entry.match(/^\s*(\S+)/)?.[1];
-                                    }
+                                                                       clickActionName: "",
+                                                                       type: "Emoji",
+                                                                       execute: () => {
+                                                                           Quickshell.clipboardText = entry.match(/^\s*(\S+)/)?.[1];
+                                                                       }
                                 };
                             }).filter(Boolean);
                         }
@@ -465,12 +466,12 @@ Item {
                                 return {
                                     key: `Action ${actionString}`,
                                     name: root.searchingText.startsWith(actionString) ? root.searchingText : actionString,
-                                    clickActionName: "Run",
-                                    type: "Action",
-                                    materialSymbol: 'settings_suggest',
-                                    execute: () => {
-                                        action.execute(root.searchingText.split(" ").slice(1).join(" "));
-                                    }
+                                                                             clickActionName: "Run",
+                                                                             type: "Action",
+                                                                             materialSymbol: 'settings_suggest',
+                                                                             execute: () => {
+                                                                                 action.execute(root.searchingText.split(" ").slice(1).join(" "));
+                                                                             }
                                 };
                             }
                             return null;
