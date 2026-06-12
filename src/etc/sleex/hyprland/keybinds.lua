@@ -112,7 +112,7 @@ hl.bind("SUPER+Right", hl.dsp.window.move({ direction = "right" }))
 hl.bind("SUPER+Up", hl.dsp.window.move({ direction = "up" }))
 hl.bind("SUPER+Down", hl.dsp.window.move({ direction = "down" }))
 
-hl.bind("SUPER+Q", hl.dsp.window.kill(), { desc = "Close an app" })
+hl.bind("SUPER+Q", hl.dsp.window.close(), { desc = "Close an app" })
 hl.bind("SUPER+SHIFT+ALT+Q", hl.dsp.exec_cmd("hyprctl kill"), { desc = "Pick and kill a window" })
 
 hl.bind("SUPER+ALT+Space", hl.dsp.window.float(), { desc = "Toggle floating" })
