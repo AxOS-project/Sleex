@@ -23,6 +23,16 @@ for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitt
     fi
 done
 
+if [ ! -f ~/.config/sleex/apps.lua ] || [ ! -s ~/.config/sleex/apps.lua ]; then
+    cp -r /etc/skel/.config/sleex/apps.lua ~/.config/sleex/apps.lua
+    chown $USER:$USER ~/.config/sleex/apps.lua
+fi
+
+if [ ! -f ~/.config/sleex/monitors.lua ] || [ ! -s ~/.config/sleex/monitors.lua ]; then
+    cp -r /etc/skel/.config/sleex/monitors.lua ~/.config/sleex/monitors.lua
+    chown $USER:$USER ~/.config/sleex/monitors.lua
+fi
+
 # Check if XDG_USER_DIRS is set up
 if [ ! -f ~/.config/user-dirs.dirs ]; then
     xdg-user-dirs-update --force # Force create user dirs
