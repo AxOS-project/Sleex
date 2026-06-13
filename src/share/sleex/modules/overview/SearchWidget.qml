@@ -21,6 +21,7 @@ Item { // Wrapper
 
     property string mathResult: ""
     property bool clipboardWorkSafetyActive: false
+    property int clipboardRefreshCounter: 0
 
     property var searchActions: [
         {
@@ -48,10 +49,10 @@ Item { // Wrapper
             execute: args => {
                 if (!/^(\d+)/.test(args.trim())) { // Invalid if doesn't start with numbers
                     Quickshell.execDetached([
-                        "notify-send", 
-                        "Superpaste", 
+                        "notify-send",
+                        "Superpaste",
                         "Usage: <tt>%1superpaste NUM_OF_ENTRIES[i]</tt>\nSupply <tt>i</tt> when you want images\nExamples:\n<tt>%1superpaste 4i</tt> for the last 4 images\n<tt>%1superpaste 7</tt> for the last 7 entries".arg(Config.options.search.prefix.action),
-                        "-a", "Shell"
+                                            "-a", "Shell"
                     ]);
                     return;
                 }
@@ -98,6 +99,10 @@ Item { // Wrapper
     function setSearchingText(text) {
         searchInput.text = text;
         root.searchingText = text;
+    }
+
+    function refreshClipboardModel() {
+        root.clipboardRefreshCounter++;
     }
 
     function containsUnsafeLink(entry) {
@@ -171,8 +176,7 @@ Item { // Wrapper
         }
 
         // Only handle visible printable characters (ignore control chars, arrows, etc.)
-        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) // ignore control chars like Backspace, Tab, etc.
-        {
+        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
                 // Insert the character at the cursor position
@@ -187,6 +191,7 @@ Item { // Wrapper
     StyledRectangularShadow {
         target: searchWidgetContent
     }
+
     Rectangle { // Background
         id: searchWidgetContent
         anchors.centerIn: parent
@@ -207,7 +212,7 @@ Item { // Wrapper
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: searchWidgetContent.width
-                    height: searchWidgetContent.width
+                    height: searchWidgetContent.height
                     radius: searchWidgetContent.radius
                 }
             }
@@ -224,9 +229,8 @@ Item { // Wrapper
                 }
                 TextField { // Search box
                     id: searchInput
-
                     focus: GlobalStates.overviewOpen
-                    Layout.rightMargin: 15
+                    Layout.fillWidth: true
                     padding: 15
                     renderType: Text.NativeRendering
                     font {
@@ -271,6 +275,34 @@ Item { // Wrapper
                         radius: 1
                     }
                 }
+
+                RippleButton {
+                    id: wipeClipboardButton
+                    visible: root.searchingText.startsWith(Config.options.search.prefix.clipboard)
+                    Layout.rightMargin: 8
+                    implicitWidth: 45
+                    implicitHeight: 30
+                    buttonRadius: Appearance.rounding.full
+                    colBackgroundHover: Appearance.colors.colSecondaryContainer
+                    colRipple: Appearance.colors.colSecondaryContainerActive
+
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "clear_all"
+                        font.pixelSize: 25
+                        color: Appearance.m3colors.m3onSurface
+                    }
+
+                    onClicked: {
+                        Cliphist.wipe();
+                        root.refreshClipboardModel();
+                        Quickshell.execDetached(["bash", "-c", "sleep 2 && rm ~/.cache/cliphist/db"]);
+                    }
+
+                    StyledToolTip {
+                        text: "Clear clipboard history"
+                    }
+                }
             }
 
             Rectangle {
@@ -310,8 +342,10 @@ Item { // Wrapper
                     id: model
                     objectProp: "key"
                     values: {
-                        // Search results are handled here
-                        ////////////////// Skip? //////////////////
+                        // Reading clipboardRefreshCounter here makes this binding depend on it,
+                        // forcing re-evaluation after clipboard mutations (wipe, delete).
+                        const _refresh = root.clipboardRefreshCounter;
+
                         if (root.searchingText == "")
                             return [];
 
@@ -320,39 +354,56 @@ Item { // Wrapper
                             // Clipboard
                             const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.clipboard);
                             return Cliphist.fuzzyQuery(searchString).map((entry, index, array) => {
-                                const mightBlurImage = Cliphist.entryIsImage(entry) && root.clipboardWorkSafetyActive;
+                                const isImage = Cliphist.entryIsImage(entry);
+                                const mightBlurImage = isImage && root.clipboardWorkSafetyActive;
                                 let shouldBlurImage = mightBlurImage;
                                 if (mightBlurImage) {
                                     shouldBlurImage = shouldBlurImage && (containsUnsafeLink(array[index - 1]) || containsUnsafeLink(array[index + 1]));
                                 }
-                                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`
-                                return {
-                                    key: type,
-                                    cliphistRawString: entry,
-                                    name: StringUtils.cleanCliphistEntry(entry),
-                                    clickActionName: "",
-                                    type: type,
-                                    execute: () => {
-                                        Cliphist.copy(entry)
-                                    },
-                                    actions: [
-                                        {
-                                            name: "Copy",
-                                            materialIcon: "content_copy",
-                                            execute: () => {
-                                                Cliphist.copy(entry);
-                                            }
-                                        },
-                                        {
-                                            name: "Delete",
-                                            materialIcon: "delete",
-                                            execute: () => {
-                                                Cliphist.deleteEntry(entry);
-                                            }
+                                const entryId = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+                                const counter = `#${array.length - index}`;
+
+                                const actions = [];
+                                if (isImage) {
+                                    actions.push({
+                                        name: "Extract Text",
+                                        materialIcon: "document_scanner",
+                                        execute: () => {
+                                            GlobalStates.overviewOpen = true;
+                                            Quickshell.execDetached(["bash", "-c", 'printf "%s" "$1" | cliphist decode | tesseract stdin stdout | wl-copy', "ocr", entry]);
                                         }
-                                    ],
-                                    blurImage: shouldBlurImage,
-                                    blurImageText: "Work safety"
+                                    });
+                                }
+                                actions.push(
+                                    {
+                                        name: "Copy",
+                                        materialIcon: "content_copy",
+                                        execute: () => {
+                                            Cliphist.copy(entry);
+                                        }
+                                    },
+                                    {
+                                        name: "Delete",
+                                        materialIcon: "delete",
+                                        execute: () => {
+                                            Cliphist.deleteEntry(entry);
+                                            root.refreshClipboardModel();
+                                        }
+                                    }
+                                );
+
+                                return {
+                                    key: entryId,
+                                    cliphistRawString: entry,
+                                    name: isImage ? "" : StringUtils.cleanCliphistEntry(entry),
+                                                                         clickActionName: "",
+                                                                         type: counter,
+                                                                         execute: () => {
+                                                                             Cliphist.copy(entry)
+                                                                         },
+                                                                         actions: actions,
+                                                                         blurImage: shouldBlurImage,
+                                                                         blurImageText: "Work safety"
                                 };
                             }).filter(Boolean);
                         }
@@ -366,11 +417,11 @@ Item { // Wrapper
                                     cliphistRawString: entry,
                                     bigText: emoji,
                                     name: entry.replace(/^\s*\S+\s+/, ""),
-                                    clickActionName: "",
-                                    type: "Emoji",
-                                    execute: () => {
-                                        Quickshell.clipboardText = entry.match(/^\s*(\S+)/)?.[1];
-                                    }
+                                                                       clickActionName: "",
+                                                                       type: "Emoji",
+                                                                       execute: () => {
+                                                                           Quickshell.clipboardText = entry.match(/^\s*(\S+)/)?.[1];
+                                                                       }
                                 };
                             }).filter(Boolean);
                         }
@@ -431,12 +482,12 @@ Item { // Wrapper
                                 return {
                                     key: `Action ${actionString}`,
                                     name: root.searchingText.startsWith(actionString) ? root.searchingText : actionString,
-                                    clickActionName: "Run",
-                                    type: "Action",
-                                    materialSymbol: 'settings_suggest',
-                                    execute: () => {
-                                        action.execute(root.searchingText.split(" ").slice(1).join(" "));
-                                    }
+                                                                             clickActionName: "Run",
+                                                                             type: "Action",
+                                                                             materialSymbol: 'settings_suggest',
+                                                                             execute: () => {
+                                                                                 action.execute(root.searchingText.split(" ").slice(1).join(" "));
+                                                                             }
                                 };
                             }
                             return null;
