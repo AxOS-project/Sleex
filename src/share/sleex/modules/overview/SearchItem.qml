@@ -57,13 +57,16 @@ RippleButton {
 
         for (let i = 0; i < content.length && qIndex < query.length; i++) {
             if (contentLower[i] === queryLower[qIndex]) {
+                // Add non-highlighted part (escaped)
                 if (i > lastIndex)
                     result += StringUtils.escapeHtml(content.slice(lastIndex, i));
+                // Add highlighted character (escaped)
                 result += root.highlightPrefix + StringUtils.escapeHtml(content[i]) + root.highlightSuffix;
                 lastIndex = i + 1;
                 qIndex++;
             }
         }
+        // Add the rest of the string (escaped)
         if (lastIndex < content.length)
             result += StringUtils.escapeHtml(content.slice(lastIndex));
 
@@ -73,8 +76,9 @@ RippleButton {
 
     property list<string> urls: {
         if (!root.itemName) return [];
+        // Regular expression to match URLs
         const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
-        const matches = root.itemName?.match(urlRegex)?.filter(url => !url.includes("…"));
+        const matches = root.itemName?.match(urlRegex)?.filter(url => !url.includes("…")); // Elided = invalid
         return matches ? matches : [];
     }
 
@@ -116,6 +120,7 @@ RippleButton {
         anchors.leftMargin: root.horizontalMargin + root.buttonHorizontalPadding
         anchors.rightMargin: root.horizontalMargin + root.buttonHorizontalPadding
 
+        // Icon
         Loader {
             id: iconLoader
             active: true
@@ -152,6 +157,7 @@ RippleButton {
             }
         }
 
+        // Main text
         ColumnLayout {
             id: contentColumn
             Layout.fillWidth: true
@@ -167,7 +173,7 @@ RippleButton {
 
             RowLayout {
                 spacing: 4
-                Repeater {
+                Repeater { // Favicons for links
                     model: root.query == root.itemName ? [] : root.urls
                     Favicon {
                         required property var modelData
@@ -175,10 +181,10 @@ RippleButton {
                         url: modelData
                     }
                 }
-                StyledText {
+                StyledText { // Item name/content
                     Layout.fillWidth: true
                     id: nameText
-                    textFormat: Text.StyledText
+                    textFormat: Text.StyledText // RichText also works, but StyledText ensures elide work
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.family: Appearance.font.family[root.fontType]
                     color: Appearance.m3colors.m3onSurface
@@ -207,6 +213,7 @@ RippleButton {
             }
         }
 
+        // Action text
         StyledText {
             Layout.fillWidth: false
             visible: (root.hovered || root.focus)
