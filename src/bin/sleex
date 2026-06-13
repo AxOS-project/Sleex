@@ -3,6 +3,8 @@ export XDG_CURRENT_DESKTOP="Sleex"
 export HYPRLAND_INSTANCE_SIGNATURE=""
 systemctl --user import-environment XDG_CURRENT_DESKTOP
 
+systemctl --user start sleex-lock-listener.service
+
 # Check if config dirs/files exist, if not copy them from /etc/skel
 for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
     if [ ! -d ~/.config/$dir ]; then
