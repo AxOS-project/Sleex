@@ -10,7 +10,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-Item {
+Item { // Wrapper
     id: root
     readonly property string xdgConfigHome: Directories.config
     property string searchingText: ""
@@ -47,7 +47,7 @@ Item {
         {
             action: "superpaste",
             execute: args => {
-                if (!/^(\d+)/.test(args.trim())) {
+                if (!/^(\d+)/.test(args.trim())) { // Invalid if doesn't start with numbers
                     Quickshell.execDetached([
                         "notify-send",
                         "Superpaste",
@@ -140,16 +140,20 @@ Item {
     }
 
     Keys.onPressed: event => {
+        // Prevent Esc and Backspace from registering
         if (event.key === Qt.Key_Escape)
             return;
 
+        // Handle Backspace: focus and delete character if not focused
         if (event.key === Qt.Key_Backspace) {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
                 if (event.modifiers & Qt.ControlModifier) {
+                    // Delete word before cursor
                     let text = searchInput.text;
                     let pos = searchInput.cursorPosition;
                     if (pos > 0) {
+                        // Find the start of the previous word
                         let left = text.slice(0, pos);
                         let match = left.match(/(\s*\S+)\s*$/);
                         let deleteLen = match ? match[0].length : 1;
@@ -157,20 +161,25 @@ Item {
                         searchInput.cursorPosition = pos - deleteLen;
                     }
                 } else {
+                    // Delete character before cursor if any
                     if (searchInput.cursorPosition > 0) {
                         searchInput.text = searchInput.text.slice(0, searchInput.cursorPosition - 1) + searchInput.text.slice(searchInput.cursorPosition);
                         searchInput.cursorPosition -= 1;
                     }
                 }
+                // Always move cursor to end after programmatic edit
                 searchInput.cursorPosition = searchInput.text.length;
                 event.accepted = true;
             }
+            // If already focused, let TextField handle it
             return;
         }
 
+        // Only handle visible printable characters (ignore control chars, arrows, etc.)
         if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) {
             if (!searchInput.activeFocus) {
                 searchInput.forceActiveFocus();
+                // Insert the character at the cursor position
                 searchInput.text = searchInput.text.slice(0, searchInput.cursorPosition) + event.text + searchInput.text.slice(searchInput.cursorPosition);
                 searchInput.cursorPosition += 1;
                 event.accepted = true;
@@ -183,7 +192,7 @@ Item {
         target: searchWidgetContent
     }
 
-    Rectangle {
+    Rectangle { // Background
         id: searchWidgetContent
         anchors.centerIn: parent
         implicitWidth: columnLayout.implicitWidth
@@ -198,6 +207,7 @@ Item {
             anchors.centerIn: parent
             spacing: 0
 
+            // clip: true
             layer.enabled: true
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
@@ -217,7 +227,7 @@ Item {
                     color: Appearance.m3colors.m3onSurface
                     text: root.searchingText.startsWith(Config.options.search.prefix.clipboard) ? 'content_paste_search' : 'search'
                 }
-                TextField {
+                TextField { // Search box
                     id: searchInput
                     focus: GlobalStates.overviewOpen
                     Layout.fillWidth: true
@@ -249,6 +259,7 @@ Item {
 
                     onAccepted: {
                         if (appResults.count > 0) {
+                            // Get the first visible delegate and trigger its click
                             let firstItem = appResults.itemAtIndex(0);
                             if (firstItem && firstItem.clicked) {
                                 firstItem.clicked();
@@ -295,13 +306,14 @@ Item {
             }
 
             Rectangle {
+                // Separator
                 visible: root.showResults
                 Layout.fillWidth: true
                 height: 1
                 color: Appearance.colors.colOutlineVariant
             }
 
-            ListView {
+            ListView { // App results
                 id: appResults
                 visible: root.showResults
                 Layout.fillWidth: true
@@ -337,7 +349,9 @@ Item {
                         if (root.searchingText == "")
                             return [];
 
+                        ///////////// Special cases ///////////////
                         if (root.searchingText.startsWith(Config.options.search.prefix.clipboard)) {
+                            // Clipboard
                             const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.clipboard);
                             return Cliphist.fuzzyQuery(searchString).map((entry, index, array) => {
                                 const isImage = Cliphist.entryIsImage(entry);
@@ -394,6 +408,7 @@ Item {
                             }).filter(Boolean);
                         }
                         else if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) {
+                            // Clipboard
                             const searchString = StringUtils.cleanPrefix(root.searchingText, Config.options.search.prefix.emojis);
                             return Emojis.fuzzyQuery(searchString).map(entry => {
                                 const emoji = entry.match(/^\s*(\S+)/)?.[1] || ""
@@ -411,6 +426,7 @@ Item {
                             }).filter(Boolean);
                         }
 
+                        ////////////////// Init ///////////////////
                         nonAppResultsTimer.restart();
                         const mathResultObject = {
                             key: `Math result: ${root.mathResult}`,
@@ -477,6 +493,7 @@ Item {
                             return null;
                         }).filter(Boolean);
 
+                        //////// Prioritized by prefix /////////
                         let result = [];
                         const startsWithNumber = /^\d/.test(root.searchingText);
                         const startsWithMathPrefix = root.searchingText.startsWith(Config.options.search.prefix.math);
@@ -490,9 +507,13 @@ Item {
                             result.push(webSearchResultObject);
                         }
 
+                        //////////////// Apps //////////////////
                         result = result.concat(appResultObjects);
+
+                        ////////// Launcher actions ////////////
                         result = result.concat(launcherActionObjects);
 
+                        /// Math result, command, web search ///
                         if (Config.options.search.prefix.showDefaultActionsWithoutPrefix) {
                             if (!startsWithShellCommandPrefix) result.push(commandResultObject);
                             if (!startsWithNumber && !startsWithMathPrefix) result.push(mathResultObject);
@@ -504,6 +525,7 @@ Item {
                 }
 
                 delegate: SearchItem {
+                    // The selectable item for each search result
                     required property var modelData
                     anchors.left: parent?.left
                     anchors.right: parent?.right
