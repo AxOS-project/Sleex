@@ -64,6 +64,8 @@ Rectangle {
         }
     }
 
+    // Kill any in-flight decode before removing the temp file; prevents onExited
+    // from writing back to root after this component has been destroyed.
     Component.onDestruction: {
         Quickshell.execDetached(["bash", "-c", `[ -f '${imageDecodeFilePath}' ] && rm -f '${imageDecodeFilePath}'`]);
     }
