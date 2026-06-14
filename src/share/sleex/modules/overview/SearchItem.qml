@@ -26,7 +26,7 @@ RippleButton {
     property string cliphistRawString: entry?.cliphistRawString ?? ""
     property bool blurImage: entry?.blurImage ?? false
     property string blurImageText: entry?.blurImageText ?? "Image hidden"
-
+    
     visible: root.entryShown
     property int horizontalMargin: 10
     property int buttonHorizontalPadding: 10
@@ -36,9 +36,9 @@ RippleButton {
     implicitHeight: rowLayout.implicitHeight + root.buttonVerticalPadding * 2
     implicitWidth: rowLayout.implicitWidth + root.buttonHorizontalPadding * 2
     buttonRadius: Appearance.rounding.normal
-    colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colSecondaryContainerActive :
-    ((root.hovered || root.focus) ? Appearance.colors.colSecondaryContainer :
-    ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 1))
+    colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colSecondaryContainerActive : 
+        ((root.hovered || root.focus) ? Appearance.colors.colSecondaryContainer : 
+        ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 1))
     colBackgroundHover: Appearance.colors.colSecondaryContainer
     colRipple: Appearance.colors.colSecondaryContainerActive
 
@@ -78,10 +78,11 @@ RippleButton {
         if (!root.itemName) return [];
         // Regular expression to match URLs
         const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
-        const matches = root.itemName?.match(urlRegex)?.filter(url => !url.includes("…")); // Elided = invalid
+        const matches = root.itemName?.match(urlRegex)
+            ?.filter(url => !url.includes("…")) // Elided = invalid
         return matches ? matches : [];
     }
-
+    
     PointingHandInteraction {}
 
     background {
@@ -97,6 +98,7 @@ RippleButton {
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Delete && event.modifiers === Qt.ShiftModifier) {
             const deleteAction = root.entry.actions.find(action => action.name == "Delete");
+
             if (deleteAction) {
                 deleteAction.execute()
             }
@@ -125,9 +127,9 @@ RippleButton {
             id: iconLoader
             active: true
             sourceComponent: root.materialSymbol !== "" ? materialSymbolComponent :
-            root.bigText ? bigTextComponent :
-            root.itemIcon !== "" ? iconImageComponent :
-            null
+                root.bigText ? bigTextComponent :
+                root.itemIcon !== "" ? iconImageComponent : 
+                null
         }
 
         Component {
@@ -163,16 +165,30 @@ RippleButton {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             spacing: 0
-
             StyledText {
                 font.pixelSize: Appearance.font.pixelSize.smaller
                 color: Appearance.colors.colSubtext
                 visible: root.itemType && root.itemType != "App"
                 text: root.itemType
             }
-
             RowLayout {
-                spacing: 4
+                Loader { // Checkmark for copied clipboard entry
+                    visible: itemName == Quickshell.clipboardText && root.cliphistRawString
+                    active: itemName == Quickshell.clipboardText && root.cliphistRawString
+                    sourceComponent: Rectangle {
+                        implicitWidth: activeText.implicitHeight
+                        implicitHeight: activeText.implicitHeight
+                        radius: Appearance.rounding.full
+                        color: Appearance.colors.colPrimary
+                        MaterialSymbol {
+                            id: activeText
+                            anchors.centerIn: parent
+                            text: "check"
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            color: Appearance.m3colors.m3onPrimary
+                        }
+                    }
+                }
                 Repeater { // Favicons for links
                     model: root.query == root.itemName ? [] : root.urls
                     Favicon {
@@ -193,22 +209,13 @@ RippleButton {
                     text: `${root.displayContent}`
                 }
             }
-
-            // Lazily decoded clipboard image preview; CliphistImage manages its own
-            // temp file lifecycle via Component.onCompleted / Component.onDestruction.
-            Loader {
-                id: imagePreviewLoader
+            Loader { // Clipboard image preview
                 active: root.cliphistRawString && Cliphist.entryIsImage(root.cliphistRawString)
-                visible: active
-                Layout.fillWidth: true
-                Layout.preferredHeight: (active && item) ? item.height : 0
-                Layout.maximumHeight: 250
-                sourceComponent: Component {
-                    CliphistImage {
-                        entry: root.cliphistRawString
-                        maxWidth: contentColumn.width
-                        maxHeight: 250
-                    }
+                sourceComponent: CliphistImage {
+                    Layout.fillWidth: true
+                    entry: root.cliphistRawString
+                    maxWidth: contentColumn.width
+                    maxHeight: 140
                 }
             }
         }
@@ -225,8 +232,10 @@ RippleButton {
         }
 
         RowLayout {
-            Layout.alignment: Qt.AlignVCenter
-            spacing: 2
+            Layout.alignment: Qt.AlignTop
+            Layout.topMargin: root.buttonVerticalPadding
+            Layout.bottomMargin: -root.buttonVerticalPadding // Why is this necessary? Good question.
+            spacing: 4
             Repeater {
                 model: (root.entry.actions ?? []).slice(0, 4)
                 delegate: RippleButton {
@@ -234,8 +243,8 @@ RippleButton {
                     required property var modelData
                     property string iconName: modelData.icon ?? ""
                     property string materialIconName: modelData.materialIcon ?? ""
-                    implicitHeight: 30
-                    implicitWidth: 30
+                    implicitHeight: 34
+                    implicitWidth: 34
 
                     colBackgroundHover: Appearance.colors.colSecondaryContainerHover
                     colRipple: Appearance.colors.colSecondaryContainerActive
@@ -248,7 +257,7 @@ RippleButton {
                             active: !(actionButton.iconName !== "") || actionButton.materialIconName
                             sourceComponent: MaterialSymbol {
                                 text: actionButton.materialIconName || "video_settings"
-                                font.pixelSize: 20
+                                font.pixelSize: Appearance.font.pixelSize.hugeass
                                 color: Appearance.m3colors.m3onSurface
                             }
                         }
@@ -257,7 +266,7 @@ RippleButton {
                             active: actionButton.materialIconName.length == 0 && actionButton.iconName && actionButton.iconName !== ""
                             sourceComponent: IconImage {
                                 source: Quickshell.iconPath(actionButton.iconName)
-                                implicitSize: 18
+                                implicitSize: 20
                             }
                         }
                     }
@@ -270,5 +279,6 @@ RippleButton {
                 }
             }
         }
+
     }
 }

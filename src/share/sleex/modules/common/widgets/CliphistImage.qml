@@ -53,7 +53,7 @@ Rectangle {
 
     Process {
         id: decodeImageProcess
-        command: ["bash", "-c", `mkdir -p "$(dirname '${imageDecodeFilePath}')" && ( [ -f '${imageDecodeFilePath}' ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}' )`]
+        command: ["bash", "-c", `[ -f ${imageDecodeFilePath} ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}'`]
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
                 root.source = imageDecodeFilePath;
@@ -64,18 +64,15 @@ Rectangle {
         }
     }
 
-    // Kill any in-flight decode before removing the temp file; prevents onExited
-    // from writing back to root after this component has been destroyed.
     Component.onDestruction: {
-        decodeImageProcess.running = false;
         Quickshell.execDetached(["bash", "-c", `[ -f '${imageDecodeFilePath}' ] && rm -f '${imageDecodeFilePath}'`]);
     }
 
     layer.enabled: true
     layer.effect: OpacityMask {
         maskSource: Rectangle {
-            width: root.width
-            height: root.height
+            width: image.width
+            height: image.height
             radius: root.radius
         }
     }
@@ -84,16 +81,15 @@ Rectangle {
         id: image
         anchors.fill: parent
 
-        source: root.source ? ("file://" + root.source) : ""
+        source: Qt.resolvedUrl(root.source)
         fillMode: Image.PreserveAspectFit
         antialiasing: true
         asynchronous: true
-        smooth: true
-        mipmap: true
-        sourceSize: Qt.size(root.imageWidth * root.scale, root.imageHeight * root.scale)
 
         width: root.imageWidth * root.scale
         height: root.imageHeight * root.scale
+        sourceSize.width: width
+        sourceSize.height: height
     }
 
     Loader {
