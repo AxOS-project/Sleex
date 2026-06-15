@@ -205,7 +205,14 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
+            property bool enableMusicPlayer: true
             property bool enableLyrics: true
+            property bool showLyricsOnLockScreen: true
+            property bool resizableLockScreenWidget: false
+            property real dashboardLyricsFontScale: 1.0
+            property real lockscreenLyricsFontScale: 1.0
+            property int lockscreenMediaWidth: 500
+            property int lockscreenMediaHeight: 240
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
