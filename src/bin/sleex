@@ -3,6 +3,8 @@ export XDG_CURRENT_DESKTOP="Sleex"
 export HYPRLAND_INSTANCE_SIGNATURE=""
 systemctl --user import-environment XDG_CURRENT_DESKTOP
 
+systemctl --user start sleex-lock-listener.service
+
 # Check if config dirs/files exist, if not copy them from /etc/skel
 for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
     if [ ! -d ~/.config/$dir ]; then
@@ -10,12 +12,6 @@ for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-c
         chown -R $USER:$USER ~/.config/$dir
     fi
 done
-
-# Create Sleex custom files
-if [ ! -d ~/.config/hypr/custom ]; then
-    mkdir -p ~/.config/hypr/custom
-    cp -r /etc/skel/.config/hypr/custom/* ~/.config/hypr/custom
-fi
 
 if [ ! -d ~/.local/share/khal/calendars/default ]; then
     mkdir -p ~/.local/share/khal/calendars/default
@@ -29,29 +25,14 @@ for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitt
     fi
 done
 
-# First run setup
-if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
-    # Sets up the user's environment to use Sleex.
-    CONFIG_FILE="$HOME/.config/hypr/custom/general.conf"
-    VC_KEYMAP=$(grep -i KEYMAP /etc/vconsole.conf | cut -d= -f2 | tr -d '"')
-    LAYOUT=$(echo "$VC_KEYMAP" | awk '{print tolower($0)}')
+if [ ! -f ~/.config/sleex/apps.lua ] || [ ! -s ~/.config/sleex/apps.lua ]; then
+    cp -r /etc/skel/.config/sleex/apps.lua ~/.config/sleex/apps.lua
+    chown $USER:$USER ~/.config/sleex/apps.lua
+fi
 
-
-    echo "Setting keyboard layout to '$LAYOUT' in $CONFIG_FILE."
-
-    if grep -q "^input:kb_layout" "$CONFIG_FILE"; then
-        sed -i "s/^input:kb_layout.*/input:kb_layout = $LAYOUT/" "$CONFIG_FILE"
-    else
-        echo "input:kb_layout = $LAYOUT" >> "$CONFIG_FILE"
-    fi
-
-    if lsmod | grep -q '^nvidia'; then
-    echo "Nvidia GPU found"
-    {
-        echo "env = LIBVA_DRIVER_NAME,nvidia"
-        echo "env = __GLX_VENDOR_LIBRARY_NAME,nvidia"
-    } >> ~/.config/hypr/custom/env.conf
-    fi
+if [ ! -f ~/.config/sleex/monitors.lua ] || [ ! -s ~/.config/sleex/monitors.lua ]; then
+    cp -r /etc/skel/.config/sleex/monitors.lua ~/.config/sleex/monitors.lua
+    chown $USER:$USER ~/.config/sleex/monitors.lua
 fi
 
 # Check if XDG_USER_DIRS is set up
@@ -61,4 +42,4 @@ fi
 
 
 # Start Hyprland with the Sleex config
-start-hyprland -- --config /etc/sleex/hyprland.conf > /dev/null 2>&1
+start-hyprland -- --config /etc/sleex/hyprland.lua > /dev/null 2>&1
