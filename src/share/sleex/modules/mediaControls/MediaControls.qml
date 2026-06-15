@@ -28,6 +28,12 @@ Item {
     property list<real> visualizerPoints: []
 
     property bool hasPlasmaIntegration: false
+    property bool isLockscreen: false
+
+    function refreshColorization() {
+        if (playerControlLoader.item && typeof playerControlLoader.item.refreshColorization === "function")
+            playerControlLoader.item.refreshColorization();
+    }
 
     function isRealPlayer(player) {
         return (
@@ -52,7 +58,7 @@ Item {
                 if (p1.trackTitle && p2.trackTitle &&
                     (p1.trackTitle.includes(p2.trackTitle) || p2.trackTitle.includes(p1.trackTitle))) {
                     group.push(j);
-                }
+                    }
             }
 
             let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
@@ -97,15 +103,16 @@ Item {
             artDominantColor: Appearance.m3colors.m3secondaryContainer
             visible: root.meaningfulPlayers.length === 0
         }
-        
 
         Loader {
+            id: playerControlLoader
             active: root.meaningfulPlayers.length > 0
             anchors.fill: parent
             visible: active
             sourceComponent: PlayerControl {
                 player: root.meaningfulPlayers[0]
-                visualizerPoints: root.visualizerPoints;
+                visualizerPoints: root.visualizerPoints
+                isLockscreen: root.isLockscreen
             }
         }
     }
