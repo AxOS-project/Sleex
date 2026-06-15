@@ -2,8 +2,6 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
 import qs.modules.common.functions
-import qs.modules.common.functions
-import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Effects
@@ -19,6 +17,16 @@ import Quickshell.Hyprland
 Item {
     id: playerControllerBlank
     // No player property needed for blank state
+
+    property bool musicPlayerEnabled: {
+        if (typeof Config !== "undefined" &&
+            Config.options.dashboard &&
+            Config.options.dashboard.enableMusicPlayer !== undefined)
+            return Config.options.dashboard.enableMusicPlayer
+            return true
+    }
+
+    // Color properties (used only when enabled)
     property color artDominantColor: Appearance.m3colors.m3secondaryContainer
     property list<real> visualizerPoints: []
     property real maxVisualizerValue: 1000
@@ -40,6 +48,138 @@ Item {
         property color colOnSecondaryContainer: ColorUtils.mix(Appearance.m3colors.m3onSecondaryContainer, artDominantColor, 0.5)
     }
 
+    // Component for the normal blank UI (when player is enabled)
+    Component {
+        id: blankUiComponent
+        Item {
+            Rectangle {
+                id: background
+                anchors.fill: parent
+                color: "transparent"
+
+                layer.enabled: true
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 13
+                    spacing: 15
+
+                    Rectangle {
+                        id: artBackground
+                        Layout.fillHeight: true
+                        implicitWidth: height
+                        radius: Appearance.rounding.verysmall
+                        color: ColorUtils.transparentize(blendedColors.colLayer1, 0.5)
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: 40
+                            color: blendedColors.colOnLayer1
+                            text: "music_note"
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillHeight: true
+                        spacing: 2
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            color: blendedColors.colOnLayer0
+                            elide: Text.ElideRight
+                            text: qsTr("Nothing playing")
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: blendedColors.colSubtext
+                            elide: Text.ElideRight
+                            text: qsTr("No music is currently playing")
+                        }
+                        Item { Layout.fillHeight: true }
+                        Item {
+                            Layout.fillWidth: true
+                            implicitHeight: trackTime.implicitHeight + sliderRow.implicitHeight
+
+                            StyledText {
+                                id: trackTime
+                                anchors.bottom: sliderRow.top
+                                anchors.bottomMargin: 5
+                                anchors.left: parent.left
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: blendedColors.colSubtext
+                                elide: Text.ElideRight
+                                text: "--:-- / --:--"
+                            }
+                            RowLayout {
+                                id: sliderRow
+                                anchors {
+                                    bottom: parent.bottom
+                                    left: parent.left
+                                    right: parent.right
+                                }
+                                TrackChangeButton {
+                                    iconName: "skip_previous"
+                                }
+                                Item {
+                                    id: progressBarContainer
+                                    Layout.fillWidth: true
+                                    height: 4
+
+                                    StyledProgressBar {
+                                        implicitWidth: parent.width
+                                        id: progressBar
+                                        anchors.fill: parent
+                                        highlightColor: blendedColors.colPrimary
+                                        trackColor: blendedColors.colSecondaryContainer
+                                        value: 0
+                                    }
+                                }
+                                TrackChangeButton {
+                                    iconName: "skip_next"
+                                }
+                            }
+
+                            RippleButton {
+                                id: playPauseButton
+                                anchors.right: parent.right
+                                anchors.bottom: sliderRow.top
+                                anchors.bottomMargin: 5
+                                property real size: 44
+                                implicitWidth: size
+                                implicitHeight: size
+                                onClicked: {
+                                    let player = Config.options.dashboard.mediaPlayer
+                                    if (player.startsWith("http://") || player.startsWith("https://")) {
+                                        Qt.openUrlExternally(player)
+                                    } else {
+                                        Quickshell.execDetached([player])
+                                    }
+                                }
+                                buttonRadius: Appearance?.rounding.normal
+                                colBackground: blendedColors.colSecondaryContainer
+                                colBackgroundHover: blendedColors.colSecondaryContainerHover
+                                colRipple: blendedColors.colSecondaryContainerActive
+
+                                contentItem: MaterialSymbol {
+                                    iconSize: Appearance.font.pixelSize.huge
+                                    fill: 1
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: blendedColors.colOnSecondaryContainer
+                                    text: "play_arrow"
+                                    Behavior on color {
+                                        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Helper component for track change buttons (used only in blank UI)
     component TrackChangeButton: RippleButton {
         implicitWidth: 24
         implicitHeight: 24
@@ -47,7 +187,7 @@ Item {
         colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 1)
         colBackgroundHover: blendedColors.colSecondaryContainerHover
         colRipple: blendedColors.colSecondaryContainerActive
-        onClicked: {} // Do nothing
+        onClicked: {} // Do nothing in blank state
         contentItem: MaterialSymbol {
             iconSize: Appearance.font.pixelSize.huge
             fill: 1
@@ -60,133 +200,9 @@ Item {
         }
     }
 
-    Rectangle {
-        id: background
+    // Main container: show either the blank UI or the disabled message
+    Loader {
         anchors.fill: parent
-        color: "transparent"
-
-        layer.enabled: true
-
-        // No blurred art or cover image for blank state
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 13
-            spacing: 15
-
-            Rectangle {
-                id: artBackground
-                Layout.fillHeight: true
-                implicitWidth: height
-                radius: Appearance.rounding.verysmall
-                color: ColorUtils.transparentize(blendedColors.colLayer1, 0.5)
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    iconSize: 40
-                    color: blendedColors.colOnLayer1
-                    text: "music_note"
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillHeight: true
-                spacing: 2
-
-                StyledText {
-                    Layout.fillWidth: true
-                    font.pixelSize: Appearance.font.pixelSize.large
-                    color: blendedColors.colOnLayer0
-                    elide: Text.ElideRight
-                    text: qsTr("Nothing playing")
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: blendedColors.colSubtext
-                    elide: Text.ElideRight
-                    text: qsTr("No music is currently playing")
-                }
-                Item { Layout.fillHeight: true }
-                Item {
-                    Layout.fillWidth: true
-                    implicitHeight: trackTime.implicitHeight + sliderRow.implicitHeight
-
-                    StyledText {
-                        id: trackTime
-                        anchors.bottom: sliderRow.top
-                        anchors.bottomMargin: 5
-                        anchors.left: parent.left
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: blendedColors.colSubtext
-                        elide: Text.ElideRight
-                        text: "--:-- / --:--"
-                    }
-                    RowLayout {
-                        id: sliderRow
-                        anchors {
-                            bottom: parent.bottom
-                            left: parent.left
-                            right: parent.right
-                        }
-                        TrackChangeButton {
-                            iconName: "skip_previous"
-                        }
-                        Item {
-                            id: progressBarContainer
-                            Layout.fillWidth: true
-                            height: 4
-
-                            StyledProgressBar {
-                                implicitWidth: parent.width
-                                id: progressBar
-                                anchors.fill: parent
-                                highlightColor: blendedColors.colPrimary
-                                trackColor: blendedColors.colSecondaryContainer
-                                value: 0
-                            }
-                        }
-                        TrackChangeButton {
-                            iconName: "skip_next"
-                        }
-                    }
-
-                    RippleButton {
-                        id: playPauseButton
-                        anchors.right: parent.right
-                        anchors.bottom: sliderRow.top
-                        anchors.bottomMargin: 5
-                        property real size: 44
-                        implicitWidth: size
-                        implicitHeight: size
-                        onClicked: {
-                           let player = Config.options.dashboard.mediaPlayer
-
-                           if (player.startsWith("http://") || player.startsWith("https://")) {
-                               // Open website
-                               Qt.openUrlExternally(player)
-                       } else {
-                           // Launch app
-                           Quickshell.execDetached([player])
-                       }
-                    }
-                        buttonRadius: Appearance?.rounding.normal
-                        colBackground: blendedColors.colSecondaryContainer
-                        colBackgroundHover: blendedColors.colSecondaryContainerHover
-                        colRipple: blendedColors.colSecondaryContainerActive
-
-                        contentItem: MaterialSymbol {
-                            iconSize: Appearance.font.pixelSize.huge
-                            fill: 1
-                            horizontalAlignment: Text.AlignHCenter
-                            color: blendedColors.colOnSecondaryContainer
-                            text: "play_arrow"
-                            Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        sourceComponent: musicPlayerEnabled ? blankUiComponent : Qt.createComponent("PlayerOff.qml")
     }
 }
