@@ -80,11 +80,11 @@ Singleton {
 
         onAdapterUpdated: {
             if (!root.loaded || root.isReloading) return;
-            
+
             let plainObj = ObjectUtils.toPlainObject(configOptionsObj);
             DatabaseManager.saveAll(JSON.stringify(plainObj));
         }
-        
+
         property JsonObject policies: JsonObject {
             property int ai: 2 // 0: No | 1: Yes | 2: Local
         }
@@ -205,14 +205,13 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
-            property bool enableMusicPlayer: true
             property bool enableLyrics: true
             property bool showLyricsOnLockScreen: true
             property bool resizableLockScreenWidget: false
-            property real dashboardLyricsFontScale: 1.0
-            property real lockscreenLyricsFontScale: 1.0
             property int lockscreenMediaWidth: 500
             property int lockscreenMediaHeight: 240
+            property int lockscreenMediaX: -1
+            property int lockscreenMediaY: -1
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
@@ -232,7 +231,7 @@ Singleton {
             property bool pinnedOnStartup: false
             property bool hoverToReveal: false // When false, only reveals on empty workspace
             property list<string> pinnedApps: [ // IDs of pinned entries
-                "pcmanfm-qt", "foot", "firefox"
+            "pcmanfm-qt", "foot", "firefox"
             ]
         }
         property JsonObject interactions: JsonObject {
