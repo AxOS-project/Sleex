@@ -20,7 +20,7 @@ ContentPage {
         onAccepted: {
             _selectedFaceImage = selectedFile.toString().replace("file://", "")
             copyProcess.command = ["bash", "-c",
-                "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
+            "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
             ]
             copyProcess.running = true
         }
@@ -204,7 +204,7 @@ ContentPage {
                     Config.options.bar.workspaces.showNumberDelay = value;
                 }
             }
-        }   
+        }
 
     }
 
@@ -427,7 +427,7 @@ ContentPage {
                     onClicked: checked = !checked
                     onCheckedChanged: {
                         Config.options.background.enableQuote = checked
-                        Quotes.refresh();    
+                        Quotes.refresh();
                     }
                 }
 
@@ -438,7 +438,7 @@ ContentPage {
                 checked: Config.options.background.showDesktopIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.background.showDesktopIcons = checked;
-             }
+            }
 
             ContentSubsection {
                 title: "Clock mode"
@@ -509,7 +509,7 @@ ContentPage {
                 {"value": "top-right", "displayName": "Top Right"},
             ]
         }
-        
+
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
             text: "Battery overlay warnings"
@@ -518,7 +518,7 @@ ContentPage {
             onCheckedChanged: {
                 Config.options.battery.overlayEnabled = checked;
             }
-        }  
+        }
     }
 
     ContentSection {
@@ -530,6 +530,24 @@ ContentPage {
             checked: Config.options.lockscreen.enableScrim
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
+        }
+
+        ConfigSwitch {
+            id: showOnLockScreenSwitch
+            text: "Player integration"
+            checked: Config.options.dashboard.showLyricsOnLockScreen
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.showLyricsOnLockScreen = checked
+            StyledToolTip { text: "Show the media player widget on the lock screen." }
+        }
+
+        ConfigSwitch {
+            visible: showOnLockScreenSwitch.checked
+            text: "Adaptable widget"
+            checked: Config.options.dashboard.resizableLockScreenWidget ?? false
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.resizableLockScreenWidget = checked
+            StyledToolTip { text: "Allow resizing & repositioning of the media player widget." }
         }
     }
 
