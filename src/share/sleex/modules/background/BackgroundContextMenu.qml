@@ -112,7 +112,7 @@ Item {
                 }
                 
                 onClicked: {
-                    Hyprland.dispatch("global quickshell:sessionOpen")
+                    Hyprland.dispatch("hl.dsp.global('quickshell:sessionOpen')")
                     bgMenu.close()
                 }
             }
