@@ -113,11 +113,59 @@ FocusScope {
             id: mediaWidget
             visible: MprisController.activePlayer && Config.options.dashboard.showLyricsOnLockScreen
             isLockscreen: true
-            width: Config.options.dashboard.lockscreenMediaWidth
-            height: Config.options.dashboard.lockscreenMediaHeight
-            anchors { centerIn: parent; bottom: passwordContainer.top }
+
+            property bool hasCustomPos: (Config.options.dashboard.lockscreenMediaX ?? -1) >= 0
+
+            width: (Config.options.dashboard.lockscreenMediaWidth ?? 0) > 0 ? Config.options.dashboard.lockscreenMediaWidth : bottomBar.width
+            height: (Config.options.dashboard.lockscreenMediaHeight ?? 0) > 0 ? Config.options.dashboard.lockscreenMediaHeight : 200
+
+            anchors.bottom: hasCustomPos ? undefined : bottomBar.top
+            anchors.bottomMargin: hasCustomPos ? 0 : 15
+            anchors.horizontalCenter: hasCustomPos ? undefined : bottomBar.horizontalCenter
+
+            x: hasCustomPos ? Config.options.dashboard.lockscreenMediaX : 0
+            y: hasCustomPos ? Config.options.dashboard.lockscreenMediaY : 0
+
             opacity: root.unlocking ? 0 : (root.visualsReady ? 1 : 0)
             Behavior on opacity { NumberAnimation { duration: 600 } }
+
+            function safeDisconnectAnchors() {
+                if (mediaWidget.anchors.bottom !== undefined || mediaWidget.anchors.horizontalCenter !== undefined) {
+                    let currentX = mediaWidget.x
+                    let currentY = mediaWidget.y
+                    mediaWidget.anchors.bottom = undefined
+                    mediaWidget.anchors.horizontalCenter = undefined
+                    mediaWidget.x = currentX
+                    mediaWidget.y = currentY
+                }
+            }
+
+            MouseArea {
+                id: dragArea
+                anchors.fill: parent
+                z: -1
+                enabled: Config.options.dashboard.resizableLockScreenWidget
+                property real dragStartX
+                property real dragStartY
+
+                onPressed: (mouse) => {
+                    mediaWidget.safeDisconnectAnchors()
+                    let mapped = mapToItem(root, mouse.x, mouse.y)
+                    dragStartX = mapped.x - mediaWidget.x
+                    dragStartY = mapped.y - mediaWidget.y
+                    mouse.accepted = true
+                }
+                onPositionChanged: (mouse) => {
+                    if (!pressed) return
+                        let mapped = mapToItem(root, mouse.x, mouse.y)
+                        mediaWidget.x = mapped.x - dragStartX
+                        mediaWidget.y = mapped.y - dragStartY
+                }
+                onReleased: {
+                    Config.options.dashboard.lockscreenMediaX = mediaWidget.x
+                    Config.options.dashboard.lockscreenMediaY = mediaWidget.y
+                }
+            }
 
             Loader {
                 id: resizeLoader
@@ -149,71 +197,76 @@ FocusScope {
                     readonly property int edgeSize: 8
                     readonly property int cornerSize: 16
 
-                    // Reusable edge handle
                     component EdgeResizeHandle: Rectangle {
-                        property string direction: "vertical" // "vertical" or "horizontal"
+                        property string direction: "vertical"
                         property bool invert: false
                         color: "transparent"
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: direction === "vertical" ? Qt.SizeVerCursor : Qt.SizeHorCursor
-                            property real start
+                            property real startPos
                             property real startSize
+                            property real startWidgetPos
+
                             onPressed: (mouse) => {
-                                start = direction === "vertical" ? mouse.y : mouse.x
+                                mediaWidget.safeDisconnectAnchors()
+                                let mapped = mapToItem(root, mouse.x, mouse.y)
+                                startPos = direction === "vertical" ? mapped.y : mapped.x
                                 startSize = direction === "vertical" ? mediaWidget.height : mediaWidget.width
+                                startWidgetPos = direction === "vertical" ? mediaWidget.y : mediaWidget.x
                                 mouse.accepted = true
                             }
                             onPositionChanged: (mouse) => {
                                 if (!pressed) return
-                                    let delta = (direction === "vertical" ? mouse.y : mouse.x) - start
-                                    if (invert) delta = -delta
-                                        let newSize = Math.max(direction === "vertical" ? 120 : 200, startSize + delta)
-                                        if (direction === "vertical") {
-                                            if (invert) {
-                                                let dy = startSize - newSize
-                                                mediaWidget.height = newSize
-                                                mediaWidget.y += dy
-                                            } else {
-                                                mediaWidget.height = newSize
-                                            }
-                                            Config.options.dashboard.lockscreenMediaHeight = newSize
+                                    let mapped = mapToItem(root, mouse.x, mouse.y)
+                                    let currentPos = direction === "vertical" ? mapped.y : mapped.x
+                                    let delta = currentPos - startPos
+
+                                    if (direction === "vertical") {
+                                        if (invert) {
+                                            let newHeight = Math.max(120, startSize - delta)
+                                            mediaWidget.height = newHeight
+                                            mediaWidget.y = startWidgetPos + (startSize - newHeight)
                                         } else {
-                                            if (invert) {
-                                                let dx = startSize - newSize
-                                                mediaWidget.width = newSize
-                                                mediaWidget.x += dx
-                                            } else {
-                                                mediaWidget.width = newSize
-                                            }
-                                            Config.options.dashboard.lockscreenMediaWidth = newSize
+                                            mediaWidget.height = Math.max(120, startSize + delta)
                                         }
+                                    } else {
+                                        if (invert) {
+                                            let newWidth = Math.max(200, startSize - delta)
+                                            mediaWidget.width = newWidth
+                                            mediaWidget.x = startWidgetPos + (startSize - newWidth)
+                                        } else {
+                                            mediaWidget.width = Math.max(200, startSize + delta)
+                                        }
+                                    }
+                            }
+                            onReleased: {
+                                Config.options.dashboard.lockscreenMediaWidth = mediaWidget.width
+                                Config.options.dashboard.lockscreenMediaHeight = mediaWidget.height
+                                Config.options.dashboard.lockscreenMediaX = mediaWidget.x
+                                Config.options.dashboard.lockscreenMediaY = mediaWidget.y
                             }
                         }
                     }
 
-                    // Top edge
                     EdgeResizeHandle {
                         width: parent.width - 2 * parent.cornerSize
                         height: parent.edgeSize
                         x: parent.cornerSize; y: 0
                         direction: "vertical"; invert: true
                     }
-                    // Bottom edge
                     EdgeResizeHandle {
                         width: parent.width - 2 * parent.cornerSize
                         height: parent.edgeSize
                         x: parent.cornerSize; y: parent.height - parent.edgeSize
                         direction: "vertical"; invert: false
                     }
-                    // Left edge
                     EdgeResizeHandle {
                         width: parent.edgeSize
                         height: parent.height - 2 * parent.cornerSize
                         x: 0; y: parent.cornerSize
                         direction: "horizontal"; invert: true
                     }
-                    // Right edge
                     EdgeResizeHandle {
                         width: parent.edgeSize
                         height: parent.height - 2 * parent.cornerSize
@@ -221,10 +274,9 @@ FocusScope {
                         direction: "horizontal"; invert: false
                     }
 
-                    // Reusable corner handle (diagonal)
                     component CornerResizeHandle: Rectangle {
-                        property int xSign: 1   // -1 for left, 1 for right
-                        property int ySign: 1   // -1 for top, 1 for bottom
+                        property int xSign: 1
+                        property int ySign: 1
                         width: parent.cornerSize; height: parent.cornerSize
                         color: "transparent"
                         MouseArea {
@@ -234,25 +286,47 @@ FocusScope {
                             property real startY
                             property real startWidth
                             property real startHeight
+                            property real startWidgetX
+                            property real startWidgetY
+
                             onPressed: (mouse) => {
-                                startX = mouse.x; startY = mouse.y
-                                startWidth = mediaWidget.width; startHeight = mediaWidget.height
+                                mediaWidget.safeDisconnectAnchors()
+                                let mapped = mapToItem(root, mouse.x, mouse.y)
+                                startX = mapped.x
+                                startY = mapped.y
+                                startWidth = mediaWidget.width
+                                startHeight = mediaWidget.height
+                                startWidgetX = mediaWidget.x
+                                startWidgetY = mediaWidget.y
                                 mouse.accepted = true
                             }
                             onPositionChanged: (mouse) => {
                                 if (!pressed) return
-                                    let dx = (mouse.x - startX) * xSign
-                                    let dy = (mouse.y - startY) * ySign
-                                    let newWidth = Math.max(200, startWidth + dx)
-                                    let newHeight = Math.max(120, startHeight + dy)
-                                    let dw = startWidth - newWidth
-                                    let dh = startHeight - newHeight
-                                    mediaWidget.width = newWidth
-                                    mediaWidget.height = newHeight
-                                    if (xSign === -1) mediaWidget.x += dw
-                                        if (ySign === -1) mediaWidget.y += dh
-                                            Config.options.dashboard.lockscreenMediaWidth = newWidth
-                                            Config.options.dashboard.lockscreenMediaHeight = newHeight
+                                    let mapped = mapToItem(root, mouse.x, mouse.y)
+                                    let dx = mapped.x - startX
+                                    let dy = mapped.y - startY
+
+                                    if (xSign === -1) {
+                                        let newWidth = Math.max(200, startWidth - dx)
+                                        mediaWidget.width = newWidth
+                                        mediaWidget.x = startWidgetX + (startWidth - newWidth)
+                                    } else {
+                                        mediaWidget.width = Math.max(200, startWidth + dx)
+                                    }
+
+                                    if (ySign === -1) {
+                                        let newHeight = Math.max(120, startHeight - dy)
+                                        mediaWidget.height = newHeight
+                                        mediaWidget.y = startWidgetY + (startHeight - newHeight)
+                                    } else {
+                                        mediaWidget.height = Math.max(120, startHeight + dy)
+                                    }
+                            }
+                            onReleased: {
+                                Config.options.dashboard.lockscreenMediaWidth = mediaWidget.width
+                                Config.options.dashboard.lockscreenMediaHeight = mediaWidget.height
+                                Config.options.dashboard.lockscreenMediaX = mediaWidget.x
+                                Config.options.dashboard.lockscreenMediaY = mediaWidget.y
                             }
                         }
                     }
