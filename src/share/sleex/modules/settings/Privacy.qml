@@ -77,97 +77,16 @@ ContentPage {
         }
 
         ContentSection {
-            title: "Music Player"
+            title: "Media Player"
             icon: "music_note"
 
             ConfigSwitch {
-                id: musicPlayerSwitch
-                text: "Enabled"
-                checked: Config.options.dashboard.enableMusicPlayer
-                onClicked: checked = !checked;
-                onCheckedChanged: {
-                    Config.options.dashboard.enableMusicPlayer = checked;
-                    if (!checked) {
-                        showOnLockScreenSwitch.checked = false;
-                        lyricsSwitch.checked = false;
-                    }
-                }
-                StyledToolTip { text: "Show music player controls (playback, track info, lyrics)." }
-            }
-
-            ConfigSwitch {
                 id: lyricsSwitch
-                visible: musicPlayerSwitch.checked
                 text: "Lyrics"
                 checked: Config.options.dashboard.enableLyrics
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.enableLyrics = checked
                 StyledToolTip { text: "Fetch and display synced lyrics (LRCLIB provider)." }
-            }
-
-            ConfigSwitch {
-                id: showOnLockScreenSwitch
-                visible: musicPlayerSwitch.checked
-                text: "Lockscreen integration"
-                checked: Config.options.dashboard.showLyricsOnLockScreen
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.showLyricsOnLockScreen = checked
-                StyledToolTip { text: "Display the music player on the lock screen." }
-            }
-
-            ConfigSwitch {
-                id: resizableWidgetSwitch
-                visible: showOnLockScreenSwitch.checked
-                text: "Resizable widget"
-                checked: Config.options.dashboard.resizableLockScreenWidget ?? false
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.resizableLockScreenWidget = checked
-                StyledToolTip { text: "Allow resizing the lock screen widget." }
-            }
-        }
-
-        ContentSection {
-            title: "Lyrics Settings"
-            icon: "text_snippet"
-            visible: musicPlayerSwitch.checked && lyricsSwitch.checked
-
-            RowLayout {
-                ConfigSpinBox {
-                    text: "Dashboard widget font"
-                    value: Math.round((Config.options.dashboard.dashboardLyricsFontScale ?? 1.0) * 10)
-                    from: 5
-                    to: 30
-                    stepSize: 1
-                    onValueChanged: {
-                        Config.options.dashboard.dashboardLyricsFontScale = value / 10.0;
-                    }
-                    ToolTip {
-                        text: "Scale the size of lyrics text in the dashboard widget (0.5x to 3.0x)."
-                        visible: parent.hovered
-                        delay: 500
-                    }
-                }
-                Item { Layout.fillWidth: true }
-            }
-
-            RowLayout {
-                visible: showOnLockScreenSwitch.checked
-                ConfigSpinBox {
-                    text: "Lockscreen widget font"
-                    value: Math.round((Config.options.dashboard.lockscreenLyricsFontScale ?? 1.0) * 10)
-                    from: 5
-                    to: 30
-                    stepSize: 1
-                    onValueChanged: {
-                        Config.options.dashboard.lockscreenLyricsFontScale = value / 10.0;
-                    }
-                    ToolTip {
-                        text: "Scale the size of lyrics text on the lock screen (0.5x to 3.0x)."
-                        visible: parent.hovered
-                        delay: 500
-                    }
-                }
-                Item { Layout.fillWidth: true }
             }
         }
 
