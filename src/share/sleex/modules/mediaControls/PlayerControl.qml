@@ -20,22 +20,9 @@ Item {
 
     property bool isLockscreen: false
 
-    readonly property bool musicPlayerEnabled: {
-        if (typeof Config !== "undefined"
-            && Config?.options?.dashboard?.enableMusicPlayer !== undefined)
-            return Config.options.dashboard.enableMusicPlayer
-            return true
-    }
-
     readonly property bool lyricsButtonEnabled:
     typeof Config !== "undefined"
     && Config?.options?.dashboard?.enableLyrics === true
-
-    readonly property real lyricsFontScale: {
-        const defaultScale = 1.0
-        const dashProp = isLockscreen ? "lockscreenLyricsFontScale" : "dashboardLyricsFontScale"
-        return Config?.options?.dashboard?.[dashProp] ?? defaultScale
-    }
 
     readonly property real contentPadding: 12
     readonly property real artRounding: 8
@@ -158,32 +145,30 @@ Item {
     property string currentTrackIdForArt: ""
 
     onArtUrlChanged: {
-        if (!musicPlayerEnabled) return
-            if (!artUrl || artUrl.length === 0) return
-                var newTrackId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
-                if (newTrackId !== currentTrackIdForArt) {
-                    currentTrackIdForArt = newTrackId
-                    if (!initialArtLoaded) {
-                        loadInitialArt(artUrl)
-                    } else {
-                        forceCrossFade(artUrl)
-                    }
+        if (!artUrl || artUrl.length === 0) return
+            var newTrackId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
+            if (newTrackId !== currentTrackIdForArt) {
+                currentTrackIdForArt = newTrackId
+                if (!initialArtLoaded) {
+                    loadInitialArt(artUrl)
+                } else {
+                    forceCrossFade(artUrl)
                 }
+            }
     }
 
     onPlayerChanged: {
-        if (!musicPlayerEnabled) return
-            currentTrackIdForArt = ""
-            initialArtLoaded = false
-            crossFadeActive = false
-            lastLoadedArtUrl = ""
-            artSourceA = ""
-            artSourceB = ""
-            effectiveArtUrl = ""
-            colorStable = false
-            ++quantizerRequestId
-            updateStableLength()
-            resetAndFetchLyrics()
+        currentTrackIdForArt = ""
+        initialArtLoaded = false
+        crossFadeActive = false
+        lastLoadedArtUrl = ""
+        artSourceA = ""
+        artSourceB = ""
+        effectiveArtUrl = ""
+        colorStable = false
+        ++quantizerRequestId
+        updateStableLength()
+        resetAndFetchLyrics()
     }
 
     // ---- color extraction ----
@@ -203,13 +188,12 @@ Item {
         property int capturedRequestId: 0
         onSourceChanged: capturedRequestId = playerController.quantizerRequestId
         onColorsChanged: {
-            if (!musicPlayerEnabled) return
-                if (capturedRequestId !== playerController.quantizerRequestId) return
-                    if (playerController.colorStable) return
-                        if (colors && colors.length > 0) {
-                            artDominantColor = colors[0]
-                            colorStable = true
-                        }
+            if (capturedRequestId !== playerController.quantizerRequestId) return
+                if (playerController.colorStable) return
+                    if (colors && colors.length > 0) {
+                        artDominantColor = colors[0]
+                        colorStable = true
+                    }
         }
     }
 
@@ -252,19 +236,17 @@ Item {
     }
 
     function updateStableLength() {
-        if (!musicPlayerEnabled) return
-            const newId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
-            if (newId !== currentTrackIdForLength) {
-                currentTrackIdForLength = newId
-                stableLength = 0
-            }
-            const currentLen = player?.length ?? 0
-            if (currentLen > stableLength) stableLength = currentLen
+        const newId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
+        if (newId !== currentTrackIdForLength) {
+            currentTrackIdForLength = newId
+            stableLength = 0
+        }
+        const currentLen = player?.length ?? 0
+        if (currentLen > stableLength) stableLength = currentLen
     }
 
     Connections {
         target: player
-        enabled: musicPlayerEnabled
         function onLengthChanged()      { updateStableLength() }
         function onTrackIdChanged()     { updateStableLength() }
         function onTrackTitleChanged()  { updateStableLength(); resetAndFetchLyrics() }
@@ -272,17 +254,16 @@ Item {
     }
 
     function resetLyricsState() {
-        if (!musicPlayerEnabled) return
-            if (currentLyricsRequest) currentLyricsRequest.abort()
-                ++lyricsRequestId
-                lyricsLines = []
-                currentLyricIndex = -1
-                fetchingLyrics = false
-                lyricsLoading = false
+        if (currentLyricsRequest) currentLyricsRequest.abort()
+            ++lyricsRequestId
+            lyricsLines = []
+            currentLyricIndex = -1
+            fetchingLyrics = false
+            lyricsLoading = false
     }
 
     function resetAndFetchLyrics() {
-        if (!musicPlayerEnabled || !lyricsButtonEnabled) return
+        if (!lyricsButtonEnabled) return
             if (currentLyricsRequest) currentLyricsRequest.abort()
                 ++lyricsRequestId
                 lyricsLines = []
@@ -293,7 +274,7 @@ Item {
     }
 
     function fetchLyrics() {
-        if (!musicPlayerEnabled || !lyricsButtonEnabled || !player) return
+        if (!lyricsButtonEnabled || !player) return
             const title = player.trackTitle || ""
             const artist = player.trackArtist || ""
             if (!title || !artist) {
@@ -365,7 +346,7 @@ Item {
 
     Timer {
         interval: 100
-        running: musicPlayerEnabled && lyricsViewVisible
+        running: lyricsViewVisible
         && lyricsLines.length > 0 && lyricsLines[0].timestamp >= 0
         && player?.isPlaying === true
         repeat: true
@@ -373,7 +354,7 @@ Item {
     }
 
     onLyricsViewVisibleChanged: {
-        if (musicPlayerEnabled && lyricsViewVisible && lyricsLines.length
+        if (lyricsViewVisible && lyricsLines.length
             && lyricsLines[0].timestamp >= 0)
             updateCurrentLyricFromPosition()
     }
@@ -415,7 +396,7 @@ Item {
     }
 
     Timer {
-        running: musicPlayerEnabled && player?.playbackState == MprisPlaybackState.Playing
+        running: player?.playbackState == MprisPlaybackState.Playing
         interval: 100; repeat: true
         onTriggered: player.positionChanged()
     }
@@ -424,7 +405,7 @@ Item {
     Item {
         id: normalPlayerContainer
         anchors.fill: parent
-        visible: musicPlayerEnabled
+        visible: true
 
         Rectangle {
             id: sharedBackground
@@ -483,7 +464,7 @@ Item {
             WaveVisualizer {
                 id: visualizerCanvas
                 anchors.fill: parent
-                live: musicPlayerEnabled && player?.isPlaying
+                live: player?.isPlaying
                 points: playerController.visualizerPoints
                 maxVisualizerValue: playerController.maxVisualizerValue
                 smoothing: playerController.visualizerSmoothing
@@ -496,8 +477,8 @@ Item {
             anchors.fill: parent
             anchors.margins: playerController.contentPadding
             spacing: 15
-            opacity: (lyricsViewVisible || !musicPlayerEnabled) ? 0 : 1
-            enabled: musicPlayerEnabled && !lyricsViewVisible
+            opacity: lyricsViewVisible ? 0 : 1
+            enabled: !lyricsViewVisible
             Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
             Rectangle {
@@ -674,7 +655,7 @@ Item {
                 top: parent.top; right: parent.right
                 topMargin: 12; rightMargin: 16
             }
-            visible: musicPlayerEnabled && lyricsButtonEnabled && !lyricsViewVisible
+            visible: lyricsButtonEnabled && !lyricsViewVisible
             opacity: visible ? 1 : 0
             enabled: visible
             Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
@@ -700,8 +681,8 @@ Item {
         Item {
             id: lyricsOverlay
             anchors.fill: parent
-            opacity: musicPlayerEnabled && lyricsViewVisible ? 1 : 0
-            enabled: musicPlayerEnabled && lyricsViewVisible
+            opacity: lyricsViewVisible ? 1 : 0
+            enabled: lyricsViewVisible
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
             z: 10
@@ -728,7 +709,7 @@ Item {
                 visible: lyricsLines.length > 0 && lyricsLines[0].timestamp >= 0
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    font.pixelSize: Appearance.font.pixelSize.large * lyricsFontScale * 0.9
+                    font.pixelSize: Appearance.font.pixelSize.large * 0.9
                     color: blendedColors.colSubtext
                     text: player?.trackTitle || ""
                     elide: Text.ElideRight
@@ -736,7 +717,7 @@ Item {
                 }
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    font.pixelSize: Appearance.font.pixelSize.smaller * lyricsFontScale * 0.9
+                    font.pixelSize: Appearance.font.pixelSize.smaller * 0.9
                     color: ColorUtils.transparentize(blendedColors.colSubtext, 0.7)
                     text: player?.trackArtist || ""
                     elide: Text.ElideRight
@@ -750,7 +731,6 @@ Item {
                 width: parent.width - 64
                 height: Math.max(oldLineText.implicitHeight, newLineText.implicitHeight)
 
-                // Current lyric line display logic
                 property string currentLine: {
                     if (lyricsLoading) return "Loading lyrics..."
                         if (lyricsLines.length === 0) return "No synced lyrics found"
@@ -767,8 +747,8 @@ Item {
                     anchors.centerIn: parent
                     width: parent.width
                     font.pixelSize: (text === "Loading lyrics..." || text === "No synced lyrics found")
-                    ? Appearance.font.pixelSize.huge * lyricsFontScale
-                    : Appearance.font.pixelSize.large * 1.1 * lyricsFontScale
+                    ? Appearance.font.pixelSize.huge
+                    : Appearance.font.pixelSize.large * 1.1
                     font.weight: Font.Bold
                     color: ColorUtils.mix(blendedColors.colOnPrimary, "#FFFFFF", 0.3)
                     horizontalAlignment: Text.AlignHCenter
@@ -781,8 +761,8 @@ Item {
                     anchors.centerIn: parent
                     width: parent.width
                     font.pixelSize: (text === "Loading lyrics..." || text === "No synced lyrics found")
-                    ? Appearance.font.pixelSize.huge * lyricsFontScale
-                    : Appearance.font.pixelSize.large * 1.1 * lyricsFontScale
+                    ? Appearance.font.pixelSize.huge
+                    : Appearance.font.pixelSize.large * 1.1
                     font.weight: Font.Bold
                     color: ColorUtils.mix(blendedColors.colOnPrimary, "#FFFFFF", 0.3)
                     horizontalAlignment: Text.AlignHCenter
@@ -796,7 +776,6 @@ Item {
                     value: lyricContainer.currentLine
                 }
 
-                // Cross-fade animation between lyric lines
                 SequentialAnimation {
                     id: crossFadeAnim
                     ParallelAnimation {
@@ -851,12 +830,6 @@ Item {
                 }
             }
         }
-    }
-
-    Loader {
-        anchors.fill: parent
-        active: !musicPlayerEnabled
-        sourceComponent: PlayerOff {}
     }
 
     function refreshColorization() {
