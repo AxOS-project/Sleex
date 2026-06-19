@@ -205,8 +205,8 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
-            property bool enableLyrics: true
-            property bool showLyricsOnLockScreen: true
+            property bool enableLyrics: false
+            property bool showLyricsOnLockScreen: false
             property bool resizableLockScreenWidget: false
             property int lockscreenMediaWidth: 500
             property int lockscreenMediaHeight: 240
@@ -231,7 +231,7 @@ Singleton {
             property bool pinnedOnStartup: false
             property bool hoverToReveal: false // When false, only reveals on empty workspace
             property list<string> pinnedApps: [ // IDs of pinned entries
-            "pcmanfm-qt", "foot", "firefox"
+                "pcmanfm-qt", "foot", "firefox"
             ]
         }
         property JsonObject interactions: JsonObject {
