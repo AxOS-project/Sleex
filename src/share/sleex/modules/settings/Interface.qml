@@ -542,7 +542,7 @@ ContentPage {
         }
 
         ConfigSwitch {
-            visible: showOnLockScreenSwitch.checked
+            visible: mediaShowOnLockScreenSwitch.checked
             text: "Resizable widget"
             checked: Config.options.dashboard.resizableLockScreenWidget ?? false
             onClicked: checked = !checked;
