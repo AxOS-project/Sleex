@@ -9,35 +9,6 @@ ContentPage {
     forceSingleColumn: true
     
     ContentSection {
-        title: "Policies"
-        icon: "policy"
-
-        ContentSubsectionLabel {
-            text: "AI"
-        }
-        ConfigSelectionArray {
-            currentValue: Config.options.policies.ai
-            onSelected: newValue => {
-                Config.options.policies.ai = newValue;
-            }
-            options: [
-                {
-                    displayName: "No",
-                    value: 0
-                },
-                {
-                    displayName: "Yes",
-                    value: 1
-                },
-                {
-                    displayName: "Local only",
-                    value: 2
-                }
-            ]
-        }
-    }
-    
-    ContentSection {
         title: "Weather"
         icon: "cloud"
 

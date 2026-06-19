@@ -19,7 +19,6 @@ function findSuitableMaterialSymbol(summary = "") {
         'configuration reloaded': 'reset_wrench',
         'config': 'reset_wrench',
         'update': 'update',
-        'ai response': 'neurology',
         'control': 'settings',
         'upscale': 'compare',
         'install': 'deployed_code_update',
