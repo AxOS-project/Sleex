@@ -20,7 +20,7 @@ ContentPage {
         onAccepted: {
             _selectedFaceImage = selectedFile.toString().replace("file://", "")
             copyProcess.command = ["bash", "-c",
-            "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
+                "pkexec cp \"" + _selectedFaceImage + "\" \"/usr/share/sddm/faces/$(id -un).face.icon\""
             ]
             copyProcess.running = true
         }
@@ -533,7 +533,7 @@ ContentPage {
         }
 
         ConfigSwitch {
-            id: showOnLockScreenSwitch
+            id: mediaShowOnLockScreenSwitch
             text: "Player integration"
             checked: Config.options.dashboard.showLyricsOnLockScreen
             onClicked: checked = !checked;
@@ -543,7 +543,7 @@ ContentPage {
 
         ConfigSwitch {
             visible: showOnLockScreenSwitch.checked
-            text: "Adaptable widget"
+            text: "Resizable widget"
             checked: Config.options.dashboard.resizableLockScreenWidget ?? false
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.resizableLockScreenWidget = checked
