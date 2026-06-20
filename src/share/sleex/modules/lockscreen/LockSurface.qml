@@ -111,20 +111,20 @@ FocusScope {
 
         MediaControls {
             id: mediaWidget
-            visible: MprisController.activePlayer && Config.options.dashboard.showLyricsOnLockScreen
+            visible: MprisController.activePlayer && Config.options.lockscreen.showLyricsOnLockScreen
             isLockscreen: true
 
-            property bool hasCustomPos: (Config.options.dashboard.lockscreenMediaX ?? -1) >= 0
+            property bool hasCustomPos: (Config.options.lockscreen.lockscreenMediaX ?? -1) >= 0
 
-            width: (Config.options.dashboard.lockscreenMediaWidth ?? 0) > 0 ? Config.options.dashboard.lockscreenMediaWidth : bottomBar.width
-            height: (Config.options.dashboard.lockscreenMediaHeight ?? 0) > 0 ? Config.options.dashboard.lockscreenMediaHeight : 200
+            width: (Config.options.lockscreen.lockscreenMediaWidth ?? 0) > 0 ? Config.options.lockscreen.lockscreenMediaWidth : bottomBar.width
+            height: (Config.options.lockscreen.lockscreenMediaHeight ?? 0) > 0 ? Config.options.lockscreen.lockscreenMediaHeight : 200
 
             anchors.bottom: hasCustomPos ? undefined : bottomBar.top
             anchors.bottomMargin: hasCustomPos ? 0 : 15
             anchors.horizontalCenter: hasCustomPos ? undefined : bottomBar.horizontalCenter
 
-            x: hasCustomPos ? Config.options.dashboard.lockscreenMediaX : 0
-            y: hasCustomPos ? Config.options.dashboard.lockscreenMediaY : 0
+            x: hasCustomPos ? Config.options.lockscreen.lockscreenMediaX : 0
+            y: hasCustomPos ? Config.options.lockscreen.lockscreenMediaY : 0
 
             opacity: root.unlocking ? 0 : (root.visualsReady ? 1 : 0)
             Behavior on opacity { NumberAnimation { duration: 600 } }
@@ -144,7 +144,7 @@ FocusScope {
                 id: dragArea
                 anchors.fill: parent
                 z: -1
-                enabled: Config.options.dashboard.resizableLockScreenWidget
+                enabled: Config.options.lockscreen.resizableLockScreenWidget
                 property real dragStartX
                 property real dragStartY
 
@@ -162,14 +162,14 @@ FocusScope {
                         mediaWidget.y = mapped.y - dragStartY
                 }
                 onReleased: {
-                    Config.options.dashboard.lockscreenMediaX = mediaWidget.x
-                    Config.options.dashboard.lockscreenMediaY = mediaWidget.y
+                    Config.options.lockscreen.lockscreenMediaX = mediaWidget.x
+                    Config.options.lockscreen.lockscreenMediaY = mediaWidget.y
                 }
             }
 
             Loader {
                 id: resizeLoader
-                active: Config.options.dashboard.resizableLockScreenWidget
+                active: Config.options.lockscreen.resizableLockScreenWidget
                 sourceComponent: resizeComponent
                 anchors.fill: parent
             }
@@ -241,10 +241,10 @@ FocusScope {
                                     }
                             }
                             onReleased: {
-                                Config.options.dashboard.lockscreenMediaWidth = mediaWidget.width
-                                Config.options.dashboard.lockscreenMediaHeight = mediaWidget.height
-                                Config.options.dashboard.lockscreenMediaX = mediaWidget.x
-                                Config.options.dashboard.lockscreenMediaY = mediaWidget.y
+                                Config.options.lockscreen.lockscreenMediaWidth = mediaWidget.width
+                                Config.options.lockscreen.lockscreenMediaHeight = mediaWidget.height
+                                Config.options.lockscreen.lockscreenMediaX = mediaWidget.x
+                                Config.options.lockscreen.lockscreenMediaY = mediaWidget.y
                             }
                         }
                     }
@@ -323,10 +323,10 @@ FocusScope {
                                     }
                             }
                             onReleased: {
-                                Config.options.dashboard.lockscreenMediaWidth = mediaWidget.width
-                                Config.options.dashboard.lockscreenMediaHeight = mediaWidget.height
-                                Config.options.dashboard.lockscreenMediaX = mediaWidget.x
-                                Config.options.dashboard.lockscreenMediaY = mediaWidget.y
+                                Config.options.lockscreen.lockscreenMediaWidth = mediaWidget.width
+                                Config.options.lockscreen.lockscreenMediaHeight = mediaWidget.height
+                                Config.options.lockscreen.lockscreenMediaX = mediaWidget.x
+                                Config.options.lockscreen.lockscreenMediaY = mediaWidget.y
                             }
                         }
                     }
