@@ -531,7 +531,7 @@ ContentPage {
             text: "Player integration"
             checked: Config.options.lockscreen.showLyricsOnLockScreen
             onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.showLyricsOnLockScreen = checked
+            onCheckedChanged: Config.options.lockscreen.showLyricsOnLockScreen = checked
             StyledToolTip { text: "Show the media player widget on the lock screen." }
         }
 
@@ -540,7 +540,7 @@ ContentPage {
             text: "Resizable widget"
             checked: Config.options.lockscreen.resizableLockScreenWidget ?? false
             onClicked: checked = !checked;
-            onCheckedChanged: Config.options.dashboard.resizableLockScreenWidget = checked
+            onCheckedChanged: Config.options.lockscreen.resizableLockScreenWidget = checked
             StyledToolTip { text: "Allow resizing & repositioning of the media player widget." }
         }
     }
