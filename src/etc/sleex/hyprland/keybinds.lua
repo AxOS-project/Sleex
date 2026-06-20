@@ -139,20 +139,21 @@ for i = 1, 10 do
 	)
 end
 
+for i = 1, 4 do
+    local key = { "SUPER + mouse_up", "SUPER + mouse_down" }
+    local keycombos = { key[1], key[2], "CTRL + " .. key[1], "CTRL + " .. key[2] }
+    local prefix = { "+", "-", "r+", "r-" }
+    hl.bind(keycombos[i], hl.dsp.focus({ workspace = prefix[i] .. "1" }))
+end
+
 hl.bind("CTRL+SUPER+Right", hl.dsp.focus({ direction = "right" }))
 hl.bind("CTRL+SUPER+Left", hl.dsp.focus({ direction = "left" }))
-
-hl.bind("SUPER+mouse_up", hl.dsp.focus({ direction = "right" }))
-hl.bind("SUPER+mouse_down", hl.dsp.focus({ direction = "left" }))
 
 hl.bind("SUPER+Page_Down", hl.dsp.focus({ direction = "right" }))
 hl.bind("SUPER+Page_Up", hl.dsp.focus({ direction = "left" }))
 
 hl.bind("CTRL+SUPER+SHIFT+Right", hl.dsp.window.move({ workspace = "e+1" }))
 hl.bind("CTRL+SUPER+SHIFT+Left", hl.dsp.window.move({ workspace = "e-1" }))
-
-hl.bind("SUPER+SHIFT+mouse_down", hl.dsp.window.move({ workspace = "e-1" }))
-hl.bind("SUPER+SHIFT+mouse_up", hl.dsp.window.move({ workspace = "e+1" }))
 
 ------- Media Controls -------
 

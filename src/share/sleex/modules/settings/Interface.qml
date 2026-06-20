@@ -283,12 +283,6 @@ ContentPage {
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
             }
-            ConfigSwitch {
-                text: "AI assistant"
-                checked: Config.options.dashboard.opt.enableAIAssistant
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.dashboard.opt.enableAIAssistant = checked;
-            }
         }
 
         StyledText {

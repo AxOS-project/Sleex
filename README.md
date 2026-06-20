@@ -5,7 +5,6 @@
 Sleex is the third desktop environment of AxOS. It is based on Hyprland with Quickshell.
 
 ## Features
-- AI chat integration with external providers (Gemini, OpenAI...)
 - Smooth animations
 - Tiling window management for seamless multitasking
 - Adaptative color scheme based on the wallpaper

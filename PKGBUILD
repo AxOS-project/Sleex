@@ -1,5 +1,5 @@
 pkgname="sleex"
-pkgver="1.32"
+pkgver="1.33"
 pkgrel="1"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
@@ -18,8 +18,6 @@ depends=(
   'hyprutils' 'hyprpicker' 'hyprlang' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
   # QT/KDE dependencies
   'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
-  # Microtex
-  "microtex-git"
   # Portal
   'xdg-desktop-portal'
   # Python deps

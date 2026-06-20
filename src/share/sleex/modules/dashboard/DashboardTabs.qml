@@ -15,7 +15,6 @@ Item {
             {"icon": "rocket_launch", "name": qsTr("Home")}
         ];
         if (Config.options.dashboard.opt.enableTodo) list.push({"name": qsTr("Todo"), "icon": "checklist_rtl"});
-        if (Config.options.dashboard.opt.enableAIAssistant) list.push({"name": qsTr("AI"), "icon": "api"});
         if (Config.options.dashboard.opt.enableCalendar) list.push({"name": qsTr("Calendar"), "icon": "calendar_today"});
         // {"name": qsTr("Quick settings"), "icon": "settings"},
         return list;
@@ -121,7 +120,6 @@ Item {
             // Predefine components for each page type
             Component { id: homeComp; HomeWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
             Component { id: todoComp; TodoWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
-            Component { id: aiComp; AiWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
             Component { id: calendarComp; CalendarWidgetGroup { Layout.alignment: Qt.AlignHCenter; Layout.fillHeight: true; Layout.fillWidth: true } }
 
             // Create one page per entry in root.tabButtonList so disabled features are not present as empty pages
@@ -136,7 +134,6 @@ Item {
                 sourceComponent: (
                     modelData.icon === "rocket_launch" ? homeComp :
                     modelData.icon === "checklist_rtl" ? todoComp :
-                    modelData.icon === "api" ? aiComp :
                     modelData.icon === "calendar_today" ? calendarComp :
                     null
                 )

@@ -277,22 +277,6 @@ ContentPage {
         }      
     }
 
-    ContentSection {
-        title: "AI"
-        icon: "smart_toy"
-
-        MaterialTextField {
-            id: systemPromptField
-            Layout.fillWidth: true
-            placeholderText: "System prompt"
-            text: Config.options.ai.systemPrompt
-            wrapMode: TextEdit.Wrap
-            onTextChanged: {
-                Config.options.ai.systemPrompt = text;
-            }
-        }
-    }
-
     Item {
         implicitHeight: 24
     }

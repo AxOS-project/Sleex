@@ -246,7 +246,7 @@ Scope {
                                         QuickToggleButton {
                                             toggled: false
                                             buttonIcon: "power_settings_new"
-                                            onClicked: Hyprland.dispatch("global quickshell:sessionOpen")
+                                            onClicked: Hyprland.dispatch("hl.dsp.global('quickshell:sessionOpen')")
                                             StyledToolTip { text: qsTr("Session") }
                                         }
                                     }
