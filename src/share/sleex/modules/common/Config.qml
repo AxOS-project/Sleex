@@ -183,12 +183,6 @@ Singleton {
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
             property bool enableLyrics: false
-            property bool showLyricsOnLockScreen: false
-            property bool resizableLockScreenWidget: false
-            property int lockscreenMediaWidth: 500
-            property int lockscreenMediaHeight: 240
-            property int lockscreenMediaX: -1
-            property int lockscreenMediaY: -1
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
@@ -230,6 +224,12 @@ Singleton {
 
         property JsonObject lockscreen: JsonObject {
             property bool enableScrim: true
+            property bool showLyricsOnLockScreen: false
+            property bool resizableLockScreenWidget: false
+            property int lockscreenMediaWidth: 500
+            property int lockscreenMediaHeight: 240
+            property int lockscreenMediaX: -1
+            property int lockscreenMediaY: -1
         }
 
         property JsonObject notifications: JsonObject {
