@@ -2,8 +2,6 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
 import qs.modules.common.functions
-import qs.modules.common.functions
-import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Effects
@@ -159,16 +157,16 @@ Item {
                         implicitWidth: size
                         implicitHeight: size
                         onClicked: {
-                           let player = Config.options.dashboard.mediaPlayer
+                            let player = Config.options.dashboard.mediaPlayer
 
-                           if (player.startsWith("http://") || player.startsWith("https://")) {
-                               // Open website
-                               Qt.openUrlExternally(player)
-                       } else {
-                           // Launch app
-                           Quickshell.execDetached([player])
-                       }
-                    }
+                            if (player.startsWith("http://") || player.startsWith("https://")) {
+                                // Open website
+                                Qt.openUrlExternally(player)
+                            } else {
+                                // Launch app
+                                Quickshell.execDetached([player])
+                            }
+                        }
                         buttonRadius: Appearance?.rounding.normal
                         colBackground: blendedColors.colSecondaryContainer
                         colBackgroundHover: blendedColors.colSecondaryContainerHover

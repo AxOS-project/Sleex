@@ -80,7 +80,7 @@ Singleton {
 
         onAdapterUpdated: {
             if (!root.loaded || root.isReloading) return;
-            
+
             let plainObj = ObjectUtils.toPlainObject(configOptionsObj);
             DatabaseManager.saveAll(JSON.stringify(plainObj));
         }
@@ -182,6 +182,7 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
+            property bool enableLyrics: false
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
@@ -223,6 +224,12 @@ Singleton {
 
         property JsonObject lockscreen: JsonObject {
             property bool enableScrim: true
+            property bool showLyricsOnLockScreen: false
+            property bool resizableLockScreenWidget: false
+            property int lockscreenMediaWidth: 500
+            property int lockscreenMediaHeight: 240
+            property int lockscreenMediaX: -1
+            property int lockscreenMediaY: -1
         }
 
         property JsonObject notifications: JsonObject {

@@ -47,6 +47,20 @@ ContentPage {
         }
     }
     
+    ContentSection {
+        title: "Media Player"
+        icon: "music_note"
+
+        ConfigSwitch {
+            id: lyricsSwitch
+            text: "Lyrics"
+            checked: Config.options.dashboard.enableLyrics
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.enableLyrics = checked
+            StyledToolTip { text: "Fetch and display synced lyrics (LRCLIB provider)." }
+        }
+    }
+    
     Item {
         implicitHeight: 24
     }

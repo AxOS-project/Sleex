@@ -204,7 +204,7 @@ ContentPage {
                     Config.options.bar.workspaces.showNumberDelay = value;
                 }
             }
-        }   
+        }
 
     }
 
@@ -421,7 +421,7 @@ ContentPage {
                     onClicked: checked = !checked
                     onCheckedChanged: {
                         Config.options.background.enableQuote = checked
-                        Quotes.refresh();    
+                        Quotes.refresh();
                     }
                 }
 
@@ -432,7 +432,7 @@ ContentPage {
                 checked: Config.options.background.showDesktopIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.background.showDesktopIcons = checked;
-             }
+            }
 
             ContentSubsection {
                 title: "Clock mode"
@@ -503,7 +503,7 @@ ContentPage {
                 {"value": "top-right", "displayName": "Top Right"},
             ]
         }
-        
+
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
             text: "Battery overlay warnings"
@@ -512,7 +512,7 @@ ContentPage {
             onCheckedChanged: {
                 Config.options.battery.overlayEnabled = checked;
             }
-        }  
+        }
     }
 
     ContentSection {
@@ -524,6 +524,24 @@ ContentPage {
             checked: Config.options.lockscreen.enableScrim
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
+        }
+
+        ConfigSwitch {
+            id: mediaShowOnLockScreenSwitch
+            text: "Player integration"
+            checked: Config.options.lockscreen.showLyricsOnLockScreen
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.lockscreen.showLyricsOnLockScreen = checked
+            StyledToolTip { text: "Show the media player widget on the lock screen." }
+        }
+
+        ConfigSwitch {
+            visible: mediaShowOnLockScreenSwitch.checked
+            text: "Resizable widget"
+            checked: Config.options.lockscreen.resizableLockScreenWidget ?? false
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.lockscreen.resizableLockScreenWidget = checked
+            StyledToolTip { text: "Allow resizing & repositioning of the media player widget." }
         }
     }
 
