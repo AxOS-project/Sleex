@@ -46,7 +46,7 @@ Singleton {
 
     Process {
         id: getClients
-        command: ["bash", "-c", "hyprctl clients -j | jq -c"]
+        command: ["bash", "-c", "hyprctl clients -j"]
         stdout: SplitParser {
             onRead: (data) => {
                 root.windowList = JSON.parse(data)
