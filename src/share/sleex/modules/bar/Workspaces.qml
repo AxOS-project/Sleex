@@ -33,6 +33,17 @@ Item {
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
+    property var biggestWindowPerWorkspace: {
+        const map = {};
+        for (const w of HyprlandData.windowList) {
+            const id = w.workspace.id;
+            const prev = map[id];
+            const prevArea = prev ? prev.size[0] * prev.size[1] : 0;
+            const area = w.size[0] * w.size[1];
+            if (area > prevArea) map[id] = w;
+        }
+        return map;
+    }
     
     // Function to update workspaceOccupied
     function updateWorkspaceOccupied() {
@@ -174,14 +185,7 @@ Item {
                         id: workspaceButtonBackground
                         implicitWidth: workspaceButtonWidth
                         implicitHeight: workspaceButtonWidth
-                        property var biggestWindow: {
-                            const windowsInThisWorkspace = HyprlandData.windowList.filter(w => w.workspace.id == button.workspaceValue)
-                            return windowsInThisWorkspace.reduce((maxWin, win) => {
-                                const maxArea = (maxWin?.size?.[0] ?? 0) * (maxWin?.size?.[1] ?? 0)
-                                const winArea = (win?.size?.[0] ?? 0) * (win?.size?.[1] ?? 0)
-                                return winArea > maxArea ? win : maxWin
-                            }, null)
-                        }
+                        property var biggestWindow: root.biggestWindowPerWorkspace[button.workspaceValue] ?? null
                         property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
 
                         property string materialIconName: {
