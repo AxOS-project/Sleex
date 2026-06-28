@@ -122,61 +122,31 @@ void ResourceMonitor::updateCpu() {
     m_prevIdle = idleAll;
 }
 
-void ResourceMonitor::updateTemperature() {
-    // Look for first sensible thermal zone or coretemp file in /sys/class/thermal
-    // We attempt a few well-known places.
-    const QStringList candidates = {
-        "/sys/class/thermal/thermal_zone0/temp"
-    };
-
-    int tempC = -1;
-    // try thermal_zone* enumerations (up to 16)
+void ResourceMonitor::discoverTemperaturePath() {
     for (int i = 0; i < 16; ++i) {
-        QString path = QString("/sys/class/thermal/thermal_zone%1/temp").arg(i);
-        QFile f(path);
-        if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QByteArray content = f.readAll().trimmed();
-            bool ok = false;
-            long long val = content.toLongLong(&ok);
-            if (ok) {
-                // kernel usually reports millidegree Celsius
-                if (val > 1000) tempC = static_cast<int>(val / 1000);
-                else tempC = static_cast<int>(val);
-                break;
-            }
-        }
+        QString p = QString("/sys/class/thermal/thermal_zone%1/temp").arg(i);
+        QFile f(p);
+        if (f.open(QIODevice::ReadOnly)) { m_temperaturePath = p; return; }
     }
 
-    // fallback: try coretemp entries under /sys/devices/platform/coretemp.*
-    if (tempC < 0) {
-        QDir d("/sys/class/hwmon");
-        const QFileInfoList list = d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const QFileInfo &fi : list) {
-            QString labelFile = fi.filePath() + "/name";
-            QFile label(labelFile);
-            QString labelName;
-            if (label.open(QIODevice::ReadOnly | QIODevice::Text))
-                labelName = QString::fromUtf8(label.readAll()).trimmed();
-
-            // try temp1_input
-            QString tryPath = fi.filePath() + "/temp1_input";
-            QFile tf(tryPath);
-            if (tf.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                QByteArray content = tf.readAll().trimmed();
-                bool ok = false;
-                long long v = content.toLongLong(&ok);
-                if (ok) {
-                    tempC = (v > 1000) ? static_cast<int>(v / 1000) : static_cast<int>(v);
-                    break;
-                }
-            }
-        }
+    // fallback
+    QDir d("/sys/class/hwmon");
+    for (const QFileInfo &fi : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        QString p = fi.filePath() + "/temp1_input";
+        if (QFileInfo::exists(p)) { m_temperaturePath = p; return; }
     }
+}
 
-    if (tempC >= 0) {
-        m_cpuTemperature = tempC;
-        emit cpuChanged();
-    }
+
+void ResourceMonitor::updateTemperature() {
+    if (m_temperaturePath.isEmpty()) return;
+    QFile f(m_temperaturePath);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+    bool ok = false;
+    long long val = f.readAll().trimmed().toLongLong(&ok);
+    if (!ok) return;
+    m_cpuTemperature = (val > 1000) ? int(val / 1000) : int(val);
+    emit cpuChanged();
 }
 
 } // namespace sleex::services
