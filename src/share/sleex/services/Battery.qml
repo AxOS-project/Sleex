@@ -32,7 +32,6 @@ Singleton {
 
     property real energyRate:  UPower.displayDevice.changeRate
     property real timeToFull:  UPower.displayDevice.timeToFull
-    property real temperature: 0
 
     readonly property int remainingTime: {
         const seconds = UPower.displayDevice.timeToFull
@@ -93,28 +92,5 @@ Singleton {
 
     function sendNotification(title, body) {
         Quickshell.execDetached(["notify-send", title, body, "-u", "critical", "-a", "System"])
-    }
-
-    Process {
-        id: tempProcess
-        command: ["bash", "-c", "cat /sys/class/thermal/thermal_zone0/temp"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                Battery.temperature = text && text.trim() !== ""
-                    ? parseInt(text.trim()) / 1000
-                    : 0
-            }
-        }
-    }
-
-    Timer {
-        interval: 3000
-        repeat:   true
-        running:  true
-        onTriggered: if (!tempProcess.running) tempProcess.running = true
-    }
-
-    Component.onCompleted: {
-        if (!tempProcess.running) tempProcess.running = true
     }
 }
