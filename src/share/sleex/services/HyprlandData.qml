@@ -36,13 +36,11 @@ Singleton {
         target: Hyprland
 
         function onRawEvent(event) {
-            // Filter out redundant old v1 events for the same thing
-            if(event.name in [
-                "activewindow", "focusedmon", "monitoradded", 
-                "createworkspace", "destroyworkspace", "moveworkspace", 
-                "activespecial", "movewindow", "windowtitle"
-            ]) return ;
-            updateWindowList()
+            const skipped = ["activewindow", "focusedmon", "monitoradded",
+                "createworkspace", "destroyworkspace", "moveworkspace",
+                "activespecial", "movewindow", "windowtitle"];
+            if (skipped.includes(event.name)) return;
+            updateWindowList();
         }
     }
 
