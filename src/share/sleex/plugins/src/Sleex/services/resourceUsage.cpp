@@ -45,20 +45,16 @@ void ResourceMonitor::updateMemory() {
         unsigned long long buffers = info.bufferram * mem_unit;
         unsigned long long shared  = info.sharedram * mem_unit;
 
-        // Approximate available memory
-        unsigned long long available = free + buffers + shared;
-        if (available > total) available = total;
+        unsigned long long available = qMin(free + buffers + shared, total);
 
-        // Used memory (this is what you want for m_memoryTotal)
-        unsigned long long used = total - available;
-
-        m_memoryTotal = static_cast<double>(used) / 1024.0; // KB, used memory
-        m_memoryFree  = static_cast<double>(available) / 1024.0; // KB, available memory
+        m_memoryTotal = static_cast<double>(total) / 1024.0;
+        m_memoryFree = static_cast<double>(available) / 1024.0;
 
         m_swapTotal = static_cast<double>(info.totalswap * mem_unit) / 1024.0;
-        m_swapFree  = static_cast<double>(info.freeswap * mem_unit) / 1024.0;
+        m_swapFree = static_cast<double>(info.freeswap  * mem_unit) / 1024.0;
 
         emit memoryChanged();
+        return;
     }
 
 
