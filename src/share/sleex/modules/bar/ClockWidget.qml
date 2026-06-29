@@ -33,20 +33,6 @@ Item {
         return todoText
     }
 
-    property bool showSeconds: Config.options.time.showSeconds
-
-    // Updates every second when showSeconds is enabled
-    Timer {
-        id: secondsTimer
-        interval: 1000
-        running: root.showSeconds
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: root.currentTimeWithSeconds = Qt.formatTime(new Date(),
-            Config.options.time.format === "h:mm AP" ? "h:mm:ss AP" : "hh:mm:ss")
-    }
-    property string currentTimeWithSeconds: ""
-
     // Popup Data
     property string formattedDate: DateTime.date
     property string formattedTime: DateTime.time
@@ -164,7 +150,7 @@ Item {
         StyledText {
             font.pixelSize: Appearance.font.pixelSize.large
             color: Appearance.colors.colOnLayer1
-            text: root.showSeconds ? root.currentTimeWithSeconds : DateTime.time
+            text: DateTime.time
         }
 
         StyledText {
