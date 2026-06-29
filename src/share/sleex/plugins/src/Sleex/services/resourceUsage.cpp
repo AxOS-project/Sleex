@@ -18,6 +18,8 @@ ResourceMonitor::ResourceMonitor(QObject* parent)
     // initial read
     updateMemory();
     updateCpu();
+    // discover sensor path before attempting to read temperature
+    discoverTemperaturePath();
     updateTemperature();
 }
 
@@ -145,6 +147,7 @@ void ResourceMonitor::updateTemperature() {
     bool ok = false;
     long long val = f.readAll().trimmed().toLongLong(&ok);
     if (!ok) return;
+    if (val == 0) return;
     m_cpuTemperature = (val > 1000) ? int(val / 1000) : int(val);
     emit cpuChanged();
 }
