@@ -49,15 +49,6 @@ ContentPage {
                 }
             }
 
-            ConfigSwitch {
-                text: "Show seconds"
-                checked: Config.options.time.showSeconds
-                onClicked: checked = !checked;
-                onCheckedChanged: {
-                    Config.options.time.showSeconds = checked;
-                }
-            }
-
             ColumnLayout {
                 // Format
                 ContentSubsectionLabel {
