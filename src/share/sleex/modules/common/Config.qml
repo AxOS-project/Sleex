@@ -271,6 +271,7 @@ Singleton {
             property string dateFormat: "dddd, dd/MM"
             property string longDateFormat: "dd/MM/yyyy"
             property int firstDayOfWeek: 0 // 0: Monday, 1: Tuesday, 2: Wednesday, 3: Thursday, 4: Friday, 5: Saturday, 6: Sunday
+            property bool showSeconds: false
         }
 
         property JsonObject hacks: JsonObject {
