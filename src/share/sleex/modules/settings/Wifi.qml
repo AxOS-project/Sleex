@@ -20,7 +20,7 @@ ContentPage {
     property string errorSsid: ""
     property bool showConnectionError: false
 
-    // UI refresh trigger - bump to force ScriptModel/computed re-evaluation
+    // UI refresh trigger and bump to force ScriptModel/computed re-evaluation
     property int refreshTrigger: 0
 
     // View toggles
@@ -43,20 +43,68 @@ ContentPage {
 
     // nmcli reports "802-3-ethernet" for wired and "802-11-wireless" for WiFi.
     // activeNetwork above only ever reflects WiFi, so on its own it can't tell
-    // us a wired connection is up - hasActiveConnection covers both.
+    // us a wired connection is up, but hasActiveConnection covers both.
     readonly property bool hasWiredConnection: root.activeConnectionType.includes("ethernet")
     readonly property bool hasActiveConnection: root.activeNetwork !== null || root.hasWiredConnection
 
-    // Speed test state
+    // Speed test state reflects whichever test is currently in-flight (or was
+    // most recently run). `speedTestSsid` says which network that is.
     property bool speedTestRunning: false
     property string speedTestStage: "idle"
     property real speedTestPingMs: -1
     property real speedTestDownloadMbps: -1
     property real speedTestUploadMbps: -1
     property string speedTestError: ""
+    property string speedTestSsid: ""
+
+    // Completed results, kept per-SSID and keyed by SSID -> { pingMs, downloadMbps, uploadMbps }.
+    property var speedTestResults: ({})
+
+    function cacheSpeedTestResult(ssid) {
+        if (!ssid) return;
+        const next = Object.assign({}, root.speedTestResults);
+        next[ssid] = {
+            pingMs: root.speedTestPingMs,
+            downloadMbps: root.speedTestDownloadMbps,
+            uploadMbps: root.speedTestUploadMbps
+        };
+        root.speedTestResults = next; // reassign (not mutate) so bindings notice
+        try {
+            Config.options.networking.speedTestResultsJson = JSON.stringify(next);
+        } catch (e) {
+            // Non-fatal - worst case the result just won't survive a restart.
+        }
+    }
+
+    // Resolves what should be shown for a given network right now: live
+    // in-progress numbers if that's the network currently being tested,
+    // otherwise whatever was cached for it (or -1 if it's never been tested).
+    function speedTestPing(ssid) {
+        if (root.speedTestSsid === ssid) return root.speedTestPingMs;
+        return root.speedTestResults[ssid]?.pingMs ?? -1;
+    }
+    function speedTestDownload(ssid) {
+        if (root.speedTestSsid === ssid) return root.speedTestDownloadMbps;
+        return root.speedTestResults[ssid]?.downloadMbps ?? -1;
+    }
+    function speedTestUpload(ssid) {
+        if (root.speedTestSsid === ssid) return root.speedTestUploadMbps;
+        return root.speedTestResults[ssid]?.uploadMbps ?? -1;
+    }
+    // True while ssid is the one actually being tested right now (drives the
+    // "…" placeholders and the animated icon for that specific row only).
+    function speedTestIsLive(ssid) {
+        return root.speedTestRunning && root.speedTestSsid === ssid;
+    }
+    // True once ssid has a finished (done or error) test to show "Test Again" for.
+    function speedTestIsDone(ssid) {
+        if (root.speedTestSsid === ssid) return root.speedTestStage === "done" || root.speedTestStage === "error";
+        return !!root.speedTestResults[ssid];
+    }
 
     function startSpeedTest() {
         if (root.speedTestRunning) return;
+        root.speedTestSsid         = root.activeNetwork ? root.activeNetwork.ssid : "";
         root.speedTestRunning      = true;
         root.speedTestStage        = "ping";
         root.speedTestPingMs       = -1;
@@ -102,14 +150,14 @@ ContentPage {
         qrEncodeProcess.running = true;
     }
 
-    // Local/public network info (health dashboard)
+    // Local/public network info (connection details)
     property string localIp: ""
     property string gatewayIp: ""
     property string dnsServers: ""
     property string publicIp: ""
     property string netInfoError: ""
 
-    // Improved refresh – restarts any running process to guarantee fresh data
+    // Improved refresh by restarting any running process to guarantee fresh data
     function fetchNetworkInfo() {
         if (!root.hasActiveConnection) return;
         root.netInfoError = "";
@@ -185,7 +233,7 @@ ContentPage {
         return root.dnsProviderMap[root.customDnsProviderId] || root.dnsProviders[0];
     }
 
-    // Apply DNS settings – guarded against double‑apply, with UI instant update
+    // Apply DNS settings is guarded against double‑apply, with UI instant update
     function applyDnsSettings() {
         if (!root.activeNetwork) return;
         if (root.dnsApplying) return;   // already applying
@@ -235,7 +283,11 @@ ContentPage {
         switch (index) {
             case 0: return root.localIp;
             case 1: return root.gatewayIp;
-            case 2: return root.dnsServers;
+            // Comma-separated with no spaces (e.g. "1.1.1.1,2606:4700:4700::1111")
+            // gives WordWrap nothing to break on, so a long DNS list just overflows
+            // its card. Insert a space after each comma so it wraps one entry per
+            // line instead.
+            case 2: return (root.dnsServers || "").replace(/,\s*/g, ", ");
             case 3: return root.publicIp;
             case 4: return root.activeNetwork ? root.formatFrequency(root.activeNetwork.frequency ?? "") : "—";
             case 5: return root.activeNetwork?.security || "—";
@@ -265,10 +317,15 @@ ContentPage {
         return arr;
     }
 
-    function parseSavedSpeedString(str) {
-        if (!str) return -1;
-        const match = String(str).match(/[\d.]+/);
-        return match ? parseFloat(match[0]) : -1;
+    function loadSavedSpeedTestResults() {
+        const raw = Config.options.networking.speedTestResultsJson;
+        if (!raw) return {};
+        try {
+            const parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === "object") ? parsed : {};
+        } catch (e) {
+            return {};
+        }
     }
 
     Component.onCompleted: {
@@ -284,17 +341,10 @@ ContentPage {
         root.showConnectionDetails = Config.options.networking.connectionDetails !== undefined
                                       ? Config.options.networking.connectionDetails : true;
 
-        const savedLat = Config.options.networking.latency;
-        const savedDown = Config.options.networking.downloadSpeed;
-        const savedUp = Config.options.networking.uploadSpeed;
-
-        root.speedTestPingMs       = parseSavedSpeedString(savedLat);
-        root.speedTestDownloadMbps = parseSavedSpeedString(savedDown);
-        root.speedTestUploadMbps   = parseSavedSpeedString(savedUp);
-
-        if (root.speedTestPingMs >= 0 || root.speedTestDownloadMbps >= 0 || root.speedTestUploadMbps >= 0) {
-            root.speedTestStage = "done";
-        }
+        // Restore every network's last speed test result (not just one "best
+        // guess" network) so switching back to a previously-tested network -
+        // even across a shell restart - still shows its numbers.
+        root.speedTestResults = root.loadSavedSpeedTestResults();
     }
 
     // Stop any in-flight background work if the page is torn down mid-request -
@@ -407,7 +457,6 @@ ContentPage {
                 const v = parseFloat(text);
                 if (!isNaN(v)) {
                     root.speedTestPingMs = v * 1000;
-                    Config.options.networking.latency = root.speedTestPingMs.toFixed(0) + " ms";
                 }
             }
         }
@@ -417,6 +466,7 @@ ContentPage {
                 root.speedTestError   = "Couldn't reach the network (ping failed)";
                 root.speedTestStage   = "error";
                 root.speedTestRunning = false;
+                root.cacheSpeedTestResult(root.speedTestSsid);
                 return;
             }
             root.speedTestStage = "download";
@@ -435,7 +485,6 @@ ContentPage {
                 const v = parseFloat(text);
                 if (!isNaN(v)) {
                     root.speedTestDownloadMbps = (v * 8) / 1000000;
-                    Config.options.networking.downloadSpeed = root.speedTestDownloadMbps.toFixed(1) + " Mbps";
                 }
             }
         }
@@ -445,6 +494,7 @@ ContentPage {
                 root.speedTestError   = "Download test failed";
                 root.speedTestStage   = "error";
                 root.speedTestRunning = false;
+                root.cacheSpeedTestResult(root.speedTestSsid);
                 return;
             }
             root.speedTestStage = "upload";
@@ -463,7 +513,6 @@ ContentPage {
                 const v = parseFloat(text);
                 if (!isNaN(v)) {
                     root.speedTestUploadMbps = (v * 8) / 1000000;
-                    Config.options.networking.uploadSpeed = root.speedTestUploadMbps.toFixed(1) + " Mbps";
                 }
             }
         }
@@ -472,6 +521,7 @@ ContentPage {
             root.speedTestStage   = (code !== 0) ? "error" : "done";
             root.speedTestRunning = false;
             if (code !== 0) root.speedTestError = "Upload test failed";
+            root.cacheSpeedTestResult(root.speedTestSsid);
         }
     }
 
@@ -888,10 +938,14 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
+                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
+                        readonly property real pingValue: root.speedTestPing(targetSsid)
+                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
+                        readonly property bool hasResult: pingValue >= 0
                         readonly property color latencyColor: {
-                            if (root.speedTestPingMs < 0) return Appearance.m3colors.m3outline;
-                            return root.speedTestPingMs < 50 ? Appearance.m3colors.m3primary
-                                 : root.speedTestPingMs < 100 ? Appearance.m3colors.m3tertiary
+                            if (!hasResult) return Appearance.m3colors.m3outline;
+                            return pingValue < 50 ? Appearance.m3colors.m3primary
+                                 : pingValue < 100 ? Appearance.m3colors.m3tertiary
                                  : Appearance.m3colors.m3error;
                         }
 
@@ -912,12 +966,12 @@ ContentPage {
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: root.speedTestPingMs >= 0
-                                    ? root.speedTestPingMs.toFixed(0) + " ms"
-                                    : (root.speedTestRunning && root.speedTestStage === "ping" ? "…" : "—")
+                                text: parent.parent.hasResult
+                                    ? parent.parent.pingValue.toFixed(0) + " ms"
+                                    : (parent.parent.isLive && root.speedTestStage === "ping" ? "…" : "—")
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: root.speedTestPingMs >= 0 ? parent.parent.latencyColor : Appearance.colors.colSubtext
+                                color: parent.parent.hasResult ? parent.parent.latencyColor : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -936,6 +990,10 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
+                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
+                        readonly property real downloadValue: root.speedTestDownload(targetSsid)
+                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
+
                         ColumnLayout {
                             anchors.centerIn: parent
                             spacing: 6
@@ -953,12 +1011,12 @@ ContentPage {
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: root.speedTestDownloadMbps >= 0
-                                    ? root.speedTestDownloadMbps.toFixed(1) + " Mbps"
-                                    : (root.speedTestRunning && (root.speedTestStage === "ping" || root.speedTestStage === "download") ? "…" : "—")
+                                text: parent.parent.downloadValue >= 0
+                                    ? parent.parent.downloadValue.toFixed(1) + " Mbps"
+                                    : (parent.parent.isLive && (root.speedTestStage === "ping" || root.speedTestStage === "download") ? "…" : "—")
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: root.speedTestDownloadMbps >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
+                                color: parent.parent.downloadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -970,6 +1028,10 @@ ContentPage {
                         color: Appearance.colors.colLayer2
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
+
+                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
+                        readonly property real uploadValue: root.speedTestUpload(targetSsid)
+                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -988,12 +1050,12 @@ ContentPage {
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: root.speedTestUploadMbps >= 0
-                                    ? root.speedTestUploadMbps.toFixed(1) + " Mbps"
-                                    : (root.speedTestRunning ? "…" : "—")
+                                text: parent.parent.uploadValue >= 0
+                                    ? parent.parent.uploadValue.toFixed(1) + " Mbps"
+                                    : (parent.parent.isLive ? "…" : "—")
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: root.speedTestUploadMbps >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
+                                color: parent.parent.uploadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -1016,7 +1078,10 @@ ContentPage {
                             required property int index
 
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            Layout.preferredWidth: 1
                             implicitHeight: infoContent.implicitHeight + 24
+                            clip: true
                             radius: Appearance.rounding.small
                             color: Appearance.colors.colLayer2
                             border.width: 1
@@ -1042,13 +1107,20 @@ ContentPage {
                                 }
                                 StyledText {
                                     Layout.alignment: Qt.AlignHCenter
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    // Bind width explicitly rather than trusting Layout.fillWidth alone -
+                                    // Text's implicit size is its natural, unwrapped width, so without a
+                                    // concrete width forced here the column can end up sized to fit the
+                                    // whole DNS string on one line and it overflows the card instead of
+                                    // ever actually wrapping.
+                                    width: infoContent.width
                                     text: root.detailValue(modelData.valueIdx)
                                     font.pixelSize: Appearance.font.pixelSize.large
                                     font.weight: 600
                                     color: Appearance.colors.colOnLayer1
-                                    wrapMode: Text.WordWrap
+                                    wrapMode: Text.Wrap
                                     horizontalAlignment: Text.AlignHCenter
-                                    Layout.fillWidth: true
                                 }
                             }
                         }
@@ -1701,42 +1773,57 @@ ContentPage {
                                         }
 
                                         RowLayout {
+                                            id: latencyRow
+                                            readonly property real pingValue: root.speedTestPing(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: root.speedTestPingMs >= 0 || (root.speedTestRunning && root.speedTestStage === "ping")
+                                            visible: pingValue >= 0 || (isLive && root.speedTestStage === "ping")
                                             MaterialSymbol { text: "timer"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
                                                 StyledText { text: "Latency"; font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colSubtext }
                                                 StyledText {
-                                                    text: root.speedTestPingMs >= 0 ? root.speedTestPingMs.toFixed(0) + " ms" : (root.speedTestRunning && root.speedTestStage === "ping" ? "…" : "—")
+                                                    text: latencyRow.pingValue >= 0
+                                                        ? latencyRow.pingValue.toFixed(0) + " ms"
+                                                        : (latencyRow.isLive && root.speedTestStage === "ping" ? "…" : "—")
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
                                         }
 
                                         RowLayout {
+                                            id: downloadRow
+                                            readonly property real downloadValue: root.speedTestDownload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: root.speedTestDownloadMbps >= 0 || (root.speedTestRunning && (root.speedTestStage === "ping" || root.speedTestStage === "download"))
+                                            visible: downloadValue >= 0 || (isLive && (root.speedTestStage === "ping" || root.speedTestStage === "download"))
                                             MaterialSymbol { text: "arrow_downward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
                                                 StyledText { text: "Download"; font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colSubtext }
                                                 StyledText {
-                                                    text: root.speedTestDownloadMbps >= 0 ? root.speedTestDownloadMbps.toFixed(1) + " Mbps" : (root.speedTestRunning ? "…" : "—")
+                                                    text: downloadRow.downloadValue >= 0
+                                                        ? downloadRow.downloadValue.toFixed(1) + " Mbps"
+                                                        : (downloadRow.isLive ? "…" : "—")
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
                                         }
 
                                         RowLayout {
+                                            id: uploadRow
+                                            readonly property real uploadValue: root.speedTestUpload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: root.speedTestUploadMbps >= 0 || (root.speedTestRunning && root.speedTestStage === "upload")
+                                            visible: uploadValue >= 0 || (isLive && root.speedTestStage === "upload")
                                             MaterialSymbol { text: "arrow_upward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
                                                 StyledText { text: "Upload"; font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colSubtext }
                                                 StyledText {
-                                                    text: root.speedTestUploadMbps >= 0 ? root.speedTestUploadMbps.toFixed(1) + " Mbps" : (root.speedTestRunning ? "…" : "—")
+                                                    text: uploadRow.uploadValue >= 0
+                                                        ? uploadRow.uploadValue.toFixed(1) + " Mbps"
+                                                        : (uploadRow.isLive ? "…" : "—")
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
@@ -1881,7 +1968,7 @@ ContentPage {
                                                     materialIcon: "speed"
                                                     mainText: root.speedTestRunning
                                                         ? "Testing…"
-                                                        : (root.speedTestStage === "done" || root.speedTestStage === "error")
+                                                        : root.speedTestIsDone(networkItem.modelData.ssid)
                                                             ? "Test Again"
                                                             : "Speed Test"
                                                     enabled: !root.speedTestRunning
