@@ -219,9 +219,11 @@ Singleton {
             property bool connectionDetails: true
             property bool sensitiveNetworkInfo: false
             property bool dnsSwitch: false
-            property string latency: ""
-            property string downloadSpeed: ""
-            property string uploadSpeed: ""
+            // JSON-serialised map of SSID -> { pingMs, downloadMbps, uploadMbps }.
+            // Keeping it per-SSID (rather than the old single latency/downloadSpeed/
+            // uploadSpeed strings) means each network's last speed test result
+            // survives switching networks, reconnecting, and shell restarts.
+            property string speedTestResultsJson: "{}"
             property string dnsProvider: ""
         }
 
