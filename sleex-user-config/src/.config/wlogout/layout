@@ -6,7 +6,7 @@
 }
 {
     "label" : "hibernate",
-    "action" : "systemctl hibernate || loginctl hibernate",
+    "action" : "loginctl hibernate",
     "text" : "save",
     "keybind" : "h"
 }
@@ -18,19 +18,19 @@
 }
 {
     "label" : "shutdown",
-    "action" : "systemctl poweroff || loginctl poweroff",
+    "action" : "loginctl poweroff",
     "text" : "power_settings_new",
     "keybind" : "s"
 }
 {
     "label" : "suspend",
-    "action" : "systemctl suspend || loginctl suspend",
+    "action" : "loginctl suspend",
     "text" : "bedtime",
     "keybind" : "u"
 }
 {
     "label" : "reboot",
-    "action" : "systemctl reboot || loginctl reboot",
+    "action" : "loginctl reboot",
     "text" : "restart_alt",
     "keybind" : "r"
 }

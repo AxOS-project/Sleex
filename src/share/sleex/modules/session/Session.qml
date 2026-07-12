@@ -101,7 +101,7 @@ Scope {
                         id: sessionSleep
                         buttonIcon: "dark_mode"
                         buttonText: qsTr("Sleep")
-                        onClicked:  { Quickshell.execDetached(["systemctl", "suspend"]); sessionRoot.hide() }
+                        onClicked:  { Quickshell.execDetached(["loginctl", "suspend"]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionLock
                         KeyNavigation.right: sessionLogout
@@ -131,7 +131,7 @@ Scope {
                         id: sessionHibernate
                         buttonIcon: "downloading"
                         buttonText: qsTr("Hibernate")
-                        onClicked: Quickshell.execDetached(["systemctl", "hibernate"]);
+                        onClicked: Quickshell.execDetached(["loginctl", "hibernate"]);
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.up: sessionLock
                         KeyNavigation.right: sessionShutdown
@@ -140,7 +140,7 @@ Scope {
                         id: sessionShutdown
                         buttonIcon: "power_settings_new"
                         buttonText: qsTr("Shutdown")
-                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                        onClicked: Quickshell.execDetached(["loginctl", "poweroff"])
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionHibernate
                         KeyNavigation.right: sessionReboot
@@ -160,7 +160,7 @@ Scope {
                         id: sessionFirmwareReboot
                         buttonIcon: "settings_applications"
                         buttonText: qsTr("Reboot to firmware settings")
-                        onClicked: Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup"]);
+                        onClicked: Quickshell.execDetached(["loginctl", "reboot", "--firmware-setup"]);
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.up: sessionTaskManager
                         KeyNavigation.left: sessionReboot
