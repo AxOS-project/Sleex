@@ -4,7 +4,6 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
-import Quickshell.Bluetooth
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -29,23 +28,29 @@ ContentPage {
     property bool networkSearchVisible: false
     property string searchText: ""
 
-    // Currently active (connected) network, kept in sync with refreshTrigger
-    readonly property var activeNetwork: {
-        let _t = root.refreshTrigger;
-        const nets = Network.networks || [];
-        for (let i = 0; i < nets.length; i++) {
-            if (nets[i].active) return nets[i];
-        }
-        return null;
-    }
+    // Currently active (connected) network, sourced directly from the C++
+    // Network singleton - Network.active already tracks exactly this (kept in
+    // sync with NetworkManager's active access point via activeChanged), so
+    // there's no need to re-derive it by scanning root.networks here.
+    readonly property var activeNetwork: Network.active || null
 
     property string activeConnectionType: ""
+
+    // Resolved via a Process at startup since Quickshell.env() isn't available
+    // on this quickshell build (0.2.0.r131). Empty until ensureCacheDirProcess
+    // finishes, at which point speedTestCacheFile.path picks it up.
+    property string homeDir: ""
 
     // nmcli reports "802-3-ethernet" for wired and "802-11-wireless" for WiFi.
     // activeNetwork above only ever reflects WiFi, so on its own it can't tell
     // us a wired connection is up, but hasActiveConnection covers both.
     readonly property bool hasWiredConnection: root.activeConnectionType.includes("ethernet")
     readonly property bool hasActiveConnection: root.activeNetwork !== null || root.hasWiredConnection
+
+    // Hoisted once instead of repeating "Network.x || false" at 6+ and 3+
+    // call sites respectively throughout this file.
+    readonly property bool wifiEnabled: Network.wifiEnabled || false
+    readonly property bool wifiScanning: Network.scanning || false
 
     // Speed test state reflects whichever test is currently in-flight (or was
     // most recently run). `speedTestSsid` says which network that is.
@@ -69,8 +74,9 @@ ContentPage {
             uploadMbps: root.speedTestUploadMbps
         };
         root.speedTestResults = next; // reassign (not mutate) so bindings notice
+        if (!root.homeDir) return; // path not resolved yet - can't persist safely
         try {
-            Config.options.networking.speedTestResultsJson = JSON.stringify(next);
+            speedTestCacheFile.setText(JSON.stringify(next, null, 2));
         } catch (e) {
             // Non-fatal - worst case the result just won't survive a restart.
         }
@@ -157,25 +163,25 @@ ContentPage {
     property string publicIp: ""
     property string netInfoError: ""
 
+    // Stops proc if it's currently running and restarts it on the next event
+    // loop turn (Process needs a full stop/start cycle to actually re-run, not
+    // just re-setting running=true while already true); otherwise starts it
+    // immediately. Shared by fetchNetworkInfo()'s two processes below.
+    function _restartProcess(proc) {
+        if (proc.running) {
+            proc.running = false;
+            Qt.callLater(() => { proc.running = true; });
+        } else {
+            proc.running = true;
+        }
+    }
+
     // Improved refresh by restarting any running process to guarantee fresh data
     function fetchNetworkInfo() {
         if (!root.hasActiveConnection) return;
         root.netInfoError = "";
-
-        // Kill any in-flight process and start fresh
-        if (localNetInfoProcess.running) {
-            localNetInfoProcess.running = false;
-            Qt.callLater(() => { localNetInfoProcess.running = true; });
-        } else {
-            localNetInfoProcess.running = true;
-        }
-
-        if (publicIpProcess.running) {
-            publicIpProcess.running = false;
-            Qt.callLater(() => { publicIpProcess.running = true; });
-        } else {
-            publicIpProcess.running = true;
-        }
+        root._restartProcess(localNetInfoProcess);
+        root._restartProcess(publicIpProcess);
     }
 
     // Custom DNS provider state
@@ -317,17 +323,6 @@ ContentPage {
         return arr;
     }
 
-    function loadSavedSpeedTestResults() {
-        const raw = Config.options.networking.speedTestResultsJson;
-        if (!raw) return {};
-        try {
-            const parsed = JSON.parse(raw);
-            return (parsed && typeof parsed === "object") ? parsed : {};
-        } catch (e) {
-            return {};
-        }
-    }
-
     Component.onCompleted: {
         // Always check - this is how we discover a wired connection exists at
         // all (activeNetwork only ever reflects WiFi). fetchNetworkInfo() is
@@ -341,10 +336,10 @@ ContentPage {
         root.showConnectionDetails = Config.options.networking.connectionDetails !== undefined
                                       ? Config.options.networking.connectionDetails : true;
 
-        // Restore every network's last speed test result (not just one "best
-        // guess" network) so switching back to a previously-tested network -
-        // even across a shell restart - still shows its numbers.
-        root.speedTestResults = root.loadSavedSpeedTestResults();
+        // Ensure ~/.cache/sleex/network exists, then load whatever speed
+        // test results are already on disk (FileView.onLoaded/onLoadFailed below
+        // populates root.speedTestResults once that's known).
+        ensureCacheDirProcess.running = true;
     }
 
     // Stop any in-flight background work if the page is torn down mid-request -
@@ -363,6 +358,7 @@ ContentPage {
         dnsModifyProcess.running          = false;
         qrPasswordProcess.running         = false;
         qrEncodeProcess.running           = false;
+        ensureCacheDirProcess.running     = false;
     }
 
     onRefreshTriggerChanged: {
@@ -430,6 +426,63 @@ ContentPage {
         id: dnsSettleRetryTimer
         interval: 500
         onTriggered: root.fetchNetworkInfo()
+    }
+
+    // Ensures ~/.cache/sleex/network exists on disk before we ever try
+    // to read or write network.json through the FileView below.
+    // FileView won't create missing parent directories itself, so this
+    // ordering matters - without it, the very first run (no ~/.cache/sleex
+    // at all yet) would fail to persist anything. Caches belong under
+    // XDG_CACHE_HOME (~/.cache), not the dotfile-style ~/.sleex.
+    Process {
+        id: ensureCacheDirProcess
+        running: false
+        // mkdir first, then print $HOME last so stdout is exactly the home
+        // dir (nothing else) for the collector below to pick up.
+        command: ["bash", "-c", "mkdir -p \"$HOME/.cache/sleex/network\" && printf '%s' \"$HOME\""]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.homeDir = (text || "").trim();
+            }
+        }
+
+        onExited: (code) => {
+            if (code !== 0 || !root.homeDir) {
+                // Couldn't resolve $HOME or create the dir - leave speedTestResults
+                // empty rather than guessing a path; results just won't persist.
+                return;
+            }
+            // path binding above already updated once homeDir changed; explicitly
+            // (re)load now that the file is guaranteed to be readable/creatable.
+            speedTestCacheFile.reload();
+        }
+    }
+
+    // Direct JSON-file persistence for per-SSID speed test results, replacing
+    // the old Config.options.networking.speedTestResultsJson approach (speed
+    // test results aren't really "config" and don't belong in the config file).
+    FileView {
+        id: speedTestCacheFile
+        path: root.homeDir ? (root.homeDir + "/.cache/sleex/network/network.json") : ""
+        printErrors: false
+        watchChanges: false
+
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(text());
+                root.speedTestResults = (parsed && typeof parsed === "object") ? parsed : {};
+            } catch (e) {
+                root.speedTestResults = {};
+            }
+        }
+
+        onLoadFailed: (error) => {
+            // File doesn't exist yet (first run) or another read error - start
+            // empty. The first cacheSpeedTestResult() call will create it via
+            // setText().
+            root.speedTestResults = {};
+        }
     }
 
     Process {
@@ -694,10 +747,10 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: Network.wifiEnabled || false
+                checked: root.wifiEnabled
                 onClicked: Network.toggleWifi()
                 StyledToolTip {
-                    text: Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
+                    text: root.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
                 }
             }
 
@@ -940,14 +993,7 @@ ContentPage {
 
                         readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
                         readonly property real pingValue: root.speedTestPing(targetSsid)
-                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
                         readonly property bool hasResult: pingValue >= 0
-                        readonly property color latencyColor: {
-                            if (!hasResult) return Appearance.m3colors.m3outline;
-                            return pingValue < 50 ? Appearance.m3colors.m3primary
-                                 : pingValue < 100 ? Appearance.m3colors.m3tertiary
-                                 : Appearance.m3colors.m3error;
-                        }
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -956,7 +1002,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "timer"
                                 font.pixelSize: 24
-                                color: parent.parent.latencyColor
+                                color: Appearance.m3colors.m3primary
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
@@ -968,10 +1014,10 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: parent.parent.hasResult
                                     ? parent.parent.pingValue.toFixed(0) + " ms"
-                                    : (parent.parent.isLive && root.speedTestStage === "ping" ? "…" : "—")
+                                    : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: parent.parent.hasResult ? parent.parent.latencyColor : Appearance.colors.colSubtext
+                                color: parent.parent.hasResult ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -992,7 +1038,6 @@ ContentPage {
 
                         readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
                         readonly property real downloadValue: root.speedTestDownload(targetSsid)
-                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -1013,7 +1058,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: parent.parent.downloadValue >= 0
                                     ? parent.parent.downloadValue.toFixed(1) + " Mbps"
-                                    : (parent.parent.isLive && (root.speedTestStage === "ping" || root.speedTestStage === "download") ? "…" : "—")
+                                    : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
                                 color: parent.parent.downloadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
@@ -1031,7 +1076,6 @@ ContentPage {
 
                         readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
                         readonly property real uploadValue: root.speedTestUpload(targetSsid)
-                        readonly property bool isLive: root.speedTestIsLive(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -1052,7 +1096,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: parent.parent.uploadValue >= 0
                                     ? parent.parent.uploadValue.toFixed(1) + " Mbps"
-                                    : (parent.parent.isLive ? "…" : "—")
+                                    : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
                                 color: parent.parent.uploadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
@@ -1436,20 +1480,20 @@ ContentPage {
 
                 RippleButton {
                     id: discoverBtn
-                    visible: Network.wifiEnabled || false
+                    visible: root.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
-                        color: (Network.scanning || false) ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                        color: root.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
                         implicitWidth: height
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "refresh"
-                            color: (Network.scanning || false)
+                            color: root.wifiScanning
                                 ? Appearance.m3colors.m3onSecondary
                                 : Appearance.m3colors.m3onSecondaryContainer
-                            fill: (Network.scanning || false) ? 1 : 0
+                            fill: root.wifiScanning ? 1 : 0
                         }
                     }
 
@@ -1468,7 +1512,7 @@ ContentPage {
 
                 RippleButton {
                     id: searchToggleBtn
-                    visible: Network.wifiEnabled || false
+                    visible: root.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
@@ -1512,7 +1556,7 @@ ContentPage {
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
-                visible: !(Network.wifiEnabled || false)
+                visible: !root.wifiEnabled
                 spacing: 14
 
                 MaterialSymbol {
@@ -1534,7 +1578,7 @@ ContentPage {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 14
-                visible: Network.wifiEnabled || false
+                visible: root.wifiEnabled
 
                 Repeater {
                     id: networkRepeater
@@ -1555,9 +1599,15 @@ ContentPage {
                         id: networkItem
 
                         required property var modelData
-                        readonly property bool isConnecting: Network.connectingToSsid === modelData.ssid
-
                         property bool expanded: false
+
+                        // Hoisted once per row instead of repeating the same
+                        // "modelData?.x || false" read across 17 separate
+                        // bindings below - cheaper per row, and multiplies by
+                        // however many networks are in the scan list.
+                        readonly property bool isActive: modelData?.active   || false
+                        readonly property bool isSecure: modelData?.isSecure || false
+                        readonly property bool isKnown:  modelData?.isKnown  || false
 
                         Layout.fillWidth: true
                         spacing: 10
@@ -1575,7 +1625,7 @@ ContentPage {
                             implicitHeight: netCard.height + dropDownBox.height
                             radius: Appearance.rounding.small
                             color: Appearance.colors.colLayer2
-                            border.width: (networkItem.modelData?.active || false) ? 2 : 0
+                            border.width: networkItem.isActive ? 2 : 0
                             border.color: Appearance.m3colors.m3primary
 
                             Behavior on border.width { NumberAnimation { duration: 150 } }
@@ -1598,7 +1648,7 @@ ContentPage {
                                         }
 
                                         MaterialSymbol {
-                                            visible: networkItem.modelData?.isSecure || false
+                                            visible: networkItem.isSecure
                                             text: "lock"
                                             font.pixelSize: Appearance.font.pixelSize.larger
                                             color: Appearance.colors.colOnSecondaryContainer
@@ -1613,8 +1663,8 @@ ContentPage {
                                             Layout.fillWidth: true
                                             text: networkItem.modelData.ssid
                                             font.pixelSize: Appearance.font.pixelSize.large
-                                            font.weight: networkItem.modelData.active ? 500 : 400
-                                            color: networkItem.modelData.active
+                                            font.weight: networkItem.isActive ? 500 : 400
+                                            color: networkItem.isActive
                                                 ? Appearance.m3colors.m3primary
                                                 : Appearance.colors.colOnLayer1
                                         }
@@ -1624,7 +1674,7 @@ ContentPage {
                                             text: "Open Network"
                                             font.pixelSize: Appearance.font.pixelSize.small
                                             color: Appearance.colors.colSubtext
-                                            visible: !(networkItem.modelData?.isSecure || false)
+                                            visible: !networkItem.isSecure
                                         }
 
                                         StyledText {
@@ -1639,7 +1689,7 @@ ContentPage {
 
                                     RippleButton {
                                         id: expandBtn
-                                        visible: (networkItem.modelData?.isSecure || false) || (networkItem.modelData?.active || false)
+                                        visible: networkItem.isSecure || networkItem.isActive
 
                                         contentItem: Rectangle {
                                             radius: Appearance.rounding.full
@@ -1676,18 +1726,19 @@ ContentPage {
                                             id: toggleSwitch
                                             anchors.centerIn: parent
                                             scale: 0.80
-                                            checked: networkItem.modelData?.active || false
+                                            checked: networkItem.isActive
                                             enabled: false
                                         }
 
                                         MouseArea {
                                             anchors.fill: parent
+                                            hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: (mouse) => {
                                                 mouse.accepted = true;
-                                                const isActive = networkItem.modelData?.active  || false;
-                                                const isSecure = networkItem.modelData?.isSecure || false;
-                                                const isKnown  = networkItem.modelData?.isKnown  || false;
+                                                const isActive = networkItem.isActive;
+                                                const isSecure = networkItem.isSecure;
+                                                const isKnown  = networkItem.isKnown;
 
                                                 if (isActive) {
                                                     Network.disconnectFromNetwork();
@@ -1705,11 +1756,11 @@ ContentPage {
                                             }
 
                                             StyledToolTip {
-                                                text: networkItem.modelData?.active
+                                                text: networkItem.isActive
                                                     ? "Disconnect from network"
-                                                    : networkItem.modelData?.isKnown
+                                                    : networkItem.isKnown
                                                         ? "Connect to known network"
-                                                        : networkItem.modelData?.isSecure
+                                                        : networkItem.isSecure
                                                             ? "Click to enter password"
                                                             : "Click to connect to open network"
                                                 visible: parent.containsMouse || false
@@ -1777,7 +1828,7 @@ ContentPage {
                                             readonly property real pingValue: root.speedTestPing(networkItem.modelData.ssid)
                                             readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: pingValue >= 0 || (isLive && root.speedTestStage === "ping")
+                                            visible: pingValue >= 0 || isLive
                                             MaterialSymbol { text: "timer"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
@@ -1785,7 +1836,7 @@ ContentPage {
                                                 StyledText {
                                                     text: latencyRow.pingValue >= 0
                                                         ? latencyRow.pingValue.toFixed(0) + " ms"
-                                                        : (latencyRow.isLive && root.speedTestStage === "ping" ? "…" : "—")
+                                                        : "…"
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
@@ -1796,7 +1847,7 @@ ContentPage {
                                             readonly property real downloadValue: root.speedTestDownload(networkItem.modelData.ssid)
                                             readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: downloadValue >= 0 || (isLive && (root.speedTestStage === "ping" || root.speedTestStage === "download"))
+                                            visible: downloadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_downward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
@@ -1804,7 +1855,7 @@ ContentPage {
                                                 StyledText {
                                                     text: downloadRow.downloadValue >= 0
                                                         ? downloadRow.downloadValue.toFixed(1) + " Mbps"
-                                                        : (downloadRow.isLive ? "…" : "—")
+                                                        : "…"
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
@@ -1815,7 +1866,7 @@ ContentPage {
                                             readonly property real uploadValue: root.speedTestUpload(networkItem.modelData.ssid)
                                             readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
-                                            visible: uploadValue >= 0 || (isLive && root.speedTestStage === "upload")
+                                            visible: uploadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_upward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
                                             ColumnLayout {
                                                 spacing: 2
@@ -1823,7 +1874,7 @@ ContentPage {
                                                 StyledText {
                                                     text: uploadRow.uploadValue >= 0
                                                         ? uploadRow.uploadValue.toFixed(1) + " Mbps"
-                                                        : (uploadRow.isLive ? "…" : "—")
+                                                        : "…"
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                 }
                                             }
@@ -1834,8 +1885,8 @@ ContentPage {
                                         Layout.fillWidth: true
                                         Layout.topMargin: 16
                                         spacing: 10
-                                        visible: (networkItem.modelData?.isSecure || false) &&
-                                                 (!(networkItem.modelData?.isKnown || false) ||
+                                        visible: networkItem.isSecure &&
+                                                 (!networkItem.isKnown ||
                                                   Network.hasConnectionFailed(networkItem.modelData.ssid))
 
                                         Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colOutlineVariant }
@@ -1952,7 +2003,7 @@ ContentPage {
                                         Layout.fillWidth: true
                                         Layout.topMargin: 16
                                         spacing: 14
-                                        visible: (networkItem.modelData?.active || false) || (networkItem.modelData?.isKnown || false)
+                                        visible: networkItem.isActive || networkItem.isKnown
 
                                         Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colOutlineVariant }
 
@@ -1962,7 +2013,7 @@ ContentPage {
 
                                             RowLayout {
                                                 spacing: 6
-                                                visible: networkItem.modelData?.active || false
+                                                visible: networkItem.isActive
 
                                                 RippleButtonWithIcon {
                                                     materialIcon: "speed"
@@ -1998,7 +2049,7 @@ ContentPage {
                                             RippleButtonWithIcon {
                                                 materialIcon: "qr_code_2"
                                                 mainText: "Share QR"
-                                                visible: networkItem.modelData?.active || false
+                                                visible: networkItem.isActive
                                                 enabled: true
                                                 onClicked: {
                                                     if (root.qrGenerating)
@@ -2023,7 +2074,7 @@ ContentPage {
                                             RippleButtonWithIcon {
                                                 materialIcon: "delete"
                                                 mainText: "Forget Network"
-                                                visible: networkItem.modelData?.isKnown || false
+                                                visible: networkItem.isKnown
                                                 onClicked: {
                                                     Network.forgetNetwork(networkItem.modelData.ssid);
                                                     networkItem.expanded = false;
@@ -2036,7 +2087,7 @@ ContentPage {
                                         Item {
                                             Layout.fillWidth: true
                                             readonly property bool qrActive: root.qrActiveSsid === networkItem.modelData.ssid &&
-                                                                             (networkItem.modelData?.active || false) &&
+                                                                             networkItem.isActive &&
                                                                              (root.qrGenerating || root.qrImagePath !== "" || root.qrError !== "")
                                             readonly property real targetH: qrActive ? qrPanel.implicitHeight : 0
                                             height: targetH
@@ -2229,7 +2280,7 @@ ContentPage {
                                                                     spacing: 4
 
                                                                     MaterialSymbol {
-                                                                        text: (networkItem.modelData?.isSecure || false) ? "lock" : "lock_open"
+                                                                        text: networkItem.isSecure ? "lock" : "lock_open"
                                                                         font.pixelSize: Appearance.font.pixelSize.small
                                                                         color: Appearance.m3colors.m3primary
                                                                     }
@@ -2270,5 +2321,7 @@ ContentPage {
         }
     }
 
-    Item { implicitHeight: 24 }
+    Item {
+        implicitHeight: 24
+    }
 }
