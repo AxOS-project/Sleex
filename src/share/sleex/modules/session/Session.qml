@@ -160,7 +160,7 @@ Scope {
                         id: sessionFirmwareReboot
                         buttonIcon: "settings_applications"
                         buttonText: qsTr("Reboot to firmware settings")
-                        onClicked: Quickshell.execDetached(["loginctl", "reboot", "--firmware-setup"]);
+                        onClicked: Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup"]);
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.up: sessionTaskManager
                         KeyNavigation.left: sessionReboot
