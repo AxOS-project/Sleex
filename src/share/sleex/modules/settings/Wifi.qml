@@ -5,403 +5,60 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import qs.services
+import qs.services as Services
 import qs.modules.common
 import qs.modules.common.widgets
 
 import Sleex.Services
 
+// qs.services imported both plain (bare Config) and as Services (Services.Network,
+// to avoid clashing with the bare C++ Network singleton below)
 ContentPage {
     id: root
     forceSingleColumn: true
 
-    // Connection error tracking
-    property string lastConnectionError: ""
-    property string errorSsid: ""
-    property bool showConnectionError: false
-
-    // UI refresh trigger and bump to force ScriptModel/computed re-evaluation
-    property int refreshTrigger: 0
-
-    // View toggles
     property bool showSensitiveInfo: false
     property bool showConnectionDetails: true
     property bool networkSearchVisible: false
     property string searchText: ""
 
-    // Currently active (connected) network, sourced directly from the C++
-    // Network singleton - Network.active already tracks exactly this (kept in
-    // sync with NetworkManager's active access point via activeChanged), so
-    // there's no need to re-derive it by scanning root.networks here.
-    readonly property var activeNetwork: Network.active || null
-
-    property string activeConnectionType: ""
-
-    // Resolved via a Process at startup since Quickshell.env() isn't available
-    // on this quickshell build (0.2.0.r131). Empty until ensureCacheDirProcess
-    // finishes, at which point speedTestCacheFile.path picks it up.
-    property string homeDir: ""
-
-    // nmcli reports "802-3-ethernet" for wired and "802-11-wireless" for WiFi.
-    // activeNetwork above only ever reflects WiFi, so on its own it can't tell
-    // us a wired connection is up, but hasActiveConnection covers both.
-    readonly property bool hasWiredConnection: root.activeConnectionType.includes("ethernet")
-    readonly property bool hasActiveConnection: root.activeNetwork !== null || root.hasWiredConnection
-
-    // Hoisted once instead of repeating "Network.x || false" at 6+ and 3+
-    // call sites respectively throughout this file.
-    readonly property bool wifiEnabled: Network.wifiEnabled || false
-    readonly property bool wifiScanning: Network.scanning || false
-
-    // Speed test state reflects whichever test is currently in-flight (or was
-    // most recently run). `speedTestSsid` says which network that is.
-    property bool speedTestRunning: false
-    property string speedTestStage: "idle"
-    property real speedTestPingMs: -1
-    property real speedTestDownloadMbps: -1
-    property real speedTestUploadMbps: -1
-    property string speedTestError: ""
-    property string speedTestSsid: ""
-
-    // Completed results, kept per-SSID and keyed by SSID -> { pingMs, downloadMbps, uploadMbps }.
-    property var speedTestResults: ({})
-
-    function cacheSpeedTestResult(ssid) {
-        if (!ssid) return;
-        const next = Object.assign({}, root.speedTestResults);
-        next[ssid] = {
-            pingMs: root.speedTestPingMs,
-            downloadMbps: root.speedTestDownloadMbps,
-            uploadMbps: root.speedTestUploadMbps
-        };
-        root.speedTestResults = next; // reassign (not mutate) so bindings notice
-        if (!root.homeDir) return; // path not resolved yet - can't persist safely
-        try {
-            speedTestCacheFile.setText(JSON.stringify(next, null, 2));
-        } catch (e) {
-            // Non-fatal - worst case the result just won't survive a restart.
-        }
-    }
-
-    // Resolves what should be shown for a given network right now: live
-    // in-progress numbers if that's the network currently being tested,
-    // otherwise whatever was cached for it (or -1 if it's never been tested).
-    function speedTestPing(ssid) {
-        if (root.speedTestSsid === ssid) return root.speedTestPingMs;
-        return root.speedTestResults[ssid]?.pingMs ?? -1;
-    }
-    function speedTestDownload(ssid) {
-        if (root.speedTestSsid === ssid) return root.speedTestDownloadMbps;
-        return root.speedTestResults[ssid]?.downloadMbps ?? -1;
-    }
-    function speedTestUpload(ssid) {
-        if (root.speedTestSsid === ssid) return root.speedTestUploadMbps;
-        return root.speedTestResults[ssid]?.uploadMbps ?? -1;
-    }
-    // True while ssid is the one actually being tested right now (drives the
-    // "…" placeholders and the animated icon for that specific row only).
-    function speedTestIsLive(ssid) {
-        return root.speedTestRunning && root.speedTestSsid === ssid;
-    }
-    // True once ssid has a finished (done or error) test to show "Test Again" for.
-    function speedTestIsDone(ssid) {
-        if (root.speedTestSsid === ssid) return root.speedTestStage === "done" || root.speedTestStage === "error";
-        return !!root.speedTestResults[ssid];
-    }
-
-    function startSpeedTest() {
-        if (root.speedTestRunning) return;
-        root.speedTestSsid         = root.activeNetwork ? root.activeNetwork.ssid : "";
-        root.speedTestRunning      = true;
-        root.speedTestStage        = "ping";
-        root.speedTestPingMs       = -1;
-        root.speedTestDownloadMbps = -1;
-        root.speedTestUploadMbps   = -1;
-        root.speedTestError        = "";
-        speedTestPingProcess.running = true;
-    }
-
-    // QR code sharing state
-    property bool   qrGenerating:  false
-    property string qrImagePath:   ""
-    property string qrError:       ""
-    property string qrActiveSsid:  ""
-    property string _qrPassword:   ""
-
-    function generateQrCode(ssid, securityStr) {
-        root.qrActiveSsid = ssid;
-        root.qrGenerating = true;
-        root.qrImagePath  = "";
-        root.qrError      = "";
-        root._qrPassword  = "";
-        const sec = (securityStr || "").toLowerCase();
-        if (!sec || sec === "none" || sec === "--") {
-            root._encodeQr(ssid, "", "nopass");
-            return;
-        }
-        qrPasswordProcess.running = true;
-    }
-
-    function _encodeQr(ssid, password, authType) {
-        function esc(s) {
-            return s.replace(/\\/g, "\\\\")
-                    .replace(/;/g,  "\\;")
-                    .replace(/,/g,  "\\,")
-                    .replace(/"/g,  "\\\"")
-                    .replace(/:/g,  "\\:");
-        }
-        const content  = "WIFI:T:" + authType + ";S:" + esc(ssid) + ";P:" + esc(password) + ";;";
-        const shellArg = "'" + content.replace(/'/g, "'\\''") + "'";
-        qrEncodeProcess.command = ["bash", "-c",
-            "printf '%s' " + shellArg + " | qrencode -o /tmp/axos_wifi_qr.png -s 8 -m 4"];
-        qrEncodeProcess.running = true;
-    }
-
-    // Local/public network info (connection details)
-    property string localIp: ""
-    property string gatewayIp: ""
-    property string dnsServers: ""
-    property string publicIp: ""
-    property string netInfoError: ""
-
-    // Stops proc if it's currently running and restarts it on the next event
-    // loop turn (Process needs a full stop/start cycle to actually re-run, not
-    // just re-setting running=true while already true); otherwise starts it
-    // immediately. Shared by fetchNetworkInfo()'s two processes below.
-    function _restartProcess(proc) {
-        if (proc.running) {
-            proc.running = false;
-            Qt.callLater(() => { proc.running = true; });
-        } else {
-            proc.running = true;
-        }
-    }
-
-    // Improved refresh by restarting any running process to guarantee fresh data
-    function fetchNetworkInfo() {
-        if (!root.hasActiveConnection) return;
-        root.netInfoError = "";
-        root._restartProcess(localNetInfoProcess);
-        root._restartProcess(publicIpProcess);
-    }
-
-    // Custom DNS provider state
     property bool customDnsEnabled: false
     property string customDnsProviderId: "cloudflare"
-    property bool dnsApplying: false
-    property string dnsApplyError: ""
-    property string _dnsConnectionName: ""
-    property string _dnsDeviceName: ""
 
-    // The network's own (non-overridden) DNS, captured live every time we read
-    // resolv.conf while custom DNS is off. Scoped to _defaultDnsSsid so a backup
-    // from one network can never leak into another after switching connections.
-    property string _defaultDnsBackup: ""
-    property string _defaultDnsSsid: ""
-
-    // After disabling, NetworkManager's reapply doesn't roll resolv.conf back to
-    // the real DHCP DNS instantly - a read taken too soon can still show the
-    // just-disabled custom DNS. Track retries so we can wait it out instead of
-    // trusting (and caching) a stale value.
-    property int _dnsSettleRetries: 0
-    readonly property var _allProviderDnsStrings: root.dnsProviders.map(p => p.servers)
-
-    // Drop any cached default the moment the active network changes - it belongs
-    // to whichever SSID it was captured under and is meaningless anywhere else.
-    onActiveNetworkChanged: {
-        if (!root.activeNetwork || root._defaultDnsSsid !== root.activeNetwork.ssid) {
-            root._defaultDnsBackup = "";
-            root._defaultDnsSsid   = "";
-        }
-        root._dnsSettleRetries = 0;
-        dnsSettleRetryTimer.stop();
-    }
-
-    readonly property var dnsProviders: [
-        { id: "cloudflare",         name: "Cloudflare",           servers: "1.1.1.1,1.0.0.1"              },
-        { id: "google",             name: "Google",               servers: "8.8.8.8,8.8.4.4"              },
-        { id: "quad9",              name: "Quad9",                servers: "9.9.9.9,149.112.112.112"      },
-        { id: "cloudflare-malware", name: "Cloudflare (Security)",servers: "1.1.1.2,1.0.0.2"              },
-        { id: "opendns",            name: "OpenDNS",              servers: "208.67.222.222,208.67.220.220" },
-        { id: "cloudflare-family",  name: "Cloudflare (Family)",  servers: "1.1.1.3,1.0.0.3"              },
-        { id: "opendns-family",     name: "OpenDNS FamilyShield", servers: "208.67.222.123,208.67.220.123" }
-    ]
-
-    // O(1) lookup map instead of .find() everywhere
-    readonly property var dnsProviderMap: {
-        var map = {};
-        for (var i = 0; i < root.dnsProviders.length; i++) {
-            map[root.dnsProviders[i].id] = root.dnsProviders[i];
-        }
-        return map;
-    }
-
-    function currentDnsProvider() {
-        return root.dnsProviderMap[root.customDnsProviderId] || root.dnsProviders[0];
-    }
-
-    // Apply DNS settings is guarded against double‑apply, with UI instant update
-    function applyDnsSettings() {
-        if (!root.activeNetwork) return;
-        if (root.dnsApplying) return;   // already applying
-
-        root.dnsApplyError = "";
-        root._dnsSettleRetries = 0;
-        dnsSettleRetryTimer.stop();
-        const ssid = root.activeNetwork.ssid;
-        const haveBackupForThisNetwork = root._defaultDnsSsid === ssid && root._defaultDnsBackup !== "";
-
-        if (root.customDnsEnabled) {
-            // Safety net: normally the backup is kept fresh continuously by
-            // fetchNetworkInfo() (see localNetInfoProcess) while DNS isn't
-            // overridden. If we somehow don't have one yet for this network,
-            // grab whatever's showing right now as a best-effort fallback.
-            if (!haveBackupForThisNetwork && root.dnsServers !== "—") {
-                root._defaultDnsBackup = root.dnsServers;
-                root._defaultDnsSsid   = ssid;
-            }
-            root.dnsServers = currentDnsProvider().servers;
-        } else {
-            // Restore instantly if we trust the cached value; otherwise show a
-            // pending state rather than leaving the old custom DNS on screen -
-            // fetchNetworkInfo() will fill in the real value once nmcli settles.
-            root.dnsServers = haveBackupForThisNetwork ? root._defaultDnsBackup : "—";
-        }
-
-        root.dnsApplying        = true;
-        root._dnsConnectionName = "";
-        dnsConnectionNameProcess.running = true;
-    }
-
-    function formatFrequency(freqRaw) {
-        const match = String(freqRaw).match(/\d+/);
-        if (!match) return String(freqRaw);
-        const freq = parseInt(match[0], 10);
-        if (freq >= 2400 && freq <= 2495)
-            return "2.4GHz, Channel " + ((freq === 2484) ? 14 : Math.round((freq - 2407) / 5));
-        if (freq >= 5925 && freq <= 7125)
-            return "6GHz, Channel " + Math.round((freq - 5950) / 5);
-        if (freq >= 5000 && freq <= 5895)
-            return "5GHz, Channel " + Math.round((freq - 5000) / 5);
-        return freq + " MHz";
-    }
-
-    function detailValue(index) {
-        switch (index) {
-            case 0: return root.localIp;
-            case 1: return root.gatewayIp;
-            // Comma-separated with no spaces (e.g. "1.1.1.1,2606:4700:4700::1111")
-            // gives WordWrap nothing to break on, so a long DNS list just overflows
-            // its card. Insert a space after each comma so it wraps one entry per
-            // line instead.
-            case 2: return (root.dnsServers || "").replace(/,\s*/g, ", ");
-            case 3: return root.publicIp;
-            case 4: return root.activeNetwork ? root.formatFrequency(root.activeNetwork.frequency ?? "") : "—";
-            case 5: return root.activeNetwork?.security || "—";
-        }
-        return "";
-    }
-
-    readonly property var detailItems: [
-        { label: "Local IP",   icon: "lan",                    valueIdx: 0, isSensitive: true,  wifiOnly: false },
-        { label: "Gateway",    icon: "router",                 valueIdx: 1, isSensitive: true,  wifiOnly: false },
-        { label: "DNS",        icon: "dns",                    valueIdx: 2, isSensitive: false, wifiOnly: false },
-        { label: "Public IP",  icon: "public",                 valueIdx: 3, isSensitive: true,  wifiOnly: false },
-        { label: "Frequency",  icon: "settings_input_antenna", valueIdx: 4, isSensitive: false, wifiOnly: true  },
-        { label: "Security",   icon: "encrypted",              valueIdx: 5, isSensitive: false, wifiOnly: true  }
-    ]
-
-    // Frequency/Security only mean anything for a WiFi connection - drop them
-    // entirely over Ethernet rather than showing "—" placeholders.
     readonly property var filteredDetailItems: {
         var arr = [];
-        for (var i = 0; i < detailItems.length; ++i) {
-            const item = detailItems[i];
-            if (item.wifiOnly && root.activeNetwork === null) continue;
+        for (var i = 0; i < Services.Network.detailItems.length; ++i) {
+            const item = Services.Network.detailItems[i];
+            if (item.wifiOnly && Services.Network.activeNetwork === null) continue;
             if (!item.isSensitive || root.showSensitiveInfo)
                 arr.push(item);
         }
         return arr;
     }
 
-    Component.onCompleted: {
-        // Always check - this is how we discover a wired connection exists at
-        // all (activeNetwork only ever reflects WiFi). fetchNetworkInfo() is
-        // triggered from connectionTypeProcess's own handler below once we
-        // actually know whether something is connected.
-        connectionTypeProcess.running = true;
-        const savedProvider = Config.options.networking.dnsProvider;
-        if (savedProvider) root.customDnsProviderId = savedProvider;
-        root.customDnsEnabled      = Config.options.networking.dnsSwitch            || false;
+    function _syncViewTogglesFromConfig() {
         root.showSensitiveInfo     = Config.options.networking.sensitiveNetworkInfo  || false;
         root.showConnectionDetails = Config.options.networking.connectionDetails !== undefined
                                       ? Config.options.networking.connectionDetails : true;
-
-        // Ensure ~/.cache/sleex/network exists, then load whatever speed
-        // test results are already on disk (FileView.onLoaded/onLoadFailed below
-        // populates root.speedTestResults once that's known).
-        ensureCacheDirProcess.running = true;
+        const savedProvider = Config.options.networking.dnsProvider;
+        if (savedProvider) root.customDnsProviderId = savedProvider;
+        root.customDnsEnabled = Config.options.networking.dnsSwitch || false;
     }
 
-    // Stop any in-flight background work if the page is torn down mid-request -
-    // otherwise a speed test or DNS apply can keep a curl/nmcli process (and its
-    // infinite pulse animation) alive after navigating away.
-    Component.onDestruction: {
-        errorTimer.stop();
-        dnsSettleRetryTimer.stop();
-        connectionTypeProcess.running     = false;
-        speedTestPingProcess.running      = false;
-        speedTestDownloadProcess.running  = false;
-        speedTestUploadProcess.running    = false;
-        localNetInfoProcess.running       = false;
-        publicIpProcess.running           = false;
-        dnsConnectionNameProcess.running  = false;
-        dnsModifyProcess.running          = false;
-        qrPasswordProcess.running         = false;
-        qrEncodeProcess.running           = false;
-        ensureCacheDirProcess.running     = false;
-    }
+    Component.onCompleted: root._syncViewTogglesFromConfig()
 
-    onRefreshTriggerChanged: {
-        if (root.hasActiveConnection) {
-            connectionTypeProcess.running = true;
+    // Re-sync on every Config reload since load order relative to Config isn't guaranteed
+    Connections {
+        target: Config
+        function onIsReloadingChanged() {
+            if (!Config.isReloading) root._syncViewTogglesFromConfig();
         }
     }
 
-    // Shared tail of the connection-succeeded/failed handlers below - re-asks the
-    // Network service for fresh state and forces a second ScriptModel re-evaluation
-    // once that state has actually landed (single source of truth, avoids drift
-    // between the two handlers).
-    function _refreshNetworkState(alsoFetchInfo) {
-        root.refreshTrigger++;
-        Qt.callLater(() => {
-            Network.updateNetworks?.();
-            Network.updateActiveConnection?.();
-            root.refreshTrigger++;
-            if (alsoFetchInfo) root.fetchNetworkInfo();
-        });
-    }
-
-    // Network connection result handlers
     Connections {
         target: Network
 
-        function onConnectionSucceeded(ssid) {
-            root.showConnectionError = false;
-            root.lastConnectionError = "";
-            root.errorSsid           = "";
-            root._refreshNetworkState(true);
-        }
-
-        function onConnectionFailed(ssid, error) {
-            root.lastConnectionError = error;
-            root.errorSsid           = ssid;
-            root.showConnectionError = true;
-            errorTimer.restart();
-            root._refreshNetworkState(false);
-        }
-
         function onPasswordRequired(ssid) {
-            // Security type changed - expand the network for password input
             for (let i = 0; i < networkRepeater.count; i++) {
                 const item = networkRepeater.itemAt(i);
                 if (item?.modelData?.ssid === ssid) {
@@ -409,331 +66,7 @@ ContentPage {
                     break;
                 }
             }
-            root.refreshTrigger++;
-        }
-    }
-
-    // Timer to auto-hide connection errors
-    Timer {
-        id: errorTimer
-        interval: 5000
-        onTriggered: root.showConnectionError = false
-    }
-
-    // Retries fetchNetworkInfo() a few times when a post-toggle DNS read still
-    // looks like the just-disabled custom DNS instead of the real default.
-    Timer {
-        id: dnsSettleRetryTimer
-        interval: 500
-        onTriggered: root.fetchNetworkInfo()
-    }
-
-    // Ensures ~/.cache/sleex/network exists on disk before we ever try
-    // to read or write network.json through the FileView below.
-    // FileView won't create missing parent directories itself, so this
-    // ordering matters - without it, the very first run (no ~/.cache/sleex
-    // at all yet) would fail to persist anything. Caches belong under
-    // XDG_CACHE_HOME (~/.cache), not the dotfile-style ~/.sleex.
-    Process {
-        id: ensureCacheDirProcess
-        running: false
-        // mkdir first, then print $HOME last so stdout is exactly the home
-        // dir (nothing else) for the collector below to pick up.
-        command: ["bash", "-c", "mkdir -p \"$HOME/.cache/sleex/network\" && printf '%s' \"$HOME\""]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.homeDir = (text || "").trim();
-            }
-        }
-
-        onExited: (code) => {
-            if (code !== 0 || !root.homeDir) {
-                // Couldn't resolve $HOME or create the dir - leave speedTestResults
-                // empty rather than guessing a path; results just won't persist.
-                return;
-            }
-            // path binding above already updated once homeDir changed; explicitly
-            // (re)load now that the file is guaranteed to be readable/creatable.
-            speedTestCacheFile.reload();
-        }
-    }
-
-    // Direct JSON-file persistence for per-SSID speed test results, replacing
-    // the old Config.options.networking.speedTestResultsJson approach (speed
-    // test results aren't really "config" and don't belong in the config file).
-    FileView {
-        id: speedTestCacheFile
-        path: root.homeDir ? (root.homeDir + "/.cache/sleex/network/network.json") : ""
-        printErrors: false
-        watchChanges: false
-
-        onLoaded: {
-            try {
-                const parsed = JSON.parse(text());
-                root.speedTestResults = (parsed && typeof parsed === "object") ? parsed : {};
-            } catch (e) {
-                root.speedTestResults = {};
-            }
-        }
-
-        onLoadFailed: (error) => {
-            // File doesn't exist yet (first run) or another read error - start
-            // empty. The first cacheSpeedTestResult() call will create it via
-            // setText().
-            root.speedTestResults = {};
-        }
-    }
-
-    Process {
-        id: connectionTypeProcess
-        running: false
-        command: ["bash", "-c", "nmcli -t -f TYPE connection show --active 2>/dev/null"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.activeConnectionType = (text || "").trim();
-                if (root.hasActiveConnection) {
-                    root.fetchNetworkInfo();
-                }
-            }
-        }
-    }
-
-    Process {
-        id: speedTestPingProcess
-        running: false
-        command: ["bash", "-c",
-            "LC_ALL=C curl --max-time 10 -o /dev/null -s -w '%{time_connect}' 'https://speed.cloudflare.com/__down?bytes=0'"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const v = parseFloat(text);
-                if (!isNaN(v)) {
-                    root.speedTestPingMs = v * 1000;
-                }
-            }
-        }
-
-        onExited: (code) => {
-            if (code !== 0) {
-                root.speedTestError   = "Couldn't reach the network (ping failed)";
-                root.speedTestStage   = "error";
-                root.speedTestRunning = false;
-                root.cacheSpeedTestResult(root.speedTestSsid);
-                return;
-            }
-            root.speedTestStage = "download";
-            speedTestDownloadProcess.running = true;
-        }
-    }
-
-    Process {
-        id: speedTestDownloadProcess
-        running: false
-        command: ["bash", "-c",
-            "LC_ALL=C curl --max-time 20 -o /dev/null -s -w '%{speed_download}' 'https://speed.cloudflare.com/__down?bytes=25000000'"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const v = parseFloat(text);
-                if (!isNaN(v)) {
-                    root.speedTestDownloadMbps = (v * 8) / 1000000;
-                }
-            }
-        }
-
-        onExited: (code) => {
-            if (code !== 0) {
-                root.speedTestError   = "Download test failed";
-                root.speedTestStage   = "error";
-                root.speedTestRunning = false;
-                root.cacheSpeedTestResult(root.speedTestSsid);
-                return;
-            }
-            root.speedTestStage = "upload";
-            speedTestUploadProcess.running = true;
-        }
-    }
-
-    Process {
-        id: speedTestUploadProcess
-        running: false
-        command: ["bash", "-c",
-            "LC_ALL=C curl --max-time 20 -X POST -s -o /dev/null -w '%{speed_upload}' --data-binary @<(head -c 8000000 /dev/urandom) 'https://speed.cloudflare.com/__up'"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const v = parseFloat(text);
-                if (!isNaN(v)) {
-                    root.speedTestUploadMbps = (v * 8) / 1000000;
-                }
-            }
-        }
-
-        onExited: (code) => {
-            root.speedTestStage   = (code !== 0) ? "error" : "done";
-            root.speedTestRunning = false;
-            if (code !== 0) root.speedTestError = "Upload test failed";
-            root.cacheSpeedTestResult(root.speedTestSsid);
-        }
-    }
-
-    Process {
-        id: localNetInfoProcess
-        running: false
-        command: ["bash", "-c",
-            "ip -4 route get 1.1.1.1 2>/dev/null | head -n1; echo '||'; " +
-            "awk '/^nameserver/{print $2}' /etc/resolv.conf 2>/dev/null | paste -sd ',' -"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const raw   = text || "";
-                const parts = raw.split("||");
-                const route = (parts[0] || "").trim();
-                const dns   = (parts[1] || "").trim();
-                root.localIp    = (route.match(/src\s+(\S+)/)  || [])[1] || "—";
-                root.gatewayIp  = (route.match(/via\s+(\S+)/)  || [])[1] || "—";
-                // DNS will be updated only if we are not in the middle of a custom DNS switch
-                // (the apply function has already set the instant value)
-                if (!root.dnsApplying) {
-                    const value = dns.length > 0 ? dns : "—";
-
-                    // If custom DNS is supposed to be off but this read still matches one
-                    // of our known provider strings, NetworkManager hasn't rolled resolv.conf
-                    // back to the real DHCP DNS yet. Don't trust or cache it - wait it out.
-                    const looksLikeLeftoverCustomDns = !root.customDnsEnabled &&
-                        root._allProviderDnsStrings.indexOf(value) !== -1;
-
-                    if (looksLikeLeftoverCustomDns && root._dnsSettleRetries < 6) {
-                        root._dnsSettleRetries++;
-                        dnsSettleRetryTimer.restart();
-                    } else {
-                        root._dnsSettleRetries = 0;
-                        root.dnsServers = value;
-                        if (!root.customDnsEnabled && root.activeNetwork) {
-                            // Custom DNS is off, so whatever resolv.conf reports right now
-                            // genuinely IS this network's default - keep the backup current
-                            // so a future toggle-off can restore it instantly and correctly.
-                            root._defaultDnsBackup = value;
-                            root._defaultDnsSsid   = root.activeNetwork.ssid;
-                        }
-                    }
-                }
-                // else: keep the instant value until apply finishes, then fetchNetworkInfo will be called
-            }
-        }
-
-        onExited: (code) => { if (code !== 0) root.netInfoError = "Couldn't read local network info"; }
-    }
-
-    Process {
-        id: publicIpProcess
-        running: false
-        command: ["bash", "-c", "curl --max-time 6 -s https://api.ipify.org"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const v = (text || "").trim();
-                root.publicIp = v.length > 0 ? v : "—";
-            }
-        }
-
-        onExited: (code) => { if (code !== 0) root.publicIp = "—"; }
-    }
-
-    Process {
-        id: dnsConnectionNameProcess
-        running: false
-        command: ["bash", "-c",
-            "nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | " +
-            "awk -F: '$3==\"802-11-wireless\"{print $1\"|\"$2; exit}'"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = (text || "").trim().split("|");
-                root._dnsConnectionName = parts[0] || "";
-                root._dnsDeviceName     = parts[1] || "";
-            }
-        }
-
-        onExited: (code) => {
-            if (code !== 0 || !root._dnsConnectionName || !root._dnsDeviceName) {
-                root.dnsApplyError = "Couldn't find the active connection";
-                root.dnsApplying   = false;
-                return;
-            }
-            const name    = root._dnsConnectionName.replace(/"/g, "\\\"");
-            const device  = root._dnsDeviceName.replace(/"/g, "\\\"");
-            const reapply = `(nmcli device reapply "${device}" || nmcli connection up "${name}")`;
-            const cmd = root.customDnsEnabled
-                ? `nmcli connection modify "${name}" ipv4.ignore-auto-dns yes ipv4.dns "${root.currentDnsProvider().servers}" && ${reapply}`
-                : `nmcli connection modify "${name}" ipv4.ignore-auto-dns no ipv4.dns "" && ${reapply}`;
-            dnsModifyProcess.command = ["bash", "-c", cmd];
-            dnsModifyProcess.running = true;
-        }
-    }
-
-    Process {
-        id: dnsModifyProcess
-        running: false
-        command: ["bash", "-c", "true"]
-
-        onExited: (code) => {
-            root.dnsApplying = false;
-            if (code !== 0) {
-                // Rollback – the apply failed, so the DNS setting did not change
-                root.customDnsEnabled = !root.customDnsEnabled;
-                Config.options.networking.dnsSwitch = root.customDnsEnabled;
-                root.dnsApplyError = "Failed to apply DNS settings";
-                // Also revert the UI DNS to the real system state
-                Qt.callLater(root.fetchNetworkInfo);
-                return;
-            }
-            if (root.customDnsEnabled)
-                Config.options.networking.dnsProvider = root.customDnsProviderId;
-            // Refresh UI with actual values (will also overwrite the instant DNS with the real one)
-            Qt.callLater(root.fetchNetworkInfo);
-        }
-    }
-
-    Process {
-        id: qrPasswordProcess
-        running: false
-        command: ["bash", "-c",
-            "nmcli -s -g 802-11-wireless-security.psk connection show " +
-            "\"$(nmcli -t -f NAME,TYPE connection show --active 2>/dev/null | " +
-            "awk -F: '$2==\"802-11-wireless\"{print $1; exit}')\" 2>/dev/null"]
-
-        stdout: StdioCollector {
-            onStreamFinished: { root._qrPassword = (text || "").trim(); }
-        }
-
-        onExited: (code) => {
-            if (code !== 0 || !root._qrPassword) {
-                root.qrError     = "Couldn't retrieve the stored WiFi password.\nEnsure NetworkManager has this connection saved with a password.";
-                root.qrGenerating = false;
-                return;
-            }
-            const sec      = (root.activeNetwork?.security || "").toLowerCase();
-            const authType = sec.includes("wep") ? "WEP" : "WPA";
-            root._encodeQr(root.qrActiveSsid, root._qrPassword, authType);
-            root._qrPassword = "";
-        }
-    }
-
-    Process {
-        id: qrEncodeProcess
-        running: false
-        command: ["bash", "-c", "true"]
-
-        onExited: (code) => {
-            root.qrGenerating = false;
-            if (code !== 0) {
-                root.qrError = "QR generation failed. Is 'qrencode' installed?\n(sudo pacman -S qrencode)";
-                return;
-            }
-            root.qrImagePath = "";
-            Qt.callLater(() => { root.qrImagePath = "file:///tmp/axos_wifi_qr.png"; });
+            Services.Network.bumpRefresh();
         }
     }
 
@@ -747,10 +80,10 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: root.wifiEnabled
+                checked: Services.Network.wifiEnabled
                 onClicked: Network.toggleWifi()
                 StyledToolTip {
-                    text: root.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
+                    text: Services.Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
                 }
             }
 
@@ -759,7 +92,11 @@ ContentPage {
                 checked: root.showConnectionDetails
                 onClicked: {
                     root.showConnectionDetails = !root.showConnectionDetails;
-                    Config.options.networking.connectionDetails = root.showConnectionDetails;
+                    try {
+                        Config.setNestedValue("networking.connectionDetails", root.showConnectionDetails);
+                    } catch (e) {
+                        console.log("[Wifi] Failed to persist connectionDetails:", e);
+                    }
                 }
                 StyledToolTip {
                     text: root.showConnectionDetails
@@ -773,7 +110,11 @@ ContentPage {
                 checked: root.showSensitiveInfo
                 onClicked: {
                     root.showSensitiveInfo = !root.showSensitiveInfo;
-                    Config.options.networking.sensitiveNetworkInfo = root.showSensitiveInfo;
+                    try {
+                        Config.setNestedValue("networking.sensitiveNetworkInfo", root.showSensitiveInfo);
+                    } catch (e) {
+                        console.log("[Wifi] Failed to persist sensitiveNetworkInfo:", e);
+                    }
                 }
                 StyledToolTip {
                     text: root.showSensitiveInfo
@@ -786,7 +127,7 @@ ContentPage {
 
     Item {
         Layout.fillWidth: true
-        readonly property real targetHeight: root.hasActiveConnection && root.showConnectionDetails
+        readonly property real targetHeight: Services.Network.hasActiveConnection && root.showConnectionDetails
             ? healthDashboard.implicitHeight : 0
         height: targetHeight
         implicitHeight: targetHeight
@@ -799,7 +140,7 @@ ContentPage {
         ContentSection {
             id: healthDashboard
             width: parent.width
-            visible: root.hasActiveConnection && root.showConnectionDetails
+            visible: Services.Network.hasActiveConnection && root.showConnectionDetails
             title: "Connection Details"
             icon: "monitoring"
 
@@ -814,7 +155,7 @@ ContentPage {
                     MaterialSymbol {
                         id: connectionTypeIcon
                         Layout.alignment: Qt.AlignVCenter
-                        text: root.activeConnectionType.includes("wireless") ? "wifi" : "settings_ethernet"
+                        text: Services.Network.activeConnectionType.includes("wireless") ? "wifi" : "settings_ethernet"
                         font.pixelSize: Appearance.font.pixelSize.title
                         color: Appearance.m3colors.m3primary
                     }
@@ -823,7 +164,7 @@ ContentPage {
                         spacing: 2
 
                         StyledText {
-                            text: root.activeNetwork?.ssid || (root.hasWiredConnection ? "Wired Connection" : "")
+                            text: Services.Network.activeNetwork?.ssid || (Services.Network.hasWiredConnection ? "Wired Connection" : "")
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: 500
                             color: Appearance.m3colors.m3primary
@@ -849,12 +190,10 @@ ContentPage {
                                 anchors.centerIn: parent
                                 text: "speed"
                                 color: Appearance.m3colors.m3onSecondaryContainer
-                                fill: root.speedTestRunning ? 1 : 0
+                                fill: Services.Network.speedTestRunning ? 1 : 0
 
-                                // Only tick while the dashboard is actually shown - avoids a
-                                // perpetual repaint loop running behind a collapsed section.
                                 SequentialAnimation on opacity {
-                                    running: root.speedTestRunning && root.showConnectionDetails
+                                    running: Services.Network.speedTestRunning && root.showConnectionDetails
                                     loops: Animation.Infinite
                                     NumberAnimation { from: 1;   to: 0.4; duration: 550; easing.type: Easing.InOutQuad }
                                     NumberAnimation { from: 0.4; to: 1;   duration: 550; easing.type: Easing.InOutQuad }
@@ -866,13 +205,13 @@ ContentPage {
                             id: speedTestHeaderArea
                             anchors.fill: parent
                             hoverEnabled: true
-                            cursorShape: root.speedTestRunning ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            enabled: !root.speedTestRunning
-                            onClicked: root.startSpeedTest()
+                            cursorShape: Services.Network.speedTestRunning ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            enabled: !Services.Network.speedTestRunning
+                            onClicked: Services.Network.startSpeedTest()
 
                             StyledToolTip {
                                 extraVisibleCondition: speedTestHeaderArea.containsMouse
-                                text: root.speedTestRunning ? "Testing…" : "Perform a network speed test\nUses the Cloudflare provider"
+                                text: Services.Network.speedTestRunning ? "Testing…" : "Perform a network speed test\nUses the Cloudflare provider"
                             }
                         }
                     }
@@ -889,10 +228,10 @@ ContentPage {
                                 anchors.centerIn: parent
                                 text: "refresh"
                                 color: Appearance.m3colors.m3onSecondaryContainer
-                                fill: (localNetInfoProcess.running || publicIpProcess.running) ? 1 : 0
+                                fill: Services.Network.fetchingNetworkInfo ? 1 : 0
 
                                 RotationAnimation on rotation {
-                                    running: (localNetInfoProcess.running || publicIpProcess.running) && root.showConnectionDetails
+                                    running: Services.Network.fetchingNetworkInfo && root.showConnectionDetails
                                     loops: Animation.Infinite
                                     from: 0; to: 360; duration: 900
                                 }
@@ -904,7 +243,7 @@ ContentPage {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.fetchNetworkInfo()
+                            onClicked: Services.Network.fetchNetworkInfo()
 
                             StyledToolTip {
                                 extraVisibleCondition: refreshInfoArea.containsMouse
@@ -922,8 +261,8 @@ ContentPage {
 
                 StyledText {
                     Layout.fillWidth: true
-                    visible: root.netInfoError !== ""
-                    text: root.netInfoError
+                    visible: Services.Network.netInfoError !== ""
+                    text: Services.Network.netInfoError
                     color: Appearance.m3colors.m3error
                     font.pixelSize: Appearance.font.pixelSize.small
                     wrapMode: Text.WordWrap
@@ -935,8 +274,7 @@ ContentPage {
                     height: 100
 
                     Rectangle {
-                        // Meaningless over Ethernet - hide rather than show a misleading 0%
-                        visible: root.activeNetwork !== null
+                        visible: Services.Network.activeNetwork !== null
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: Appearance.rounding.small
@@ -967,7 +305,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
 
                                 Rectangle {
-                                    width: parent.width * Math.min(root.activeNetwork?.strength ?? 0, 100) / 100
+                                    width: parent.width * Math.min(Services.Network.activeNetwork?.strength ?? 0, 100) / 100
                                     height: parent.height
                                     radius: 2
                                     color: Appearance.m3colors.m3primary
@@ -975,7 +313,7 @@ ContentPage {
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: (root.activeNetwork?.strength ?? 0) + "%"
+                                text: (Services.Network.activeNetwork?.strength ?? 0) + "%"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
                                 color: Appearance.m3colors.m3primary
@@ -991,8 +329,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
-                        readonly property real pingValue: root.speedTestPing(targetSsid)
+                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
+                        readonly property real pingValue: Services.Network.speedTestPing(targetSsid)
                         readonly property bool hasResult: pingValue >= 0
 
                         ColumnLayout {
@@ -1036,8 +374,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
-                        readonly property real downloadValue: root.speedTestDownload(targetSsid)
+                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
+                        readonly property real downloadValue: Services.Network.speedTestDownload(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -1074,8 +412,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: root.activeNetwork ? root.activeNetwork.ssid : ""
-                        readonly property real uploadValue: root.speedTestUpload(targetSsid)
+                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
+                        readonly property real uploadValue: Services.Network.speedTestUpload(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -1153,13 +491,8 @@ ContentPage {
                                     Layout.alignment: Qt.AlignHCenter
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    // Bind width explicitly rather than trusting Layout.fillWidth alone -
-                                    // Text's implicit size is its natural, unwrapped width, so without a
-                                    // concrete width forced here the column can end up sized to fit the
-                                    // whole DNS string on one line and it overflows the card instead of
-                                    // ever actually wrapping.
                                     width: infoContent.width
-                                    text: root.detailValue(modelData.valueIdx)
+                                    text: Services.Network.detailValue(modelData.valueIdx)
                                     font.pixelSize: Appearance.font.pixelSize.large
                                     font.weight: 600
                                     color: Appearance.colors.colOnLayer1
@@ -1176,7 +509,7 @@ ContentPage {
 
     Item {
         Layout.fillWidth: true
-        readonly property real targetHeight: root.activeNetwork !== null
+        readonly property real targetHeight: Services.Network.activeNetwork !== null
             ? customDnsSection.implicitHeight : 0
         height: targetHeight
         implicitHeight: targetHeight
@@ -1189,7 +522,7 @@ ContentPage {
         ContentSection {
             id: customDnsSection
             width: parent.width
-            visible: root.activeNetwork !== null
+            visible: Services.Network.activeNetwork !== null
             title: "Custom DNS"
             icon: "dns"
 
@@ -1197,18 +530,17 @@ ContentPage {
                 Layout.fillWidth: true
                 spacing: 14
 
-                // Disable switch while DNS is being applied to prevent races
                 ConfigSwitch {
                     text: "Custom DNS"
                     checked: root.customDnsEnabled
-                    enabled: !root.dnsApplying
+                    enabled: !Services.Network.dnsApplying
                     onClicked: {
                         root.customDnsEnabled = !root.customDnsEnabled;
                         Config.options.networking.dnsSwitch = root.customDnsEnabled;
-                        root.applyDnsSettings();
+                        Services.Network.applyDnsSettings(root.customDnsEnabled, root.customDnsProviderId);
                     }
                     StyledToolTip {
-                        text: root.dnsApplying
+                        text: Services.Network.dnsApplying
                             ? "Applying DNS settings…"
                             : (root.customDnsEnabled
                                 ? "Click to use this network's default DNS"
@@ -1250,8 +582,7 @@ ContentPage {
                                         required property string modelData
                                         required property int index
 
-                                        // O(1) lookup via map
-                                        readonly property var provider:    root.dnsProviderMap[modelData] ?? null
+                                        readonly property var provider:    Services.Network.dnsProviderMap[modelData] ?? null
                                         readonly property bool isSelected:  root.customDnsProviderId === modelData
                                         readonly property string primaryIp: provider?.servers.split(",")[0] ?? ""
 
@@ -1308,11 +639,12 @@ ContentPage {
 
                                         MouseArea {
                                             anchors.fill: parent
-                                            enabled: !root.dnsApplying
+                                            enabled: !Services.Network.dnsApplying
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 root.customDnsProviderId = modelData;
-                                                root.applyDnsSettings();
+                                                Config.options.networking.dnsProvider = modelData;
+                                                Services.Network.applyDnsSettings(root.customDnsEnabled, modelData);
                                             }
                                         }
                                     }
@@ -1325,7 +657,7 @@ ContentPage {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    visible: root.dnsApplyError !== ""
+                    visible: Services.Network.dnsApplyError !== ""
 
                     MaterialSymbol {
                         text: "error_outline"
@@ -1338,7 +670,7 @@ ContentPage {
                         wrapMode: Text.WordWrap
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.m3colors.m3error
-                        text: root.dnsApplyError
+                        text: Services.Network.dnsApplyError
                     }
                 }
             }
@@ -1373,7 +705,7 @@ ContentPage {
                     }
 
                     Rectangle {
-                        visible: root.activeNetwork !== null
+                        visible: Services.Network.activeNetwork !== null
                         radius: Appearance.rounding.full
                         color: Appearance.colors.colLayer2
                         implicitWidth: connectedPillRow.implicitWidth + 20
@@ -1391,7 +723,7 @@ ContentPage {
                                 color: Appearance.m3colors.m3primary
 
                                 SequentialAnimation on opacity {
-                                    running: root.activeNetwork !== null
+                                    running: Services.Network.activeNetwork !== null
                                     loops: Animation.Infinite
                                     NumberAnimation { from: 1;    to: 0.35; duration: 900; easing.type: Easing.InOutQuad }
                                     NumberAnimation { from: 0.35; to: 1;    duration: 900; easing.type: Easing.InOutQuad }
@@ -1480,20 +812,20 @@ ContentPage {
 
                 RippleButton {
                     id: discoverBtn
-                    visible: root.wifiEnabled
+                    visible: Services.Network.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
-                        color: root.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                        color: Services.Network.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
                         implicitWidth: height
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "refresh"
-                            color: root.wifiScanning
+                            color: Services.Network.wifiScanning
                                 ? Appearance.m3colors.m3onSecondary
                                 : Appearance.m3colors.m3onSecondaryContainer
-                            fill: root.wifiScanning ? 1 : 0
+                            fill: Services.Network.wifiScanning ? 1 : 0
                         }
                     }
 
@@ -1512,7 +844,7 @@ ContentPage {
 
                 RippleButton {
                     id: searchToggleBtn
-                    visible: root.wifiEnabled
+                    visible: Services.Network.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
@@ -1556,7 +888,7 @@ ContentPage {
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
-                visible: !root.wifiEnabled
+                visible: !Services.Network.wifiEnabled
                 spacing: 14
 
                 MaterialSymbol {
@@ -1578,7 +910,7 @@ ContentPage {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 14
-                visible: root.wifiEnabled
+                visible: Services.Network.wifiEnabled
 
                 Repeater {
                     id: networkRepeater
@@ -1586,7 +918,7 @@ ContentPage {
                     model: ScriptModel {
                         id: networkModel
                         values: {
-                            let _t = root.refreshTrigger;
+                            let _t = Services.Network.refreshTrigger; // forces re-evaluation on bump
                             const search = root.searchText.toLowerCase().trim();
                             let nets = [...(Network.networks || [])];
                             if (search) nets = nets.filter(n => n.ssid.toLowerCase().includes(search));
@@ -1601,10 +933,6 @@ ContentPage {
                         required property var modelData
                         property bool expanded: false
 
-                        // Hoisted once per row instead of repeating the same
-                        // "modelData?.x || false" read across 17 separate
-                        // bindings below - cheaper per row, and multiplies by
-                        // however many networks are in the scan list.
                         readonly property bool isActive: modelData?.active   || false
                         readonly property bool isSecure: modelData?.isSecure || false
                         readonly property bool isKnown:  modelData?.isKnown  || false
@@ -1679,11 +1007,11 @@ ContentPage {
 
                                         StyledText {
                                             Layout.fillWidth: true
-                                            text: "Failed to connect: " + root.lastConnectionError
+                                            text: "Failed to connect: " + Services.Network.lastConnectionError
                                             font.pixelSize: Appearance.font.pixelSize.small
                                             color: Appearance.m3colors.m3error
                                             wrapMode: Text.WordWrap
-                                            visible: root.showConnectionError && root.errorSsid === networkItem.modelData.ssid
+                                            visible: Services.Network.showConnectionError && Services.Network.errorSsid === networkItem.modelData.ssid
                                         }
                                     }
 
@@ -1809,7 +1137,7 @@ ContentPage {
                                             ColumnLayout {
                                                 spacing: 2
                                                 StyledText { text: "Frequency"; font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colSubtext }
-                                                StyledText { text: root.formatFrequency(networkItem.modelData.frequency); font.pixelSize: Appearance.font.pixelSize.small }
+                                                StyledText { text: Services.Network.formatFrequency(networkItem.modelData.frequency); font.pixelSize: Appearance.font.pixelSize.small }
                                             }
                                         }
 
@@ -1825,8 +1153,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: latencyRow
-                                            readonly property real pingValue: root.speedTestPing(networkItem.modelData.ssid)
-                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real pingValue: Services.Network.speedTestPing(networkItem.modelData.ssid)
+                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: pingValue >= 0 || isLive
                                             MaterialSymbol { text: "timer"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -1844,8 +1172,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: downloadRow
-                                            readonly property real downloadValue: root.speedTestDownload(networkItem.modelData.ssid)
-                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real downloadValue: Services.Network.speedTestDownload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: downloadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_downward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -1863,8 +1191,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: uploadRow
-                                            readonly property real uploadValue: root.speedTestUpload(networkItem.modelData.ssid)
-                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real uploadValue: Services.Network.speedTestUpload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: uploadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_upward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -2017,13 +1345,13 @@ ContentPage {
 
                                                 RippleButtonWithIcon {
                                                     materialIcon: "speed"
-                                                    mainText: root.speedTestRunning
+                                                    mainText: Services.Network.speedTestRunning
                                                         ? "Testing…"
-                                                        : root.speedTestIsDone(networkItem.modelData.ssid)
+                                                        : Services.Network.speedTestIsDone(networkItem.modelData.ssid)
                                                             ? "Test Again"
                                                             : "Speed Test"
-                                                    enabled: !root.speedTestRunning
-                                                    onClicked: root.startSpeedTest()
+                                                    enabled: !Services.Network.speedTestRunning
+                                                    onClicked: Services.Network.startSpeedTest()
                                                 }
 
                                                 Rectangle {
@@ -2032,13 +1360,10 @@ ContentPage {
                                                     Layout.alignment: Qt.AlignVCenter
                                                     radius: 3
                                                     color: Appearance.m3colors.m3primary
-                                                    visible: root.speedTestRunning
+                                                    visible: Services.Network.speedTestRunning
 
-                                                    // Scoped to this row's expanded state - a Repeater can
-                                                    // have many delegates; no reason to animate the ones
-                                                    // that aren't expanded/visible.
                                                     SequentialAnimation on opacity {
-                                                        running: root.speedTestRunning && networkItem.expanded
+                                                        running: Services.Network.speedTestRunning && networkItem.expanded
                                                         loops: Animation.Infinite
                                                         NumberAnimation { from: 1;    to: 0.25; duration: 550; easing.type: Easing.InOutQuad }
                                                         NumberAnimation { from: 0.25; to: 1;    duration: 550; easing.type: Easing.InOutQuad }
@@ -2052,19 +1377,19 @@ ContentPage {
                                                 visible: networkItem.isActive
                                                 enabled: true
                                                 onClicked: {
-                                                    if (root.qrGenerating)
+                                                    if (Services.Network.qrGenerating)
                                                         return;
 
-                                                    if (root.qrActiveSsid === networkItem.modelData.ssid &&
-                                                        (root.qrImagePath !== "" || root.qrError !== "")) {
-                                                        root.qrActiveSsid = "";
-                                                        root.qrImagePath  = "";
-                                                        root.qrError      = "";
+                                                    if (Services.Network.qrActiveSsid === networkItem.modelData.ssid &&
+                                                        (Services.Network.qrImagePath !== "" || Services.Network.qrError !== "")) {
+                                                        Services.Network.qrActiveSsid = "";
+                                                        Services.Network.qrImagePath  = "";
+                                                        Services.Network.qrError      = "";
                                                         qrPanel.opacity = 0;
                                                         qrFadeInAnim.stop();
                                                     } else {
-                                                        root.generateQrCode(networkItem.modelData.ssid,
-                                                                            networkItem.modelData.security || "");
+                                                        Services.Network.generateQrCode(networkItem.modelData.ssid,
+                                                            networkItem.modelData.security || "");
                                                         qrPanel.opacity = 0;
                                                         qrFadeInAnim.restart();
                                                     }
@@ -2086,9 +1411,9 @@ ContentPage {
 
                                         Item {
                                             Layout.fillWidth: true
-                                            readonly property bool qrActive: root.qrActiveSsid === networkItem.modelData.ssid &&
+                                            readonly property bool qrActive: Services.Network.qrActiveSsid === networkItem.modelData.ssid &&
                                                                              networkItem.isActive &&
-                                                                             (root.qrGenerating || root.qrImagePath !== "" || root.qrError !== "")
+                                                                             (Services.Network.qrGenerating || Services.Network.qrImagePath !== "" || Services.Network.qrError !== "")
                                             readonly property real targetH: qrActive ? qrPanel.implicitHeight : 0
                                             height: targetH
                                             implicitHeight: targetH
@@ -2115,8 +1440,8 @@ ContentPage {
                                                     implicitHeight: 76
                                                     radius: Appearance.rounding.small
                                                     clip: true
-                                                    visible: root.qrGenerating &&
-                                                             root.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Services.Network.qrGenerating &&
+                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
                                                                    Appearance.m3colors.m3primaryContainer.g,
                                                                    Appearance.m3colors.m3primaryContainer.b, 0.22)
@@ -2134,11 +1459,8 @@ ContentPage {
                                                             font.pixelSize: 30
                                                             color: Appearance.m3colors.m3primary
 
-                                                            // Scoped to this delegate's ssid so a Repeater with
-                                                            // multiple known/active networks doesn't animate
-                                                            // hidden rows while one QR code is generating.
                                                             SequentialAnimation on opacity {
-                                                                running: root.qrGenerating && root.qrActiveSsid === networkItem.modelData.ssid
+                                                                running: Services.Network.qrGenerating && Services.Network.qrActiveSsid === networkItem.modelData.ssid
                                                                 loops: Animation.Infinite
                                                                 NumberAnimation { from: 1.0; to: 0.2; duration: 650; easing.type: Easing.InOutQuad }
                                                                 NumberAnimation { from: 0.2; to: 1.0; duration: 650; easing.type: Easing.InOutQuad }
@@ -2178,7 +1500,7 @@ ContentPage {
                                                             color: Appearance.m3colors.m3primary
 
                                                             SequentialAnimation on x {
-                                                                running: root.qrGenerating && root.qrActiveSsid === networkItem.modelData.ssid
+                                                                running: Services.Network.qrGenerating && Services.Network.qrActiveSsid === networkItem.modelData.ssid
                                                                 loops: Animation.Infinite
                                                                 NumberAnimation { from: -qrScanBar.width; to: qrScanBar.parent.width; duration: 1000; easing.type: Easing.InOutCubic }
                                                             }
@@ -2190,8 +1512,8 @@ ContentPage {
                                                     Layout.fillWidth: true
                                                     implicitHeight: qrErrorRow.implicitHeight + 24
                                                     radius: Appearance.rounding.small
-                                                    visible: root.qrError !== "" &&
-                                                             root.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Services.Network.qrError !== "" &&
+                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3errorContainer.r,
                                                                    Appearance.m3colors.m3errorContainer.g,
                                                                    Appearance.m3colors.m3errorContainer.b, 0.35)
@@ -2212,7 +1534,7 @@ ContentPage {
                                                         }
                                                         StyledText {
                                                             Layout.fillWidth: true
-                                                            text: root.qrError
+                                                            text: Services.Network.qrError
                                                             font.pixelSize: Appearance.font.pixelSize.small
                                                             color: Appearance.m3colors.m3error
                                                             wrapMode: Text.WordWrap
@@ -2224,8 +1546,8 @@ ContentPage {
                                                     Layout.fillWidth: true
                                                     implicitHeight: qrReadyRow.implicitHeight + 32
                                                     radius: Appearance.rounding.small
-                                                    visible: root.qrImagePath !== "" &&
-                                                             root.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Services.Network.qrImagePath !== "" &&
+                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
                                                                    Appearance.m3colors.m3primaryContainer.g,
                                                                    Appearance.m3colors.m3primaryContainer.b, 0.22)
@@ -2245,7 +1567,7 @@ ContentPage {
 
                                                             Image {
                                                                 anchors { fill: parent; margins: 8 }
-                                                                source: root.qrImagePath
+                                                                source: Services.Network.qrImagePath
                                                                 smooth: false
                                                                 fillMode: Image.PreserveAspectFit
                                                                 cache: false
@@ -2259,7 +1581,7 @@ ContentPage {
 
                                                             StyledText {
                                                                 Layout.fillWidth: true
-                                                                text: root.qrActiveSsid
+                                                                text: Services.Network.qrActiveSsid
                                                                 font.pixelSize: Appearance.font.pixelSize.large
                                                                 font.weight: 600
                                                                 color: Appearance.m3colors.m3primary
