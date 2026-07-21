@@ -4,6 +4,7 @@ qml_module(sleex-widgets
     URI Sleex.Widgets
     SOURCES
         ContributionCalendar.cpp ContributionCalendar.hpp
+        CalendarGridBackground.cpp CalendarGridBackground.hpp
         plugin.cpp
 )
 

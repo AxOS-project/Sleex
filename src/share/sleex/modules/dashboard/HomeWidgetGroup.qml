@@ -3,256 +3,74 @@ import qs.modules.common.widgets
 import qs.services
 import qs.modules.dashboard.notifications
 import qs.modules.dashboard.calendar
+import qs.modules.dashboard.home
 import qs.modules.mediaControls
-import qs.modules.dashboard.weather
-import Qt5Compat.GraphicalEffects
 import QtQuick
-import Quickshell.Io
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
-import Sleex.Widgets
-
 import Sleex.Services
 
 Rectangle {
     id: root
     color: "transparent"
 
-    property bool connected: Network.networks.filter(n => n.active).length > 0    
+    property bool connected: Network.networks.filter(n => n.active).length > 0
+
+    Component { id: compUserInfo; HomeUserInfoWidget {} }
+    Component { id: compClock; HomeClockWidget {} }
+    Component { id: compGithub; HomeGithubWidget { connected: root.connected } }
+    Component { id: compNotifications; NotificationList { anchors.margins: 15 } }
+    Component { id: compMedia; MediaControls {} }
+    Component { id: compWeather; HomeWeatherWidget { connected: root.connected } }
+    Component { id: compCalendar; CalendarWidget {} }
+
+    readonly property var widgetRegistry: [
+        { id: "userInfo", column: 1, fillHeight: false, preferredHeight: 300, component: compUserInfo },
+        { id: "clock", column: 1, fillHeight: false, preferredHeight: 150, component: compClock },
+        { id: "github", column: 1, fillHeight: true, preferredHeight: -1,  component: compGithub },
+        { id: "notifications", column: 2, fillHeight: true, preferredHeight: -1,  component: compNotifications },
+        { id: "media", column: 3, fillHeight: false, preferredHeight: 150, component: compMedia },
+        { id: "weather", column: 3, fillHeight: true, preferredHeight: -1,  component: compWeather },
+        { id: "calendar", column: 3, fillHeight: false, preferredHeight: 375, component: compCalendar }
+    ]
+
+    function widgetsForColumn(col) {
+        return widgetRegistry.filter(w => w.column === col)
+    }
 
     RowLayout {
         id: mainCols
         anchors.fill: parent
         spacing: 10
-        
-        ColumnLayout {
-            id: firstCol
-            spacing: 10
 
-            Rectangle {
-                id: userInfoWidget
-                color: Appearance.colors.colLayer1
-                radius: Appearance.rounding.normal
-                Layout.fillWidth: true
-                Layout.preferredHeight: 300
+        Repeater {
+            model: 3
+            delegate: ColumnLayout {
+                id: columnDelegate
+                required property int index
+                readonly property int columnNumber: index + 1
+                spacing: 10
 
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 10
-                    width: parent.width * 0.9
-                
-                    Rectangle {
-                        id: userAvatar
-                        width: 120
-                        height: 120
-                        radius: 99
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Appearance.colors.colLayer2
+                Layout.fillWidth: columnNumber === 2
+                Layout.preferredWidth: columnNumber !== 2 ? 450 : -1
 
-                        ClippingRectangle {
-                            width: 120; height: 120
-                            radius: 60
-                            color: "transparent"
-                            Image {
-                                anchors.fill: parent
-                                source: Config.options.dashboard.avatarPath
-                                fillMode: Image.PreserveAspectCrop
-                            }
-                        }
-                    }
-
-                    Text {
-                        text: qsTr("Welcome, %1!").arg(SystemInfo.username)
-                        color: Appearance.colors.colOnLayer1
-                        font.pixelSize: 30
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    StyledText {
-                        text: Config.options.dashboard.userDesc
-                        color: Appearance.colors.colOnLayer1
-                        font.pixelSize: 20
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        horizontalAlignment: Qt.AlignHCenter
-                    }
-                }
-            }
-
-            Rectangle {
-                color: Appearance.colors.colLayer1
-                radius: Appearance.rounding.normal
-                Layout.fillWidth: true
-                Layout.preferredHeight: 150
-
-                Column{
-                    anchors.centerIn: parent
-                    spacing: 10
-
-                    Text {
-                        text: DateTime.time
-                        color: Appearance.colors.colPrimary
-                        font.pixelSize: 60
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    Text {
-                        text: DateTime.longDateFormat
-                        color: Appearance.colors.colOnLayer1
-                        font.pixelSize: 20
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-                
-            }
-
-            Rectangle {
-                color: Appearance.colors.colLayer1
-                radius: Appearance.rounding.normal
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                
-                Column{
-                    anchors.centerIn: parent
-                    spacing: 10
-
-                    Text {
-                        visible: root.connected
-                        text: root.connected ? Github.contribution_number || qsTr("Loading...") : qsTr("--")
-                        color: Appearance.colors.colPrimary
-                        font.pixelSize: 60
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    Text {
-                        text: root.connected ? qsTr("contributions in the last year") : "No network connection"
-                        color: Appearance.colors.colOnLayer1
-                        font.pixelSize: 20
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    Loader {
-                        active: root.connected
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        sourceComponent: GhCalendar {}
-                    }
-
-                    Loader {
-                        active: !root.connected
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        sourceComponent: GhCalendarNoNet {}
-                    }
-
-                    Text {
-                        text: `@${Github.author}`
-                        color: Appearance.colors.colOnLayer1
-                        font.pixelSize: 16
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-                
-            }
-        }
-        
-        NotificationList {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            anchors.margins: 15
-        }
-        
-        ColumnLayout {
-            id: thirdCol
-            spacing: 10
-
-            MediaControls {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 150
-            }
-
-            Rectangle {
-                color: Appearance.colors.colLayer1
-                radius: Appearance.rounding.normal
-                Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                // Column {
-                //     anchors.left: parent.left
-                //     anchors.right: parent.right
-                //     anchors.verticalCenter: parent.verticalCenter
-                //     anchors.margins: 20
-                //     spacing: 10
-                    
-                //     Text {
-                //         text: Weather.temperature || qsTr("--")
-                //         font.bold: true
-                //         color: Appearance.colors.colPrimary
-                //         font.pixelSize: 60
-                //         anchors.horizontalCenter: parent.horizontalCenter
-                //     }
-
-                //     Text {
-                //         text: Weather.condition || qsTr("Loading...")
-                //         font.pixelSize: 20
-                //         color: Appearance.colors.colOnLayer1
-                //         width: parent.width
-                //         wrapMode: Text.WordWrap
-                //         horizontalAlignment: Text.AlignHCenter
-                //         maximumLineCount: 2
-                //         elide: Text.ElideRight
-                //     }
-                // }
-
-                Loader {
-                    active: !Config.options.dashboard.enableWeather
-                    anchors.fill: parent
-                    sourceComponent: WeatherOff {
-                        id: weatherWidgetOff
-                        anchors.fill: parent
+                Repeater {
+                    model: root.widgetsForColumn(columnDelegate.columnNumber)
+                    delegate: Loader {
+                        id: widgetLoader
+                        required property var modelData
+                        
+                        Layout.fillWidth: true
+                        Layout.fillHeight: modelData.fillHeight
+                        
+                        Layout.preferredHeight: modelData.preferredHeight > 0 ? modelData.preferredHeight : -1
+                        
+                        sourceComponent: modelData.component
                     }
                 }
-
-                Loader {
-                    active: Config.options.dashboard.enableWeather && root.connected
-                    anchors.fill: parent
-                    sourceComponent: Weather {
-                        id: weatherWidget
-                        anchors.fill: parent
-                    }
-                }
-
-                Loader {
-                    active: Config.options.dashboard.enableWeather && !root.connected
-                    anchors.fill: parent
-                    sourceComponent: WeatherNoNet {
-                        id: weatherWidgetNoNet
-                        anchors.fill: parent
-                    }
-                }
-                
-
             }
-
-            Rectangle {
-                color: Appearance.colors.colLayer1
-                radius: Appearance.rounding.normal
-                Layout.fillWidth: true
-                Layout.preferredHeight: 375
-
-                CalendarWidget {}
-            }
-
         }
     }
-
-    Rectangle {
-        color: Appearance.colors.colLayer1
-        radius: Appearance.rounding.normal
-        Layout.fillWidth: true
-        Layout.preferredHeight: 150
-    }
-
 }
