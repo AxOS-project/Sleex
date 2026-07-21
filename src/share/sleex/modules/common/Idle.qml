@@ -70,7 +70,7 @@ Singleton {
                 }
                 property JsonObject suspend: JsonObject {
                     property int timeout: 300
-                    property string actions: "loginctl suspend"
+                    property string actions: "/usr/share/sleex/scripts/power-action.sh suspend"
                     property bool on_battery: true
                     property bool enabled: true
                 }

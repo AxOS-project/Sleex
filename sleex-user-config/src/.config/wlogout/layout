@@ -6,7 +6,7 @@
 }
 {
     "label" : "hibernate",
-    "action" : "loginctl hibernate",
+    "action" : "/usr/share/sleex/scripts/power-action.sh hibernate",
     "text" : "save",
     "keybind" : "h"
 }
@@ -18,19 +18,19 @@
 }
 {
     "label" : "shutdown",
-    "action" : "loginctl poweroff",
+    "action" : "/usr/share/sleex/scripts/power-action.sh poweroff",
     "text" : "power_settings_new",
     "keybind" : "s"
 }
 {
     "label" : "suspend",
-    "action" : "loginctl suspend",
+    "action" : "/usr/share/sleex/scripts/power-action.sh suspend",
     "text" : "bedtime",
     "keybind" : "u"
 }
 {
     "label" : "reboot",
-    "action" : "loginctl reboot",
+    "action" : "/usr/share/sleex/scripts/power-action.sh reboot",
     "text" : "restart_alt",
     "keybind" : "r"
 }
