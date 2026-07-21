@@ -370,7 +370,7 @@ ShellRoot {
                             color: Appearance.colors.colOnLayer0
                             anchors.centerIn: parent
                         }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "suspend"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl suspend || systemctl suspend"])
                     }
                     
                     RippleButton {
@@ -385,7 +385,7 @@ ShellRoot {
                             anchors.centerIn: parent
                             color: Appearance.colors.colOnLayer0
                         }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "reboot"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl reboot || systemctl reboot"])
                     }
 
                     RippleButton {
@@ -401,7 +401,7 @@ ShellRoot {
                             anchors.centerIn: parent
                             color: Appearance.colors.colOnLayer0
                         }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "poweroff"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl poweroff || systemctl poweroff"])
                     }
                 }
             }

@@ -444,7 +444,7 @@ FocusScope {
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "bedtime"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "suspend"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl suspend || systemctl suspend"])
                     }
                     RippleButton {
                         colBackground: Appearance.colors.colLayer1
@@ -452,14 +452,14 @@ FocusScope {
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "power_settings_new"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "poweroff"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl poweroff || systemctl poweroff"])
                     }
                     RippleButton {
                         colBackground: Appearance.colors.colLayer1
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "restart_alt"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "reboot"])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "loginctl reboot || systemctl reboot"])
                     }
                 }
             }

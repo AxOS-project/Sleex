@@ -112,7 +112,7 @@ Scope {
                             id: sessionSleep
                             buttonIcon: "dark_mode"
                             buttonText: qsTr("Sleep")
-                            onClicked:  { Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "suspend"]); sessionRoot.hide() }
+                            onClicked:  { Quickshell.execDetached(["sh", "-c", "loginctl suspend || systemctl suspend"]); sessionRoot.hide() }
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionLock
                             KeyNavigation.right: sessionLogout
@@ -147,7 +147,7 @@ Scope {
                             id: sessionHibernate
                             buttonIcon: "downloading"
                             buttonText: qsTr("Hibernate")
-                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "hibernate"]);
+                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl hibernate || systemctl hibernate"]);
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.up: sessionLock
                             KeyNavigation.right: sessionShutdown
@@ -156,7 +156,7 @@ Scope {
                             id: sessionShutdown
                             buttonIcon: "power_settings_new"
                             buttonText: qsTr("Shutdown")
-                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "poweroff"])
+                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl poweroff || systemctl poweroff"])
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionHibernate
                             KeyNavigation.right: sessionReboot
