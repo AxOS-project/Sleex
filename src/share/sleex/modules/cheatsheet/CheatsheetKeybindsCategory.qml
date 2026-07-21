@@ -17,6 +17,8 @@ Column {
     property int maxBindWidth: 0
     property real columnSpacing: 40
     property real titleSpacing: 7
+    readonly property var cheatsheetOptions: Config?.options?.cheatsheet ?? ({})
+    readonly property var cheatsheetFontSize: cheatsheetOptions.fontSize ?? ({})
 
     // Excellent symbol explaination and source :
     // http://xahlee.info/comp/unicode_computing_symbols.html
@@ -71,14 +73,15 @@ Column {
         "Slash": "/",
         "Hash": "#",
         "Return": "Enter",
+        "&": "<Number>",
         // "Shift": "",
       },
-      !!Config.options.cheatsheet.superKey ? {
-          "Super": Config.options.cheatsheet.superKey,
+            !!cheatsheetOptions.superKey ? {
+                    "Super": cheatsheetOptions.superKey,
       }: {},
-      Config.options.cheatsheet.useMacSymbol ? macSymbolMap : {},
-      Config.options.cheatsheet.useFnSymbol ? functionSymbolMap : {},
-      Config.options.cheatsheet.useMouseSymbol ? mouseSymbolMap : {},
+            cheatsheetOptions.useMacSymbol ? macSymbolMap : {},
+            cheatsheetOptions.useFnSymbol ? functionSymbolMap : {},
+            cheatsheetOptions.useMouseSymbol ? mouseSymbolMap : {},
     )
 
     function modMaskToStringList(modMask: int): list<string> {
@@ -117,22 +120,27 @@ Column {
 
     function containsNonFirstRepetitive(bind) {
         const key = bind.key;
+        const desc = bind.description || "";
+
+        if (/\bworkspace (?:[2-9]|10)\b/i.test(desc)) return true;
+
         if (key.includes("mouse") || key.includes("page")) return false;
-        // Contains non-1 number
-        if (/\d/.test(key) && !key.includes("1")) return true;
-        // Contains non-left direction
+        if (/\d/.test(key) && !key.match(/^(1|code:10)$/)) return true;
         if (/^(right|up|down)\b/i.test(key)) return true;
+        
         return false;
     }
 
     function containsFirstRepetitive(bind) {
         const key = bind.key;
-        return key.includes("1") || /left/i.test(key);
+        const desc = bind.description || "";
+        
+        return key.includes("1") || /left/i.test(key) || /\bworkspace 1\b/i.test(desc);
     }
 
     function transformKey(key) {
         const replaced = root.keySubstitutions[key] || key;
-        const denumbered = replaced.replace("1", "<Number>");
+        const denumbered = replaced.replace(/^(1|code:10)$/, "<Number>");
         const dedirectioned = denumbered.replace("Left", "<Direction>");
         return dedirectioned;
     }
@@ -170,6 +178,29 @@ Column {
         required property var keyData
         property string categoryName: ""
 
+        property string finalKey: {
+            let k = bindLine.keyData.key || "";
+            if ((k === "" || k === "&" || k.startsWith("code:")) && /\bworkspace\b/i.test(bindLine.keyData.description || "")) {
+                return "<Number>";
+            }
+            return root.transformKey(k);
+        }
+
+        property bool showMainKey: {
+            let k = bindLine.keyData.key || "";
+            
+            let extendedBlacklist = root.keyBlacklist.concat(["SUPER", "Super_L", "Super_R"]);
+            if (extendedBlacklist.includes(k)) return false;
+            
+            if (finalKey === "") return false;
+            
+            if (finalKey === "<Number>" && !/\bworkspace\b/i.test(bindLine.keyData.description || "")) {
+                return false;
+            }
+            
+            return true;
+        }
+
         Row {
             spacing: 16
             Row {
@@ -177,34 +208,36 @@ Column {
                 Component.onCompleted: root.maxBindWidth = Math.max(root.maxBindWidth, implicitWidth)
                 width: root.maxBindWidth
                 spacing: 4
+                
                 Repeater {
                     model: {
                         const modList = root.modMaskToStringList(bindLine.keyData.modmask).map(mod => root.keySubstitutions[mod] || mod)
-                        if (modList.length == 0) return []
-                        if (Config.options.cheatsheet.splitButtons) return modList;
+                        if (modList.length === 0) return []
+                        if (root.cheatsheetOptions.splitButtons) return modList;
                         return [modList.join(" ")]
                     }
                     delegate: KeyboardKey {
                         required property var modelData
                         key: root.transformKey(modelData)
-                        //pixelSize: Config.options.cheatsheet.fontSize.key
                     }
                 }
+                
                 StyledText {
                     id: keybindPlus
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: !keyBlacklist.includes(bindLine.keyData.key) && bindLine.keyData.modmask > 0
+                    visible: bindLine.showMainKey && bindLine.keyData.modmask > 0
                     text: "+"
                 }
+                
                 KeyboardKey {
                     id: keybindKey
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: !keyBlacklist.includes(bindLine.keyData.key)
-                    key: root.transformKey(bindLine.keyData.key)
-                    //pixelSize: Config.options.cheatsheet.fontSize.key
+                    visible: bindLine.showMainKey
+                    key: bindLine.finalKey
                     color: Appearance.colors.colOnLayer0
                 }
             }
+            
             Item {
                 anchors.verticalCenter: parent.verticalCenter
                 implicitWidth: commentText.implicitWidth + root.columnSpacing
@@ -213,7 +246,7 @@ Column {
                     id: commentText
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
-                    font.pixelSize: Config.options.cheatsheet.fontSize.comment || Appearance.font.pixelSize.smaller
+                    font.pixelSize: root.cheatsheetFontSize.comment ?? Appearance.font.pixelSize.smaller
                     text: root.transformDescription(bindLine.keyData, bindLine.categoryName)
                 }
             }
