@@ -14,6 +14,14 @@ import Quickshell.Hyprland
 Scope {
     id: root
     property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property bool hasSystemd: false
+
+    Process {
+        id: systemdCheck
+        running: true
+        command: ["test", "-d", "/run/systemd/system"]
+        onExited: (exitCode) => root.hasSystemd = (exitCode === 0)
+    }
 
     Loader {
         id: sessionLoader
@@ -124,7 +132,7 @@ Scope {
                         onClicked:  { Quickshell.execDetached(["bash", "-c", `${Config.options.apps.taskManager}`]); sessionRoot.hide() }
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionLogout
-                        KeyNavigation.down: sessionFirmwareReboot
+                        KeyNavigation.down: root.hasSystemd ? sessionFirmwareReboot : null
                     }
 
                     SessionActionButton {
@@ -153,11 +161,12 @@ Scope {
                         onClicked: Quickshell.execDetached(["reboot"]);
                         onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                         KeyNavigation.left: sessionShutdown
-                        KeyNavigation.right: sessionFirmwareReboot
+                        KeyNavigation.right: root.hasSystemd ? sessionFirmwareReboot : null
                         KeyNavigation.up: sessionLogout
                     }
                     SessionActionButton {
                         id: sessionFirmwareReboot
+                        visible: root.hasSystemd
                         buttonIcon: "settings_applications"
                         buttonText: qsTr("Reboot to firmware settings")
                         onClicked: Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup"]);
