@@ -1,7 +1,7 @@
 hl.on("hyprland.start", function () 
     -- Bar, wallpaper
     -- hl.dsp.exec_cmd("swww-daemon")
-    hl.exec_cmd("qs -p /usr/share/sleex &")
+    hl.exec_cmd("QT_QPA_PLATFORM=wayland qs -p /usr/share/sleex &")
 
     -- Core components (authentication, lock screen, notification daemon)
     hl.exec_cmd("dbus-update-activation-environment --all")

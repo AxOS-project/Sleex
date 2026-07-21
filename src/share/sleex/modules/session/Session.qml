@@ -14,6 +14,14 @@ import Quickshell.Hyprland
 Scope {
     id: root
     property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property bool hasSystemd: false
+
+    Process {
+        id: systemdCheck
+        running: true
+        command: ["test", "-d", "/run/systemd/system"]
+        onExited: (exitCode) => root.hasSystemd = (exitCode === 0)
+    }
 
     Loader {
         id: sessionLoader
@@ -82,88 +90,98 @@ Scope {
                     }
                 }
 
-                GridLayout {
-                    columns: 4
-                    columnSpacing: 15
-                    rowSpacing: 15
+                ColumnLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 15
 
-                    SessionActionButton {
-                        id: sessionLock
-                        focus: sessionRoot.visible
-                        buttonIcon: "lock"
-                        buttonText: qsTr("Lock")
-                        onClicked:  GlobalStates.screenLocked = true;
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.right: sessionSleep
-                        KeyNavigation.down: sessionHibernate
-                    }
-                    SessionActionButton {
-                        id: sessionSleep
-                        buttonIcon: "dark_mode"
-                        buttonText: qsTr("Sleep")
-                        onClicked:  { Quickshell.execDetached(["systemctl", "suspend"]); sessionRoot.hide() }
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.left: sessionLock
-                        KeyNavigation.right: sessionLogout
-                        KeyNavigation.down: sessionShutdown
-                    }
-                    SessionActionButton {
-                        id: sessionLogout
-                        buttonIcon: "logout"
-                        buttonText: qsTr("Logout")
-                        onClicked: { Quickshell.execDetached(["pkill", "Hyprland"]); sessionRoot.hide() }
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.left: sessionSleep
-                        KeyNavigation.right: sessionTaskManager
-                        KeyNavigation.down: sessionReboot
-                    }
-                    SessionActionButton {
-                        id: sessionTaskManager
-                        buttonIcon: "browse_activity"
-                        buttonText: qsTr("Task Manager")
-                        onClicked:  { Quickshell.execDetached(["bash", "-c", `${Config.options.apps.taskManager}`]); sessionRoot.hide() }
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.left: sessionLogout
-                        KeyNavigation.down: sessionFirmwareReboot
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 15
+
+                        SessionActionButton {
+                            id: sessionLock
+                            focus: sessionRoot.visible
+                            buttonIcon: "lock"
+                            buttonText: qsTr("Lock")
+                            onClicked:  GlobalStates.screenLocked = true;
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.right: sessionSleep
+                            KeyNavigation.down: sessionHibernate
+                        }
+                        SessionActionButton {
+                            id: sessionSleep
+                            buttonIcon: "dark_mode"
+                            buttonText: qsTr("Sleep")
+                            onClicked:  { Quickshell.execDetached(["loginctl", "suspend"]); sessionRoot.hide() }
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.left: sessionLock
+                            KeyNavigation.right: sessionLogout
+                            KeyNavigation.down: sessionShutdown
+                        }
+                        SessionActionButton {
+                            id: sessionLogout
+                            buttonIcon: "logout"
+                            buttonText: qsTr("Logout")
+                            onClicked: { Quickshell.execDetached(["pkill", "Hyprland"]); sessionRoot.hide() }
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.left: sessionSleep
+                            KeyNavigation.right: sessionTaskManager
+                            KeyNavigation.down: sessionReboot
+                        }
+                        SessionActionButton {
+                            id: sessionTaskManager
+                            buttonIcon: "browse_activity"
+                            buttonText: qsTr("Task Manager")
+                            onClicked:  { Quickshell.execDetached(["bash", "-c", `${Config.options.apps.taskManager}`]); sessionRoot.hide() }
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.left: sessionLogout
+                            KeyNavigation.down: root.hasSystemd ? sessionFirmwareReboot : null
+                        }
                     }
 
-                    SessionActionButton {
-                        id: sessionHibernate
-                        buttonIcon: "downloading"
-                        buttonText: qsTr("Hibernate")
-                        onClicked: Quickshell.execDetached(["systemctl", "hibernate"]);
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.up: sessionLock
-                        KeyNavigation.right: sessionShutdown
-                    }
-                    SessionActionButton {
-                        id: sessionShutdown
-                        buttonIcon: "power_settings_new"
-                        buttonText: qsTr("Shutdown")
-                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.left: sessionHibernate
-                        KeyNavigation.right: sessionReboot
-                        KeyNavigation.up: sessionSleep
-                    }
-                    SessionActionButton {
-                        id: sessionReboot
-                        buttonIcon: "restart_alt"
-                        buttonText: qsTr("Reboot")
-                        onClicked: Quickshell.execDetached(["reboot"]);
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.left: sessionShutdown
-                        KeyNavigation.right: sessionFirmwareReboot
-                        KeyNavigation.up: sessionLogout
-                    }
-                    SessionActionButton {
-                        id: sessionFirmwareReboot
-                        buttonIcon: "settings_applications"
-                        buttonText: qsTr("Reboot to firmware settings")
-                        onClicked: Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup"]);
-                        onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
-                        KeyNavigation.up: sessionTaskManager
-                        KeyNavigation.left: sessionReboot
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 15
+
+                        SessionActionButton {
+                            id: sessionHibernate
+                            buttonIcon: "downloading"
+                            buttonText: qsTr("Hibernate")
+                            onClicked: Quickshell.execDetached(["loginctl", "hibernate"]);
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.up: sessionLock
+                            KeyNavigation.right: sessionShutdown
+                        }
+                        SessionActionButton {
+                            id: sessionShutdown
+                            buttonIcon: "power_settings_new"
+                            buttonText: qsTr("Shutdown")
+                            onClicked: Quickshell.execDetached(["loginctl", "poweroff"])
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.left: sessionHibernate
+                            KeyNavigation.right: sessionReboot
+                            KeyNavigation.up: sessionSleep
+                        }
+                        SessionActionButton {
+                            id: sessionReboot
+                            buttonIcon: "restart_alt"
+                            buttonText: qsTr("Reboot")
+                            onClicked: Quickshell.execDetached(["reboot"]);
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.left: sessionShutdown
+                            KeyNavigation.right: root.hasSystemd ? sessionFirmwareReboot : null
+                            KeyNavigation.up: sessionLogout
+                        }
+                        SessionActionButton {
+                            id: sessionFirmwareReboot
+                            visible: root.hasSystemd
+                            buttonIcon: "settings_applications"
+                            buttonText: qsTr("Reboot to firmware settings")
+                            onClicked: Quickshell.execDetached(["systemctl", "reboot", "--firmware-setup"]);
+                            onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
+                            KeyNavigation.up: sessionTaskManager
+                            KeyNavigation.left: sessionReboot
+                        }
                     }
                 }
 

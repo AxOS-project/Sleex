@@ -370,7 +370,7 @@ ShellRoot {
                             color: Appearance.colors.colOnLayer0
                             anchors.centerIn: parent
                         }
-                        onClicked: Quickshell.execDetached(["systemctl", "suspend"])
+                        onClicked: Quickshell.execDetached(["loginctl", "suspend"])
                     }
                     
                     RippleButton {
@@ -385,7 +385,7 @@ ShellRoot {
                             anchors.centerIn: parent
                             color: Appearance.colors.colOnLayer0
                         }
-                        onClicked: Quickshell.execDetached(["systemctl", "reboot"])
+                        onClicked: Quickshell.execDetached(["loginctl", "reboot"])
                     }
 
                     RippleButton {
@@ -401,7 +401,7 @@ ShellRoot {
                             anchors.centerIn: parent
                             color: Appearance.colors.colOnLayer0
                         }
-                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                        onClicked: Quickshell.execDetached(["loginctl", "poweroff"])
                     }
                 }
             }

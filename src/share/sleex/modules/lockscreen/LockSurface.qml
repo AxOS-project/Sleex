@@ -444,7 +444,7 @@ FocusScope {
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "bedtime"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["systemctl", "suspend"])
+                        onClicked: Quickshell.execDetached(["loginctl", "suspend"])
                     }
                     RippleButton {
                         colBackground: Appearance.colors.colLayer1
@@ -452,14 +452,14 @@ FocusScope {
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "power_settings_new"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                        onClicked: Quickshell.execDetached(["loginctl", "poweroff"])
                     }
                     RippleButton {
                         colBackground: Appearance.colors.colLayer1
                         Layout.fillHeight: true; Layout.fillWidth: true
                         buttonRadius: Appearance.rounding.full
                         MaterialSymbol { text: "restart_alt"; iconSize: 20; anchors.centerIn: parent; color: Appearance.colors.colOnLayer0 }
-                        onClicked: Quickshell.execDetached(["systemctl", "reboot"])
+                        onClicked: Quickshell.execDetached(["loginctl", "reboot"])
                     }
                 }
             }
