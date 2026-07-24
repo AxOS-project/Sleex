@@ -13,7 +13,7 @@ ContentPage {
 
     ContentSection {
         visible: SystemInfo.distroName == "AxOS"
-        title: "Distro"
+        title: qsTr("Distro")
         icon: "info"
         
         RowLayout {

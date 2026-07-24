@@ -12,6 +12,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Widgets
+import Sleex.Core
 import qs
 import qs.services
 import qs.modules.common
@@ -33,22 +34,22 @@ ApplicationWindow {
     property bool showNextTime: false
     property int currentPage: 0
     property var pages: [
-        { name: "Style",       icon: "palette",          component: "modules/settings/Style.qml",         type: "item" },
-        { name: "Interface",   icon: "space_dashboard",  component: "modules/settings/Interface.qml",     type: "item" },
+        { name: qsTr("Style"),       icon: "palette",          component: "modules/settings/Style.qml",         type: "item" },
+        { name: qsTr("Interface"),   icon: "space_dashboard",  component: "modules/settings/Interface.qml",     type: "item" },
         { type: "divider" },
-        { name: "Behavior",    icon: "settings",         component: "modules/settings/BehaviorConfig.qml", type: "item" },
-        { name: "Sound",       icon: "brand_awareness",  component: "modules/settings/Sound.qml",         type: "item" },
-        { name: "Bluetooth",   icon: "bluetooth",        component: "modules/settings/Bluetooth.qml",     type: "item" },
-        { name: "Wifi",        icon: "wifi",             component: "modules/settings/Wifi.qml",          type: "item" },
-        { name: "Applications",icon: "apps",             component: "modules/settings/Applications.qml",  type: "item" },
-        { name: "Display",     icon: "display_settings", component: "modules/settings/Display.qml",       type: "item" },
+        { name: qsTr("Behavior"),    icon: "settings",         component: "modules/settings/BehaviorConfig.qml", type: "item" },
+        { name: qsTr("Sound"),       icon: "brand_awareness",  component: "modules/settings/Sound.qml",         type: "item" },
+        { name: qsTr("Bluetooth"),   icon: "bluetooth",        component: "modules/settings/Bluetooth.qml",     type: "item" },
+        { name: qsTr("Wifi"),        icon: "wifi",             component: "modules/settings/Wifi.qml",          type: "item" },
+        { name: qsTr("Applications"),icon: "apps",             component: "modules/settings/Applications.qml",  type: "item" },
+        { name: qsTr("Display"),     icon: "display_settings", component: "modules/settings/Display.qml",       type: "item" },
         { type: "divider" },
-        { name: "Privacy",     icon: "lock",             component: "modules/settings/Privacy.qml",       type: "item" },
-        { name: "About",       icon: "info",             component: "modules/settings/About.qml",         type: "item" }
+        { name: qsTr("Privacy"),     icon: "lock",             component: "modules/settings/Privacy.qml",       type: "item" },
+        { name: qsTr("About"),       icon: "info",             component: "modules/settings/About.qml",         type: "item" }
     ]
 
     visible: true
-    title: "Sleex Settings"
+    title: qsTr("Sleex Settings")
 
     onClosing: Qt.quit()
 

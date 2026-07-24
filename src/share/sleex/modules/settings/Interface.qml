@@ -15,7 +15,7 @@ ContentPage {
 
     FileDialog {
         id: sddmFaceDialog
-        title: "Select profile picture"
+        title: qsTr("Select profile picture")
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
             _selectedFaceImage = selectedFile.toString().replace("file://", "")
@@ -58,7 +58,7 @@ ContentPage {
 
     FileDialog {
         id: avatarPickerDialog
-        title: "Select avatar image"
+        title: qsTr("Select avatar image")
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp *.webp)"]
         onAccepted: {
             Config.options.dashboard.avatarPath = selectedFile.toString().replace("file://", "")
@@ -67,19 +67,19 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Shell style"
+        title: qsTr("Shell style")
         icon: "style"
 
         ConfigSwitch {
-            text: "Transparency"
+            text: qsTr("Transparency")
             checked: Config.options.appearance.transparency
             onClicked: checked = !checked;
-            StyledToolTip { text: "Enable the blur effect on the shell." }
+            StyledToolTip { text: qsTr("Enable the blur effect on the shell.") }
             onCheckedChanged: Config.options.appearance.transparency = checked;
         }
 
         ConfigSpinBox {
-            text: "Opacity"
+            text: qsTr("Opacity")
             value: Config.options.appearance.opacity
             from: 0
             to: 100
@@ -92,7 +92,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Bar"
+        title: qsTr("Bar")
         icon: "toolbar"
 
         RowLayout {
@@ -100,14 +100,14 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
-                text: "Show app name"
+                text: qsTr("Show app name")
                 checked: Config.options.bar.showTitle
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showTitle = checked;
             }
 
             ConfigSwitch {
-                text: "Show resources usage"
+                text: qsTr("Show resources usage")
                 checked: Config.options.bar.showRessources
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showRessources = checked;
@@ -119,14 +119,14 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
-                text: "Show Workspaces"
+                text: qsTr("Show Workspaces")
                 checked: Config.options.bar.showWorkspaces
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showWorkspaces = checked;
             }
 
             ConfigSwitch {
-                text: "Show clock"
+                text: qsTr("Show clock")
                 checked: Config.options.bar.showClock
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showClock = checked;
@@ -138,14 +138,14 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
-                text: "Show system icons"
+                text: qsTr("Show system icons")
                 checked: Config.options.bar.showTrayAndIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showTrayAndIcons = checked;
             }
 
             ConfigSwitch {
-                text: "Enable bar background"
+                text: qsTr("Enable bar background")
                 checked: Config.options.bar.background
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.background = checked;
@@ -154,13 +154,13 @@ ContentPage {
         }
 
         ContentSubsection {
-            title: "Workspaces"
-            tooltip: "Tip: Hide icons for the\n classic Sleex experience"
+            title: qsTr("Workspaces")
+            tooltip: qsTr("Tip: Hide icons for the\nclassic Sleex experience")
 
             ConfigRow {
                 uniform: true
                 ConfigSwitch {
-                    text: 'Show app icons'
+                    text: qsTr("Show app icons")
                     onClicked: checked = !checked;
                     checked: Config.options.bar.workspaces.showAppIcons
                     onCheckedChanged: {
@@ -168,7 +168,7 @@ ContentPage {
                     }
                 }
                 ConfigSwitch {
-                    text: 'Use Material icons'
+                    text: qsTr("Use Material icons")
                     onClicked: checked = !checked;
                     checked: Config.options.bar.workspaces.useMaterialIcons
                     onCheckedChanged: {
@@ -177,7 +177,7 @@ ContentPage {
                 }
             }
             ConfigSwitch {
-                text: 'Always show numbers'
+                text: qsTr("Always show numbers")
                 onClicked: checked = !checked;
                 checked: Config.options.bar.workspaces.alwaysShowNumbers
                 onCheckedChanged: {
@@ -185,7 +185,7 @@ ContentPage {
                 }
             }
             ConfigSpinBox {
-                text: "Workspaces shown"
+                text: qsTr("Workspaces shown")
                 value: Config.options.bar.workspaces.shown
                 from: 1
                 to: 30
@@ -195,7 +195,7 @@ ContentPage {
                 }
             }
             ConfigSpinBox {
-                text: "Number show delay when pressing Super (ms)"
+                text: qsTr("Number show delay when pressing Super (ms)")
                 value: Config.options.bar.workspaces.showNumberDelay
                 from: 0
                 to: 1000
@@ -209,11 +209,11 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Dashboard"
+        title: qsTr("Dashboard")
         icon: "dashboard"
 
         ConfigSpinBox {
-            text: "Scale"
+            text: qsTr("Scale")
             value: Config.options.dashboard.dashboardScale * 100
             from: 0
             to: 200
@@ -226,7 +226,7 @@ ContentPage {
         MaterialTextField {
             id: ghUsername
             Layout.fillWidth: true
-            placeholderText: "Github username"
+            placeholderText: qsTr("Github username")
             text: Config.options.dashboard.ghUsername
             wrapMode: TextEdit.Wrap
             onTextChanged: {
@@ -237,7 +237,7 @@ ContentPage {
         MaterialTextField {
             id: userDesc
             Layout.fillWidth: true
-            placeholderText: "User description"
+            placeholderText: qsTr("User description")
             text: Config.options.dashboard.userDesc
             onTextChanged: {
                 Config.options.dashboard.userDesc = text;
@@ -252,7 +252,7 @@ ContentPage {
             MaterialTextField {
                 id: avatarPathField
                 Layout.fillWidth: true
-                placeholderText: "Avatar image path"
+                placeholderText: qsTr("Avatar image path")
                 text: Config.options.dashboard.avatarPath
                 onEditingFinished: {
                     Config.options.dashboard.avatarPath = text;
@@ -268,17 +268,17 @@ ContentPage {
         }
 
         ContentSubsection {
-            title: "Optional features"
-            tooltip: "Affects performances.\nWill make dashboard load slower"
+            title: qsTr("Optional features")
+            tooltip: qsTr("May affect performance.\nThe dashboard may load more slowly.")
 
             ConfigSwitch {
-                text: "Todo list"
+                text: qsTr("Todo list")
                 checked: Config.options.dashboard.opt.enableTodo
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.opt.enableTodo = checked;
             }
             ConfigSwitch {
-                text: "Calendar tab"
+                text: qsTr("Calendar tab")
                 checked: Config.options.dashboard.opt.enableCalendar
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.dashboard.opt.enableCalendar = checked;
@@ -286,7 +286,7 @@ ContentPage {
         }
 
         StyledText {
-            text: "Animation Direction"
+            text: qsTr("Animation Direction")
             color: Appearance.colors.colSubtext
         }
 
@@ -304,7 +304,7 @@ ContentPage {
         }
 
         StyledText {
-            text: "Animation Intensity"
+            text: qsTr("Animation Intensity")
             color: Appearance.colors.colSubtext
         }
 
@@ -323,14 +323,14 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Dock"
+        title: qsTr("Dock")
         icon: "dock"
 
         ConfigRow {
             uniform: true
 
             ConfigSwitch {
-                text: "Enabled"
+                text: qsTr("Enabled")
                 onClicked: checked = !checked;
                 checked: Config.options.dock.enabled
                 onCheckedChanged: {
@@ -338,7 +338,7 @@ ContentPage {
                 }
             }
             ConfigSpinBox {
-                text: "Height"
+                text: qsTr("Height")
                 value: Config.options.dock.height
                 stepSize: 5
                 onValueChanged: {
@@ -350,7 +350,7 @@ ContentPage {
         ConfigRow {
             uniform: true
             ConfigSwitch {
-                text: "Hover to reveal"
+                text: qsTr("Hover to reveal")
                 onClicked: checked = !checked;
                 checked: Config.options.dock.hoverToReveal
                 onCheckedChanged: {
@@ -358,7 +358,7 @@ ContentPage {
                 }
             }
             ConfigSwitch {
-                text: "Pinned on startup"
+                text: qsTr("Pinned on startup")
                 onClicked: checked = !checked
                 checked: Config.options.dock.pinnedOnStartup
                 onCheckedChanged: {
@@ -369,7 +369,7 @@ ContentPage {
         }
 
         ConfigSpinBox {
-            text: "Hover region height"
+            text: qsTr("Hover region height")
             value: Config.options.dock.hoverRegionHeight
             onValueChanged: {
                 Config.options.dock.hoverRegionHeight = value
@@ -380,7 +380,7 @@ ContentPage {
 
 
     ContentSection {
-        title: "Background"
+        title: qsTr("Background")
         icon: "wallpaper"
 
         ColumnLayout {
@@ -391,14 +391,14 @@ ContentPage {
                 uniform: true
 
                 ConfigSwitch {
-                    text: "Show clock"
+                    text: qsTr("Show clock")
                     checked: Config.options.background.enableClock
                     onClicked: checked = !checked;
                     onCheckedChanged: Config.options.background.enableClock = checked;
                 }
 
                 ConfigSwitch {
-                    text: "Fixed clock position"
+                    text: qsTr("Fixed clock position")
                     checked: Config.options.background.fixedClockPosition
                     onClicked: checked = !checked;
                     onCheckedChanged: Config.options.background.fixedClockPosition = checked;
@@ -409,14 +409,14 @@ ContentPage {
                 uniform: true
 
                 ConfigSwitch {
-                    text: "Show watermark"
+                    text: qsTr("Show watermark")
                     checked: Config.options.background.showWatermark
                     onClicked: checked = !checked;
                     onCheckedChanged: Config.options.background.showWatermark = checked;
                 }
 
                 ConfigSwitch {
-                    text: "Show quotes"
+                    text: qsTr("Show quotes")
                     checked: Config.options.background.enableQuote
                     onClicked: checked = !checked
                     onCheckedChanged: {
@@ -428,14 +428,14 @@ ContentPage {
             }
 
             ConfigSwitch {
-                text: "Show desktop icons"
+                text: qsTr("Show desktop icons")
                 checked: Config.options.background.showDesktopIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.background.showDesktopIcons = checked;
             }
 
             ContentSubsection {
-                title: "Clock mode"
+                title: qsTr("Clock mode")
 
                 ConfigSelectionArray {
                     currentValue: Config.options.background.clockMode
@@ -451,7 +451,7 @@ ContentPage {
             }
 
             ContentSubsection {
-                title: "Clock Font"
+                title: qsTr("Clock Font")
 
                 StyledComboBox {
                     id: fontComboBox
@@ -468,8 +468,8 @@ ContentPage {
             }
 
             ContentSubsection {
-                title: "Quote Source"
-                tooltip: "The local quotes are stored in /usr/share/sleex/assets/quotes.json.\nThese quotes are made by the AxOS community and are tech related."
+                title: qsTr("Quote Source")
+                tooltip: qsTr("The local quotes are stored in /usr/share/sleex/assets/quotes.json.\nThese quotes are made by the AxOS community and are tech related.")
 
                 ConfigSelectionArray {
                     currentValue: Config.options.background.quoteSource
@@ -488,7 +488,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Notifications"
+        title: qsTr("Notifications")
         icon: "notifications"
 
         ConfigSelectionArray {
@@ -506,7 +506,7 @@ ContentPage {
 
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
-            text: "Battery overlay warnings"
+            text: qsTr("Battery overlay warnings")
             checked: Config.options.battery.overlayEnabled
             onClicked: checked = !checked;
             onCheckedChanged: {
@@ -516,11 +516,11 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Lock Screen"
+        title: qsTr("Lock Screen")
         icon: "lock"
 
         ConfigSwitch {
-            text: "Scrim background"
+            text: qsTr("Scrim background")
             checked: Config.options.lockscreen.enableScrim
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.enableScrim = checked;
@@ -528,25 +528,25 @@ ContentPage {
 
         ConfigSwitch {
             id: mediaShowOnLockScreenSwitch
-            text: "Player integration"
+            text: qsTr("Player integration")
             checked: Config.options.lockscreen.showLyricsOnLockScreen
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.showLyricsOnLockScreen = checked
-            StyledToolTip { text: "Show the media player widget on the lock screen." }
+            StyledToolTip { text: qsTr("Show the media player widget on the lock screen.") }
         }
 
         ConfigSwitch {
             visible: mediaShowOnLockScreenSwitch.checked
-            text: "Resizable widget"
+            text: qsTr("Resizable widget")
             checked: Config.options.lockscreen.resizableLockScreenWidget ?? false
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.resizableLockScreenWidget = checked
-            StyledToolTip { text: "Allow resizing & repositioning of the media player widget." }
+            StyledToolTip { text: qsTr("Allow resizing & repositioning of the media player widget.") }
         }
     }
 
     ContentSection {
-        title: "Login Screen"
+        title: qsTr("Login Screen")
         icon: "key"
 
         RowLayout {
@@ -556,7 +556,7 @@ ContentPage {
             Text {
                 id: faceImageLabel
                 Layout.fillWidth: true
-                text: _selectedFaceImage !== "" ? "  Custom picture set" : "  No picture selected"
+                text: _selectedFaceImage !== "" ? qsTr("Custom picture set") : qsTr("No picture selected")
                 elide: Text.ElideMiddle
                 color: palette.windowText
             }
@@ -589,22 +589,22 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Calendar"
+        title: qsTr("Calendar")
         icon: "event"
 
         ContentSubsection {
-            title: "Advanced"
-            tooltip: "Vdirsyncer is not configured by default.\nPlease refer to the documentation\n to set it up. Enable only after configuring it."
+            title: qsTr("Advanced")
+            tooltip: qsTr("Vdirsyncer is not configured by default.\nPlease refer to the documentation\nto set it up. Enable it only after configuration.")
         }
         ConfigSwitch {
-            text: "Use vdirsyncer"
+            text: qsTr("Use vdirsyncer")
             checked: Config.options.dashboard.calendar.useVdirsyncer
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.calendar.useVdirsyncer = checked;
         }
 
         ConfigSpinBox {
-            text: "Sync interval (minutes)"
+            text: qsTr("Sync interval (minutes)")
             value: Config.options.dashboard.calendar.syncInterval
             from: 1
             to: 1440 // 24 hours

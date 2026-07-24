@@ -26,7 +26,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Colors"
+        title: qsTr("Colors")
         icon: "palette"
 
         ButtonGroup {
@@ -37,7 +37,7 @@ ContentPage {
         }
 
         StyledText {
-            text: "Material Palette"
+            text: qsTr("Material Palette")
             color: Appearance.colors.colSubtext
         }
 
@@ -61,7 +61,7 @@ ContentPage {
 
        ConfigSwitch {
             id: staticColorsSwitch
-            text: "Static colors"
+            text: qsTr("Static colors")
             onClicked: checked = !checked;
             checked: Config.options.appearance.palette.useStaticColors
             onCheckedChanged: {
@@ -70,7 +70,7 @@ ContentPage {
                 // else Quickshell.execDetached(["sh", `${Directories.wallpaperSwitchScriptPath}`, "--noswitch", "--color", `${Config.options.appearance.palette.accentColorHex}`])
             }
             StyledToolTip {
-                text: "Use a static accent color instead of extracting colors from wallpaper"   
+                text: qsTr("Use a static accent color instead of extracting colors from wallpaper")   
             }
         }
         
@@ -102,11 +102,11 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Wallpaper"
+        title: qsTr("Wallpaper")
         icon: "wallpaper"
 
         StyledText {
-            text: "Transition Style"
+            text: qsTr("Transition Style")
             color: Appearance.colors.colSubtext
         }
 
@@ -134,7 +134,7 @@ ContentPage {
         }
 
         StyledText {
-            text: "Wipe Direction"
+            text: qsTr("Wipe Direction")
             color: Appearance.colors.colSubtext
             visible: isWipeSelected
         }
@@ -154,7 +154,7 @@ ContentPage {
         }
 
         StyledText {
-            text: "Animation Intensity"
+            text: qsTr("Animation Intensity")
             color: Appearance.colors.colSubtext
         }
 
@@ -174,7 +174,7 @@ ContentPage {
         MaterialTextField {
             id: wallpaperPathField
             Layout.fillWidth: true
-            placeholderText: "Wallpaper selector directory path"
+            placeholderText: qsTr("Wallpaper selector directory path")
             text: Config.options.background.wallpaperSelectorPath
             wrapMode: TextEdit.Wrap
             onTextChanged: {
@@ -202,7 +202,7 @@ ContentPage {
 
             StyledText {
                 anchors.centerIn: parent
-                text: "No wallpaper set"
+                text: qsTr("No wallpaper set")
                 color: Appearance.colors.colSubtext
                 visible: !Config.options.background.wallpaperPath
             }

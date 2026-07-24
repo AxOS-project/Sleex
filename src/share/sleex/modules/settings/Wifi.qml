@@ -129,7 +129,7 @@ ContentPage {
     // }
 
     ContentSection {
-        title: "Wifi settings"
+        title: qsTr("Wifi settings")
         icon: "network_wifi"
 
         RowLayout {
@@ -137,7 +137,7 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
-                text: "Enabled"
+                text: qsTr("Enabled")
                 checked: Network.wifiEnabled || false
                 onClicked: {
                     const newState = !checked;
@@ -145,7 +145,7 @@ ContentPage {
                     Network.toggleWifi();
                 }
                 StyledToolTip {
-                    text: Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
+                    text: Network.wifiEnabled ? qsTr("Click to disable WiFi") : qsTr("Click to enable WiFi")
                 }
             }
         }
@@ -196,7 +196,7 @@ ContentPage {
 
                 StyledToolTip {
                     extraVisibleCondition: discoverArea.containsMouse
-                    text: "Discover new networks"
+                    text: qsTr("Discover new networks")
                 }
             }
         }
@@ -218,7 +218,7 @@ ContentPage {
 
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: "Turn on WiFi to see available networks"
+                text: qsTr("Turn on WiFi to see available networks")
                 color: Appearance.colors.colOnLayer1
                 font.pixelSize: Appearance.font.pixelSize.large
                 horizontalAlignment: Text.AlignHCenter
@@ -230,7 +230,7 @@ ContentPage {
             Layout.fillWidth: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16
-            placeholderText: "Search networks"
+            placeholderText: qsTr("Search networks")
             visible: Network.wifiEnabled || false
         }
 
@@ -325,7 +325,7 @@ ContentPage {
 
                                 StyledText {
                                     Layout.fillWidth: true
-                                    text: "Open Network"
+                                    text: qsTr("Open Network")
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.colors.colSubtext
                                     visible: !(networkItem.modelData?.isSecure || false)
@@ -334,7 +334,7 @@ ContentPage {
                                 // Connection error display for this network
                                 StyledText {
                                     Layout.fillWidth: true
-                                    text: "Failed to connect: " + root.lastConnectionError
+                                    text: qsTr("Failed to connect: %1").arg(root.lastConnectionError)
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.m3colors.m3error
                                     wrapMode: Text.WordWrap
@@ -371,7 +371,7 @@ ContentPage {
 
                                     StyledToolTip {
                                         extraVisibleCondition: expandArea.containsMouse
-                                        text: networkItem.expanded ? "Collapse" : "Expand"
+                                        text: networkItem.expanded ? qsTr("Collapse") : qsTr("Expand")
                                     }
                                 }
                             }
@@ -461,14 +461,14 @@ ContentPage {
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 spacing: 4
-                                StyledText { text: "BSSID: " + networkItem.modelData.bssid }
-                                StyledText { text: "Frequence: " + networkItem.modelData.frequency }
-                                StyledText { text: "Security: " + networkItem.modelData.security }
+                                StyledText { text: qsTr("BSSID: %1").arg(networkItem.modelData.bssid) }
+                                StyledText { text: qsTr("Frequency: %1").arg(networkItem.modelData.frequency) }
+                                StyledText { text: qsTr("Security: %1").arg(networkItem.modelData.security) }
 
 
 
                                 StyledText { 
-                                    text: "Password:" 
+                                    text: qsTr("Password:") 
                                     visible: (networkItem.modelData?.isSecure || false) && (!(networkItem.modelData?.isKnown || false) || Network.hasConnectionFailed(networkItem.modelData.ssid))
                                 }
                                 Rectangle {
@@ -501,7 +501,7 @@ ContentPage {
                                             verticalAlignment: TextInput.AlignVCenter
 
                                             Text {
-                                                text: "Enter password..."
+                                                text: qsTr("Enter password...")
                                                 color: Appearance.m3colors.m3outline
                                                 font.pixelSize: Appearance?.font.pixelSize.small
                                                 visible: !passwdInput.text && !passwdInput.activeFocus
