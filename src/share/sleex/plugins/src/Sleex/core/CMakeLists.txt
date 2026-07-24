@@ -2,11 +2,18 @@ pkg_check_modules(GLIB REQUIRED glib-2.0 gobject-2.0 gio-2.0)
 
 qml_module(sleex-core
     URI Sleex.Core
-    SOURCES
-        init.cpp init.hpp
+
+    CUSTOM_PLUGIN
+    CLASS_NAME SleexCorePlugin
+    PLUGIN_SOURCES
         plugin.cpp
+
+    SOURCES
+        init.cpp
+        init.hpp
+
     DEPENDENCIES
-            Qt::Sql
+        Qt::Sql
 )
 
 target_include_directories(sleex-core PRIVATE 
