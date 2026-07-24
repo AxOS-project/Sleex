@@ -69,7 +69,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Default Applications"
+        title: qsTr("Default Applications")
         icon: "apps"
 
         ColumnLayout {
@@ -79,7 +79,7 @@ ContentPage {
             Layout.bottomMargin: 10
 
             StyledText {
-                text: "Web Browser"
+                text: qsTr("Web Browser")
                 color: Appearance.colors.colSubtext
             }
 
@@ -98,7 +98,7 @@ ContentPage {
             }
 
             StyledText {
-                text: "File Manager"
+                text: qsTr("File Manager")
                 color: Appearance.colors.colSubtext
             }
 
@@ -117,7 +117,7 @@ ContentPage {
             }
 
             StyledText {
-                text: "Image Viewer"
+                text: qsTr("Image Viewer")
                 color: Appearance.colors.colSubtext
             }
 
@@ -136,7 +136,7 @@ ContentPage {
             }
 
             StyledText {
-                text: "Video Player"
+                text: qsTr("Video Player")
                 color: Appearance.colors.colSubtext
             }
 
@@ -155,7 +155,7 @@ ContentPage {
             }
 
             StyledText {
-                text: "Document Viewer"
+                text: qsTr("Document Viewer")
                 color: Appearance.colors.colSubtext
             }
 

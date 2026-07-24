@@ -38,23 +38,23 @@ ContentPage {
     // forceWidth: true
 
     ContentSection {
-        title: "Protection"
+        title: qsTr("Protection")
         icon: "spatial_audio_off"
 
         ConfigSwitch {
-            text: "Earbang protection"
+            text: qsTr("Earbang protection")
             checked: Config.options.audio.protection.enable
             onClicked: checked = !checked;
             onCheckedChanged: {
                 Config.options.audio.protection.enable = checked;
             }
             StyledToolTip {
-                text: "Prevents abrupt increments and restricts volume limit"
+                text: qsTr("Prevents abrupt increments and restricts volume limit")
             }
         }
         ConfigSpinBox {
             id: earbangLimitSpinBox
-            text: "Earbang limit"
+            text: qsTr("Earbang limit")
             value: Config.options.audio.protection.maxAllowed
             from: 0
             to: 100
@@ -63,13 +63,13 @@ ContentPage {
                 Config.options.audio.protection.maxAllowed = value;
             }
             StyledToolTip {
-                text: "Maximum volume level allowed by earbang protection"
+                text: qsTr("Maximum volume level allowed by earbang protection")
             }
         }
     }
 
     ContentSection {
-        title: "Devices"
+        title: qsTr("Devices")
         icon: "headphones"
 
         AudioDeviceSelectorButton {
@@ -81,7 +81,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Volume mixer"
+        title: qsTr("Volume mixer")
         icon: "tune"
 
         // Rectangle {
@@ -122,12 +122,12 @@ ContentPage {
     }
 
     ContentSection {
-        title: "System sounds"
+        title: qsTr("System sounds")
         icon: "graphic_eq"
 
         ConfigSwitch {
             visible: UPower.displayDevice.isLaptopBattery
-            text: "Enable battery notification sounds"
+            text: qsTr("Enable battery notification sounds")
             checked: Config.options.battery.sound
             onClicked: checked = !checked;
             onCheckedChanged: {
@@ -137,7 +137,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Default Media Player"
+        title: qsTr("Default Media Player")
         icon: "play_circle"
     
             
@@ -146,7 +146,7 @@ ContentPage {
             
             id: mediaPlayer
             Layout.fillWidth: true
-            placeholderText: "Default Media Player"
+            placeholderText: qsTr("Default Media Player")
             text: Config.options.dashboard.mediaPlayer
             wrapMode: TextEdit.Wrap
             onEditingFinished: {

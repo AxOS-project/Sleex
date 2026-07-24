@@ -9,36 +9,36 @@ ContentPage {
     forceSingleColumn: true
     
     ContentSection {
-        title: "Weather"
+        title: qsTr("Weather")
         icon: "cloud"
 
         ConfigSwitch {
             id: weatherSwitch
-            text: "Enabled"
+            text: qsTr("Enabled")
             checked: Config.options.dashboard.enableWeather
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.enableWeather = checked
-            StyledToolTip { text: "View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider." }
+            StyledToolTip { text: qsTr("View weather forecasts directly in your dashboard.\nIt uses the https://open-meteo.com provider.") }
         }
         
         ConfigSwitch {
             id: autoLocationSwitch
             visible: weatherSwitch.checked
-            text: "Automatic Location"
+            text: qsTr("Automatic Location")
             checked: Config.options.dashboard.autoWeatherLocation ?? true
             onClicked: checked = !checked;
             onCheckedChanged: {
                 Config.options.dashboard.autoWeatherLocation = checked;
                 Weather.updateWeather();
             }
-            StyledToolTip { text: "IP-based approximate location." }
+            StyledToolTip { text: qsTr("IP-based approximate location.") }
         }
         
         MaterialTextField {
             id: weatherLocation
             visible: weatherSwitch.checked && !autoLocationSwitch.checked
             Layout.fillWidth: true
-            placeholderText: "Weather Location"
+            placeholderText: qsTr("Weather Location")
             text: Config.options.dashboard.weatherLocation
             wrapMode: TextEdit.Wrap
             onEditingFinished: {
@@ -48,16 +48,16 @@ ContentPage {
     }
     
     ContentSection {
-        title: "Media Player"
+        title: qsTr("Media Player")
         icon: "music_note"
 
         ConfigSwitch {
             id: lyricsSwitch
-            text: "Lyrics"
+            text: qsTr("Lyrics")
             checked: Config.options.dashboard.enableLyrics
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.dashboard.enableLyrics = checked
-            StyledToolTip { text: "Fetch and display synced lyrics (LRCLIB provider)." }
+            StyledToolTip { text: qsTr("Fetch and display synced lyrics (LRCLIB provider).") }
         }
     }
     

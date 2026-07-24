@@ -35,7 +35,7 @@ ContentPage {
     // forceWidth: true
 
     ContentSection {
-        title: "Monitor arrangement"
+        title: qsTr("Monitor arrangement")
         icon: "display_settings"
 
         DS.DisplaySettings {
@@ -45,7 +45,7 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Brightness"
+        title: qsTr("Brightness")
         icon: "brightness_medium"
 
         StyledSlider {
@@ -57,12 +57,12 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Night light"
+        title: qsTr("Night light")
         icon: "nightlight"
 
         ConfigSwitch {
             id: enableSwitch
-            text: "Enable"
+            text: qsTr("Enable")
             checked: NightLight.active
             onClicked: {
                 NightLight.toggle()
@@ -72,7 +72,7 @@ ContentPage {
 
         ConfigSwitch {
             id: autoSwitch
-            text: "Automatic toggle"
+            text: qsTr("Automatic toggle")
             checked: Config.options.display.nightLightAuto
             onClicked: checked = !checked
             onCheckedChanged: {

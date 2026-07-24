@@ -34,7 +34,7 @@ ContentPage {
 
 
     ContentSection {
-        title: "Bluetooth settings"
+        title: qsTr("Bluetooth settings")
         icon: "bluetooth"
         visible: Bluetooth.adapters.values.length > 0
 
@@ -43,7 +43,7 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
-                text: "Enabled"
+                text: qsTr("Enabled")
                 checked: Config.options.bar.showTitle
                 onClicked: checked = !checked;
                 onCheckedChanged: {
@@ -53,7 +53,7 @@ ContentPage {
             }
 
             ConfigSwitch {
-                text: "Discoverable"
+                text: qsTr("Discoverable")
                 checked: Bluetooth.defaultAdapter.discoverable
                 onClicked: checked = !checked;
                 onCheckedChanged: {
@@ -109,7 +109,7 @@ ContentPage {
 
                 StyledToolTip {
                     extraVisibleCondition: discoverArea.containsMouse
-                    text: "Discover new devices"
+                    text: qsTr("Discover new devices")
                 }
             }
         }
@@ -119,7 +119,7 @@ ContentPage {
 
 
         Text {
-            text: "No bluetooth adapter found"
+            text: qsTr("No bluetooth adapter found")
             color: Appearance.colors.colOnLayer1
             font.pixelSize: 30
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -129,7 +129,7 @@ ContentPage {
         StyledTextArea {
             id: deviceSearch
             Layout.fillWidth: true
-            placeholderText: "Search devices"
+            placeholderText: qsTr("Search devices")
             visible: Bluetooth.adapters.values.length > 0
         }
 

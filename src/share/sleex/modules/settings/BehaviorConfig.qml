@@ -10,13 +10,13 @@ ContentPage {
     // forceWidth: true
 
     ContentSection {
-        title: "Time and date"
+        title: qsTr("Time and date")
         icon: "schedule"
 
         ColumnLayout {
             // Format
             ContentSubsectionLabel {
-                text: "Time format"
+                text: qsTr("Time format")
             }
             StyledComboBox {
                 id: timeFormatComboBox
@@ -52,7 +52,7 @@ ContentPage {
             ColumnLayout {
                 // Format
                 ContentSubsectionLabel {
-                    text: "Date format"
+                    text: qsTr("Date format")
                 }
                 StyledComboBox {
                     id: dateFormatComboBox
@@ -102,14 +102,14 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Power"
+        title: qsTr("Power")
         icon: "battery_android_full"
 
         ConfigRow {
             visible: UPower.displayDevice.isLaptopBattery
             uniform: true
             ConfigSpinBox {
-                text: "Low warning"
+                text: qsTr("Low warning")
                 value: Config.options.battery.low
                 from: 0
                 to: 100
@@ -120,7 +120,7 @@ ContentPage {
             }
             ConfigSpinBox {
                 visible: UPower.displayDevice.isLaptopBattery
-                text: "Critical warning"
+                text: qsTr("Critical warning")
                 value: Config.options.battery.critical
                 from: 0
                 to: 100
@@ -131,7 +131,7 @@ ContentPage {
             }
         }
         ContentSubsectionLabel {
-            text: "Power profile"
+            text: qsTr("Power profile")
         }
         ConfigSelectionArray {
             currentValue: PowerProfiles.profile
@@ -148,12 +148,12 @@ ContentPage {
     }
 
     ContentSection {
-        title: "Idle daemon"
+        title: qsTr("Idle daemon")
         icon: "timer"
 
 
         ConfigSwitch {
-            text: "Enable idle actions"
+            text: qsTr("Enable idle actions")
             checked: Idle.hypnos.enabled
             onClicked: checked = !checked;
             onCheckedChanged: {
@@ -162,15 +162,15 @@ ContentPage {
         }
 
         ContentSubsection {
-            title: "Dim screen"
-            tooltip: "Decrease the screen brightness after the specified timeout."
+            title: qsTr("Dim screen")
+            tooltip: qsTr("Decrease the screen brightness after the specified timeout.")
             
             ConfigRow {
                 spacing: 10
                 Layout.fillWidth: true
 
                 ConfigSwitch {
-                    text: "Enable dimming"
+                    text: qsTr("Enable dimming")
                     checked: Idle.hypnos.rules.dim.enabled
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -179,7 +179,7 @@ ContentPage {
                 }
 
                 ConfigSwitch {
-                    text: "Only on battery power"
+                    text: qsTr("Only on battery power")
                     checked: Idle.hypnos.rules.dim.on_battery
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -189,7 +189,7 @@ ContentPage {
             }
 
             ConfigSpinBox {
-                text: "Timeout (seconds)"
+                text: qsTr("Timeout (seconds)")
                 value: Idle.hypnos.rules.dim.timeout
                 from: 10
                 to: 3600
@@ -201,15 +201,15 @@ ContentPage {
         }
 
         ContentSubsection {
-            title: "Lock screen"
-            tooltip: "Lock the session after the specified timeout."
+            title: qsTr("Lock screen")
+            tooltip: qsTr("Lock the session after the specified timeout.")
 
             ConfigRow {
                 spacing: 10
                 Layout.fillWidth: true
 
                 ConfigSwitch {
-                    text: "Enable locking"
+                    text: qsTr("Enable locking")
                     checked: Idle.hypnos.rules.lock.enabled
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -217,7 +217,7 @@ ContentPage {
                     }
                 }
                 ConfigSwitch {
-                    text: "Only on battery power"
+                    text: qsTr("Only on battery power")
                     checked: Idle.hypnos.rules.lock.on_battery
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -227,7 +227,7 @@ ContentPage {
             }
 
             ConfigSpinBox {
-                text: "Timeout (seconds)"
+                text: qsTr("Timeout (seconds)")
                 value: Idle.hypnos.rules.lock.timeout
                 from: 10
                 to: 3600
@@ -239,15 +239,15 @@ ContentPage {
         }    
 
         ContentSubsection {
-            title: "Suspend system"
-            tooltip: "Suspend the system after the specified timeout."
+            title: qsTr("Suspend system")
+            tooltip: qsTr("Suspend the system after the specified timeout.")
 
             ConfigRow {
                 spacing: 10
                 Layout.fillWidth: true
                 
                 ConfigSwitch {
-                    text: "Enable suspend"
+                    text: qsTr("Enable suspend")
                     checked: Idle.hypnos.rules.suspend.enabled
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -255,7 +255,7 @@ ContentPage {
                     }
                 }
                 ConfigSwitch {
-                    text: "Only on battery power"
+                    text: qsTr("Only on battery power")
                     checked: Idle.hypnos.rules.suspend.on_battery
                     onClicked: checked = !checked;
                     onCheckedChanged: {
@@ -265,7 +265,7 @@ ContentPage {
             }
             
             ConfigSpinBox {
-                text: "Timeout (seconds)"
+                text: qsTr("Timeout (seconds)")
                 value: Idle.hypnos.rules.suspend.timeout
                 from: 10
                 to: 3600

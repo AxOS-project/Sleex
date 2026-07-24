@@ -97,7 +97,7 @@ Item {
                 }
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "No monitors detected"
+                    text: qsTr("No monitors detected")
                     color: Appearance.colors.colSubtext
                 }
             }
@@ -234,7 +234,7 @@ Item {
                         const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
                         return m ? Math.round(m.scale * 100) : 100
                     }
-                    text: "Scale"
+                    text: qsTr("Scale")
                     onValueChanged: {
                         Monitors.applyScale(root.selectedMonitorName, value / 100.0)
                     }
