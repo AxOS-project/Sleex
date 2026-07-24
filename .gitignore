@@ -1,3 +1,6 @@
 *.tar.zst
 pkg/
 .vscode/
+# Python cache
+__pycache__/
+*.py[cod]
