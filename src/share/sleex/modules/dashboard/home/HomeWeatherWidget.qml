@@ -2,6 +2,7 @@ import qs.modules.common
 import qs.services
 import qs.modules.dashboard.weather
 import QtQuick
+import SleexUiKit.Appearance
 
 Rectangle {
     id: root

@@ -2,7 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import qs.modules.common
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import QtQuick
 import Quickshell
 import Quickshell.Io

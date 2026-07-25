@@ -1,6 +1,7 @@
 import qs.modules.common
 import qs.services
 import QtQuick
+import SleexUiKit.Appearance
 
 Rectangle {
     color: Appearance.colors.colLayer1

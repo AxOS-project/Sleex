@@ -1,6 +1,6 @@
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

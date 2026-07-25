@@ -1,6 +1,6 @@
 pragma Singleton
 
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import qs.modules.common
 import Quickshell
 import Quickshell.Io

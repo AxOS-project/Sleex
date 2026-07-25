@@ -1,5 +1,6 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.services
 import qs.modules.dashboard.calendar
 import qs.modules.dashboard.todo

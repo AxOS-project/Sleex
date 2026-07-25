@@ -1,9 +1,10 @@
 pragma ComponentBehavior: Bound
 import qs 
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.services
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

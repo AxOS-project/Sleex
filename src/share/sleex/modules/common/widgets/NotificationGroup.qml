@@ -1,7 +1,8 @@
 import qs.modules.common
 import qs.services
-import qs.modules.common.functions
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import "./notification_utils.js" as NotificationUtils
 import Qt5Compat.GraphicalEffects
 import QtQuick

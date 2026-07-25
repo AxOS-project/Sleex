@@ -49,6 +49,8 @@ ShellRoot {
     property bool enableWallSelector: true
     property bool enableBackground: true
 
+    AppearanceBridge {} // Init the bridge to populate the Appearance singleton
+
     // Force initialization of some singletons
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()

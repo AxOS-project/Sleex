@@ -1,9 +1,10 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
 import QtQuick
 import Quickshell.Widgets
 import Sleex.Widgets
+import SleexUiKit.Appearance
 
 Rectangle {
     id: root

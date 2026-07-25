@@ -1,6 +1,6 @@
 import qs
 import qs.modules.common
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import qs.modules.lockscreen
 import QtQuick
 import Quickshell

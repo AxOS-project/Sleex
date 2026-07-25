@@ -4,7 +4,8 @@ import Quickshell
 import Quickshell.Widgets
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 Item {
     id: root

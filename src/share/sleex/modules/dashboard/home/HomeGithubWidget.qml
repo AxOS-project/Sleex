@@ -3,6 +3,7 @@ import qs.services
 import qs.modules.dashboard.calendar
 import QtQuick
 import Quickshell
+import SleexUiKit.Appearance
 
 Rectangle {
     id: root

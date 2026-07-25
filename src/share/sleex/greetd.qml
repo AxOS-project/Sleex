@@ -8,7 +8,7 @@ import Quickshell.Services.Greetd
 import Qt5Compat.GraphicalEffects
 import qs
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
 import qs.modules.bar
 

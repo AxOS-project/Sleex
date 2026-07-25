@@ -5,6 +5,7 @@ import qs.modules.common
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import SleexUiKit.Appearance
 
 /**
  * Automatically reloads generated material colors.

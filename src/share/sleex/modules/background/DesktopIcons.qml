@@ -1,7 +1,8 @@
 import QtQuick
 import Quickshell
 import qs.modules.common
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import Sleex.Utils
 
 Item {

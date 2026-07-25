@@ -8,7 +8,7 @@ pragma ComponentBehavior: Bound
 import qs
 import qs.modules.common
 import Qt.labs.platform
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import qs.modules.common
 
 Singleton {
