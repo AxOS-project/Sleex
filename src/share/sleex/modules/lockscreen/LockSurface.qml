@@ -24,6 +24,7 @@ FocusScope {
 
     Component.onCompleted: {
         visualsReady = true
+        context.startAuth()
         passwordInput.forceActiveFocus()
     }
 
@@ -36,6 +37,32 @@ FocusScope {
         function onUnlockInProgressChanged() {
             if (!context.unlockInProgress && root.unlocking)
                 unlockSequence.start()
+        }
+    }
+
+    Rectangle {
+        id: debugUnlock
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 20
+        width: 120
+        height: 40
+        color: "red"
+        radius: 5
+        z: 1000
+        
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                root.context.unlocked();
+            }
+        }
+        
+        Text {
+            anchors.centerIn: parent
+            text: "Help, I'm stuck!"
+            color: "white"
+            font.pixelSize: 12
         }
     }
 
@@ -355,13 +382,44 @@ FocusScope {
                 color: Appearance.colors.colLayer0
 
                 RowLayout {
+                    anchors.margins: 12
+                    spacing: 8
+                    anchors.fill: parent
+                    visible: context.unlockInProgress && !context.awaitingPassword && !context.forcePassword
+                    
+                    Item { Layout.fillWidth: true }
+                    MaterialSymbol {
+                        text: "face" 
+                        iconSize: 24; color: Appearance.colors.colPrimary
+                    }
+                    StyledText {
+                        text: "Detecting face..."
+                        color: Appearance.colors.colPrimary
+                        font.pixelSize: 15
+                    }
+                    Item { Layout.fillWidth: true }
+
+                    RippleButton {
+                        colBackground: Appearance.colors.colLayer1
+                        Layout.fillHeight: true; implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        MaterialSymbol {
+                            text: "keyboard" 
+                            iconSize: 20; color: Appearance.colors.colOnLayer0; anchors.centerIn: parent
+                        }
+                        onClicked: context.forcePassword = true
+                    }
+                }
+
+                RowLayout {
                     id: passwordRow
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 8
                     property int shakeOffset: 0
                     anchors.horizontalCenterOffset: shakeOffset
-
+                    visible: !context.unlockInProgress || context.awaitingPassword || context.forcePassword
+                    
                     SequentialAnimation {
                         id: shakeAnim
                         running: root.wrongPassword
@@ -377,7 +435,7 @@ FocusScope {
                         colBackground: Appearance.colors.colLayer1
                         Layout.fillHeight: true; implicitWidth: height
                         buttonRadius: Appearance.rounding.full
-                        enabled: !context.unlockInProgress && !root.unlocking
+                        enabled: (!context.unlockInProgress || context.awaitingPassword || context.forcePassword) && !root.unlocking
                         MaterialSymbol {
                             text: passwordInput.echoMode === TextInput.Password ? "visibility" : "visibility_off"
                             iconSize: 20; color: Appearance.colors.colOnLayer0; anchors.centerIn: parent
@@ -402,10 +460,10 @@ FocusScope {
                             font.pixelSize: 15
                             echoMode: TextInput.Password
                             inputMethodHints: Qt.ImhSensitiveData
-                            enabled: !context.unlockInProgress && !root.unlocking
+                            enabled: (!context.unlockInProgress || context.awaitingPassword || context.forcePassword) && !root.unlocking
                             text: context.currentText
                             onTextChanged: context.currentText = text
-                            onAccepted: if (!root.unlocking) context.tryUnlock()
+                            onAccepted: if (!root.unlocking) context.submitPassword()
                             StyledText {
                                 anchors.centerIn: parent
                                 text: qsTr("Enter password")
@@ -421,12 +479,12 @@ FocusScope {
                         colBackgroundHover: Appearance.colors.colPrimaryContainer
                         Layout.fillHeight: true; implicitWidth: height
                         buttonRadius: Appearance.rounding.full
-                        enabled: !context.unlockInProgress && !root.unlocking
+                        enabled: (!context.unlockInProgress || context.awaitingPassword || context.forcePassword) && !root.unlocking
                         MaterialSymbol {
                             text: "arrow_forward"; iconSize: 24
                             color: Appearance.colors.colOnPrimary; anchors.centerIn: parent
                         }
-                        onClicked: context.tryUnlock()
+                        onClicked: context.submitPassword()
                     }
                 }
             }

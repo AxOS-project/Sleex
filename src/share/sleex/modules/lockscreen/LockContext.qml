@@ -1,4 +1,5 @@
 import qs
+import qs.modules.common
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pam
@@ -10,12 +11,15 @@ Scope {
     signal failed()
     signal animate()
 
-    // These properties are in the context and not individual lock surfaces
-    // so all surfaces can share the same state.
     property string currentText: ""
     property bool unlockInProgress: false
     property bool showFailure: false
-
+    property bool forcePassword: false
+    property bool awaitingPassword: false
+    property var pendingPamMessage: null
+    property bool autoSubmit: false
+    property bool enableFaceAuth: Config.options.lockscreen.enableFaceAuth
+    
     Timer {
         id: passwordClearTimer
         interval: 10000
@@ -33,30 +37,47 @@ Scope {
         passwordClearTimer.restart();
     }
 
-    function tryUnlock() {
-        root.unlockInProgress = true;
-        pam.start();
+    function startAuth() {
+        if (!unlockInProgress) {
+            root.unlockInProgress = true;
+            root.awaitingPassword = false;
+            root.showFailure = false;
+            root.autoSubmit = false;
+            root.forcePassword = !root.enableFaceAuth;             
+            pam.start();
+        }
+    }
+
+    function submitPassword() {
+        if (root.awaitingPassword) {
+            root.awaitingPassword = false;
+            pam.respond(root.currentText);
+        } else if (root.unlockInProgress && root.forcePassword) {
+            root.autoSubmit = true;
+            root.forcePassword = false; 
+        } else if (!root.unlockInProgress) {
+            startAuth();
+        }
     }
 
     PamContext {
         id: pam
-
-        // Its best to have a custom pam config for quickshell, as the system one
-        // might not be what your interface expects, and break in some way.
-        // This particular example only supports passwords.
         configDirectory: "pam"
-        config: "password.conf"
+        config: root.enableFaceAuth ? "password_face.conf" : "password.conf"
 
-        // pam_unix will ask for a response for the password prompt
         onPamMessage: {
             if (this.responseRequired) {
-                this.respond(root.currentText);
+                if (root.autoSubmit) {
+                    root.autoSubmit = false;
+                    this.respond(root.currentText);
+                } else {
+                    root.awaitingPassword = true;
+                }
             }
         }
 
-        // pam_unix won't send any important messages so all we need is the completion status.
         onCompleted: result => {
-            if (result == PamResult.Success) {
+            if (result === PamResult.Success) {
                 root.animate()
             } else {
                 root.showFailure = true;
@@ -65,6 +86,9 @@ Scope {
 
             root.currentText = "";
             root.unlockInProgress = false;
+            root.awaitingPassword = false;
+            root.forcePassword = false;
+            root.autoSubmit = false;
         }
     }
 }

@@ -230,6 +230,11 @@ Singleton {
             property int lockscreenMediaHeight: 240
             property int lockscreenMediaX: -1
             property int lockscreenMediaY: -1
+            property bool enableFaceAuth: false
+            property JsonObject howdy: JsonObject {
+                property string devicePath: "/dev/video0"
+                property bool darkMode: false
+            }
         }
 
         property JsonObject notifications: JsonObject {
