@@ -40,31 +40,31 @@ FocusScope {
         }
     }
 
-    Rectangle {
-        id: debugUnlock
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.margins: 20
-        width: 120
-        height: 40
-        color: "red"
-        radius: 5
-        z: 1000
+    // Rectangle {
+    //     id: debugUnlock
+    //     anchors.top: parent.top
+    //     anchors.left: parent.left
+    //     anchors.margins: 20
+    //     width: 120
+    //     height: 40
+    //     color: "red"
+    //     radius: 5
+    //     z: 1000
         
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                root.context.unlocked();
-            }
-        }
+    //     MouseArea {
+    //         anchors.fill: parent
+    //         onClicked: {
+    //             root.context.unlocked();
+    //         }
+    //     }
         
-        Text {
-            anchors.centerIn: parent
-            text: "Help, I'm stuck!"
-            color: "white"
-            font.pixelSize: 12
-        }
-    }
+    //     Text {
+    //         anchors.centerIn: parent
+    //         text: "Help, I'm stuck!"
+    //         color: "white"
+    //         font.pixelSize: 12
+    //     }
+    // }
 
     WallpaperDisplay {
         id: wallpaper
