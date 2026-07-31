@@ -131,6 +131,36 @@ ContentPage {
         title: "Lock"
         icon: "lock"
 
+        Rectangle {
+            Layout.fillWidth: true
+            height: warnChildren.height + 40
+            color: Appearance.colors.colPrimaryContainer
+            radius: 6
+
+            RowLayout {
+                id: warnChildren
+                anchors.fill: parent
+                anchors.margins: 10
+
+                Label {
+                    text: "⚠️"
+                    font.pixelSize: 16 // Slightly smaller icon
+                    Layout.alignment: Qt.AlignVCenter
+                    rightPadding: 6
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "<b>IMPORTANT:</b> Face authentication will never be as secure as a traditional password.\nThis is a convenience feature."
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                    textFormat: Text.RichText
+                    color: Appearance.colors.colOnPrimaryContainer
+                }
+            }
+        }
+
         ConfigSwitch {
             id: enableFaceAuthSwitch
             text: "Enable Face Authentication"
@@ -242,6 +272,37 @@ ContentPage {
                 visible: root.howdyModels.length === 0 && !root.howdyLoading
                 text: qsTr("No face models are configured yet.")
                 color: Appearance.colors.colSubtext
+            }
+        }
+    }
+
+    ContentSection {
+        title: "Face Authentication Engine (Howdy)"
+        icon: "face"
+
+        visible: Config.options.lockscreen.enableFaceAuth
+
+        RowLayout {
+            anchors.margins: 10
+            spacing: 10
+
+            Layout.fillWidth: true
+            Layout.preferredHeight: 64
+
+            StyledText {
+                Layout.fillWidth: true
+                text: qsTr("Edit Howdy configuration file (advanced)")
+                wrapMode: Text.WordWrap
+                font.pixelSize: Appearance.font.pixelSize.normal
+                color: Appearance.colors.colOnSecondaryContainer
+            }
+
+            RippleButtonWithIcon {
+                materialIcon: "edit"
+                materialIconFill: false
+                mainText: qsTr("Edit")
+                onClicked: Quickshell.execDetached(["/usr/bin/xdg-open", "/etc/howdy/config.ini"])
+                StyledToolTip { text: qsTr("May require administrator privileges.\n") }
             }
         }
     }
