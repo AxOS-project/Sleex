@@ -2,7 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
 import SleexUiKit.Appearance
-import SleexUiKit.Appearance
+import SleexUiKit.Widgets
+import qs.modules.common
+import qs.services
 
 Rectangle {
     id: userInfoWidget

@@ -15,8 +15,10 @@ import Quickshell.Widgets
 import qs
 import qs.services
 import qs.modules.common
+import qs.modules.common.widgets
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 ApplicationWindow {
     id: root
