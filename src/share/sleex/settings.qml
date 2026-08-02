@@ -44,6 +44,7 @@ ApplicationWindow {
         { name: "Wifi",        icon: "wifi",             component: "modules/settings/Wifi.qml",          type: "item" },
         { name: "Applications",icon: "apps",             component: "modules/settings/Applications.qml",  type: "item" },
         { name: "Display",     icon: "display_settings", component: "modules/settings/Display.qml",       type: "item" },
+        { name: "Security",    icon: "lock",             component: "modules/settings/Security.qml",      type: "item" },
         { type: "divider" },
         { name: "Privacy",     icon: "lock",             component: "modules/settings/Privacy.qml",       type: "item" },
         { name: "About",       icon: "info",             component: "modules/settings/About.qml",         type: "item" }
