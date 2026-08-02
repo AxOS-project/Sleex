@@ -4,7 +4,8 @@ import QtQuick.Layouts
 import Quickshell.Services.UPower
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 ContentPage {
     // forceWidth: true

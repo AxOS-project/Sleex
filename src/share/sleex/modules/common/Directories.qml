@@ -1,7 +1,7 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import Qt.labs.platform
 import QtQuick
 import Quickshell

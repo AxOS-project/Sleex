@@ -4,7 +4,8 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
 import "./volumeMixer"

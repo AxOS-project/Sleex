@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.modules.common
 
 Rectangle {

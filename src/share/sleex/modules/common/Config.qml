@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Sleex.Core
-import qs.modules.common.functions
+import SleexUiKit.Functions
 
 Singleton {
     id: root

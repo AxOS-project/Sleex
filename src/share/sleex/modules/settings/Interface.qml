@@ -5,7 +5,8 @@ import QtQuick.Dialogs
 import Quickshell.Io
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 ContentPage {
     // forceWidth: true

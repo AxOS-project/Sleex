@@ -1,4 +1,4 @@
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.modules.common
 import qs.services
 import Quickshell
@@ -8,6 +8,7 @@ import QtQuick.Controls
 import Quickshell.Hyprland
 import Sleex.Services
 import "displaySettings" as DS
+import SleexUiKit.Appearance
 
 ContentPage {
     id: root

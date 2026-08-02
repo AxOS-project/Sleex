@@ -7,6 +7,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 Rectangle { // App icon
     id: root
