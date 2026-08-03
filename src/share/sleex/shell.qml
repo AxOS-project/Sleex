@@ -22,6 +22,7 @@ import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
 import qs.modules.BatteryPopup
+import qs.modules.cornerPopup
 
 import Quickshell
 import QtQuick
@@ -48,6 +49,7 @@ ShellRoot {
     property bool enableDashboard: true
     property bool enableWallSelector: true
     property bool enableBackground: true
+    property bool enableCornerPopup: true
 
     AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
@@ -76,5 +78,6 @@ ShellRoot {
     LazyLoader { active: enableDashboard; component: Dashboard {} }
     LazyLoader { active: enableWallSelector; component: WallpaperSelector {} }
     LazyLoader { active: enableBackground; component: Background {} }
+    LazyLoader { active: enableCornerPopup; component: CornerPopup {} }
     LazyLoader { active: GlobalStates.screenLocked; component: Lock {}}
 }
