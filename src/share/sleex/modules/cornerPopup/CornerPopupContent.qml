@@ -82,7 +82,7 @@ Item {
                 id: tabBar
                 Layout.fillWidth: true
                 tabButtonList: [
-                    { "icon": "extension", "name": "test1" },
+                    { "icon": "timer", "name": "Pomodoro" },
                     { "icon": "extension", "name": "test2" },
                     { "icon": "extension", "name": "test3" }
                 ]
@@ -103,7 +103,7 @@ Item {
                     root.currentTab = currentIndex
                 }
 
-                CornerPopupPlaceholderCard {}
+                PomodoroTab {}
                 CornerPopupPlaceholderCard {}
                 CornerPopupPlaceholderCard {}
             }

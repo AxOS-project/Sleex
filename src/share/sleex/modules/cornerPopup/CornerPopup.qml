@@ -17,7 +17,7 @@ Scope {
             screen: modelData
 
             property int cardWidth: 500
-            property int cardHeight: 300
+            property int cardHeight: 350
             property int cornerSize: Appearance.rounding.screenRounding ?? 20
             property int triggerWidth: 20
             property int triggerHeight: 20
