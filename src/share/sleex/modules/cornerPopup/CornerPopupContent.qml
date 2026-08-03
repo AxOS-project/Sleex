@@ -1,4 +1,5 @@
 import qs.modules.common
+import qs.services
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 import QtQuick
@@ -83,7 +84,7 @@ Item {
                 Layout.fillWidth: true
                 tabButtonList: [
                     { "icon": "timer", "name": "Pomodoro" },
-                    { "icon": "extension", "name": "test2" },
+                    { "icon": "timer_3", "name": "Stopwatch" },
                     { "icon": "extension", "name": "test3" }
                 ]
                 externalTrackedTab: root.currentTab
@@ -104,7 +105,7 @@ Item {
                 }
 
                 PomodoroTab {}
-                CornerPopupPlaceholderCard {}
+                StopwatchTab {}
                 CornerPopupPlaceholderCard {}
             }
         }
