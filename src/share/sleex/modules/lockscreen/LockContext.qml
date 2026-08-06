@@ -19,6 +19,7 @@ Scope {
     property var pendingPamMessage: null
     property bool autoSubmit: false
     property bool enableFaceAuth: Config.options.lockscreen.enableFaceAuth
+    property string pamConfig: "password.conf"
     
     Timer {
         id: passwordClearTimer
@@ -39,13 +40,34 @@ Scope {
 
     function startAuth() {
         if (!unlockInProgress) {
+            if (root.enableFaceAuth) {
+                return;
+            }
             root.unlockInProgress = true;
             root.awaitingPassword = false;
             root.showFailure = false;
             root.autoSubmit = false;
-            root.forcePassword = !root.enableFaceAuth;             
+            root.forcePassword = true;             
+            root.pamConfig = "password.conf";
             pam.start();
         }
+    }
+
+    function startFaceScan() {
+        if (!root.enableFaceAuth) return;
+        if (root.unlockInProgress) {
+            root.forcePassword = false;
+            return;
+        }
+
+        root.currentText = "";
+        root.unlockInProgress = true;
+        root.awaitingPassword = false;
+        root.showFailure = false;
+        root.autoSubmit = false;
+        root.forcePassword = false;
+        root.pamConfig = "password_face.conf";
+        pam.start();
     }
 
     function submitPassword() {
@@ -56,14 +78,20 @@ Scope {
             root.autoSubmit = true;
             root.forcePassword = false; 
         } else if (!root.unlockInProgress) {
-            startAuth();
+            root.unlockInProgress = true;
+            root.awaitingPassword = false;
+            root.showFailure = false;
+            root.autoSubmit = true;
+            root.forcePassword = true;
+            root.pamConfig = "password.conf";
+            pam.start();
         }
     }
 
     PamContext {
         id: pam
         configDirectory: "pam"
-        config: root.enableFaceAuth ? "password_face.conf" : "password.conf"
+        config: root.pamConfig
 
         onPamMessage: {
             if (this.responseRequired) {
@@ -89,6 +117,11 @@ Scope {
             root.awaitingPassword = false;
             root.forcePassword = false;
             root.autoSubmit = false;
+            root.pamConfig = "password.conf";
+
+            if (result !== PamResult.Success) {
+                startAuth();
+            }
         }
     }
 }

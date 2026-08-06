@@ -476,6 +476,21 @@ FocusScope {
                     }
 
                     RippleButton {
+                        visible: context.enableFaceAuth
+                        colBackground: Appearance.colors.colLayer1
+                        colBackgroundHover: Appearance.colors.colPrimaryContainer
+                        Layout.fillHeight: true; implicitWidth: height
+                        buttonRadius: Appearance.rounding.full
+                        enabled: (!context.unlockInProgress || context.awaitingPassword || context.forcePassword) && !root.unlocking
+                        MaterialSymbol {
+                            text: "face"
+                            iconSize: 20; color: Appearance.colors.colOnLayer0; anchors.centerIn: parent
+                        }
+                        onClicked: context.startFaceScan()
+                        StyledToolTip { text: qsTr("Scan face") }
+                    }
+
+                    RippleButton {
                         colBackground: Appearance.colors.colPrimary
                         colBackgroundHover: Appearance.colors.colPrimaryContainer
                         Layout.fillHeight: true; implicitWidth: height
