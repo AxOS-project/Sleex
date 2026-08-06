@@ -85,7 +85,6 @@ Item {
                 tabButtonList: [
                     { "icon": "timer", "name": "Pomodoro" },
                     { "icon": "timer_3", "name": "Stopwatch" },
-                    { "icon": "extension", "name": "test3" }
                 ]
                 externalTrackedTab: root.currentTab
                 onCurrentIndexChanged: (index) => {
@@ -106,7 +105,6 @@ Item {
 
                 PomodoroTab {}
                 StopwatchTab {}
-                CornerPopupPlaceholderCard {}
             }
         }
     }
