@@ -3,9 +3,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
 
 ContentPage {
     id: root
