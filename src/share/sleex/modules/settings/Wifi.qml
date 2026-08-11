@@ -4,15 +4,14 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
+import Quickshell.Bluetooth
 import qs.services
-import qs.services as Services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 import Sleex.Services
 
-// qs.services imported both plain (bare Config) and as Services (Services.Network,
-// to avoid clashing with the bare C++ Network singleton below)
 ContentPage {
     id: root
     forceSingleColumn: true
@@ -25,15 +24,73 @@ ContentPage {
     property bool customDnsEnabled: false
     property string customDnsProviderId: "cloudflare"
 
+    // UI-only refresh nudge for the network Repeater's ScriptModel - Network's
+    // own properties (networks, active, ...) are already reactive; this just
+    // guards against ScriptModel not re-evaluating on in-place AccessPoint mutation
+    property int refreshTrigger: 0
+
+    // Presentation-only derivations over Network's real, reactive properties.
+    // The underlying data (IP info, DNS servers, speed test results, ...) is
+    // fetched/cached entirely by Sleex.Services Network - this is just formatting.
+    function formatFrequency(freqRaw) {
+        const match = String(freqRaw).match(/\d+/);
+        if (!match) return String(freqRaw);
+        const freq = parseInt(match[0], 10);
+        if (freq >= 2400 && freq <= 2495)
+            return "2.4GHz, Channel " + ((freq === 2484) ? 14 : Math.round((freq - 2407) / 5));
+        if (freq >= 5925 && freq <= 7125)
+            return "6GHz, Channel " + Math.round((freq - 5950) / 5);
+        if (freq >= 5000 && freq <= 5895)
+            return "5GHz, Channel " + Math.round((freq - 5000) / 5);
+        return freq + " MHz";
+    }
+
+    readonly property var networkDetailItems: [
+        { label: "Local IP",   icon: "lan",                    value: Network.localIp,   isSensitive: true,  wifiOnly: false },
+        { label: "Gateway",    icon: "router",                 value: Network.gatewayIp, isSensitive: true,  wifiOnly: false },
+        { label: "DNS",        icon: "dns",                    value: (Network.dnsServers || "").replace(/,\s*/g, ", "), isSensitive: false, wifiOnly: false },
+        { label: "Public IP",  icon: "public",                 value: Network.publicIp,  isSensitive: true,  wifiOnly: false },
+        { label: "Frequency",  icon: "settings_input_antenna", value: Network.active ? root.formatFrequency(Network.active.frequency ?? 0) : "—", isSensitive: false, wifiOnly: true },
+        { label: "Security",   icon: "encrypted",              value: Network.active?.security || "—", isSensitive: false, wifiOnly: true }
+    ]
+
     readonly property var filteredDetailItems: {
         var arr = [];
-        for (var i = 0; i < Services.Network.detailItems.length; ++i) {
-            const item = Services.Network.detailItems[i];
-            if (item.wifiOnly && Services.Network.activeNetwork === null) continue;
+        for (var i = 0; i < root.networkDetailItems.length; ++i) {
+            const item = root.networkDetailItems[i];
+            if (item.wifiOnly && Network.active === null) continue;
             if (!item.isSensitive || root.showSensitiveInfo)
                 arr.push(item);
         }
         return arr;
+    }
+
+    // Speed test results live on Network (fetched + cached in C++); these just
+    // pick the right value out for a given ssid.
+    function speedTestPing(ssid) {
+        if (!ssid) return -1;
+        if (Network.speedTestSsid === ssid) return Network.speedTestPingMs;
+        const r = Network.speedTestResults[ssid];
+        return r ? r.pingMs : -1;
+    }
+    function speedTestDownload(ssid) {
+        if (!ssid) return -1;
+        if (Network.speedTestSsid === ssid) return Network.speedTestDownloadMbps;
+        const r = Network.speedTestResults[ssid];
+        return r ? r.downloadMbps : -1;
+    }
+    function speedTestUpload(ssid) {
+        if (!ssid) return -1;
+        if (Network.speedTestSsid === ssid) return Network.speedTestUploadMbps;
+        const r = Network.speedTestResults[ssid];
+        return r ? r.uploadMbps : -1;
+    }
+    function speedTestIsLive(ssid) {
+        return Network.speedTestRunning && Network.speedTestSsid === ssid;
+    }
+    function speedTestIsDone(ssid) {
+        if (Network.speedTestSsid === ssid) return Network.speedTestStage === "done" || Network.speedTestStage === "error";
+        return !!Network.speedTestResults[ssid];
     }
 
     function _syncViewTogglesFromConfig() {
@@ -66,8 +123,13 @@ ContentPage {
                     break;
                 }
             }
-            Services.Network.bumpRefresh();
+            root.refreshTrigger++;
         }
+
+        // Network's own properties are reactive, but the connect/disconnect
+        // flow mutates AccessPoints in place - nudge the ScriptModel just in case.
+        function onConnectionSucceeded(ssid) { root.refreshTrigger++; }
+        function onConnectionFailed(ssid, error) { root.refreshTrigger++; }
     }
 
     ContentSection {
@@ -80,10 +142,10 @@ ContentPage {
 
             ConfigSwitch {
                 text: "Enabled"
-                checked: Services.Network.wifiEnabled
+                checked: Network.wifiEnabled
                 onClicked: Network.toggleWifi()
                 StyledToolTip {
-                    text: Services.Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
+                    text: Network.wifiEnabled ? "Click to disable WiFi" : "Click to enable WiFi"
                 }
             }
 
@@ -127,7 +189,7 @@ ContentPage {
 
     Item {
         Layout.fillWidth: true
-        readonly property real targetHeight: Services.Network.hasActiveConnection && root.showConnectionDetails
+        readonly property real targetHeight: Network.hasActiveConnection && root.showConnectionDetails
             ? healthDashboard.implicitHeight : 0
         height: targetHeight
         implicitHeight: targetHeight
@@ -140,7 +202,7 @@ ContentPage {
         ContentSection {
             id: healthDashboard
             width: parent.width
-            visible: Services.Network.hasActiveConnection && root.showConnectionDetails
+            visible: Network.hasActiveConnection && root.showConnectionDetails
             title: "Connection Details"
             icon: "monitoring"
 
@@ -155,7 +217,7 @@ ContentPage {
                     MaterialSymbol {
                         id: connectionTypeIcon
                         Layout.alignment: Qt.AlignVCenter
-                        text: Services.Network.activeConnectionType.includes("wireless") ? "wifi" : "settings_ethernet"
+                        text: Network.active !== null ? "wifi" : "settings_ethernet"
                         font.pixelSize: Appearance.font.pixelSize.title
                         color: Appearance.m3colors.m3primary
                     }
@@ -164,7 +226,7 @@ ContentPage {
                         spacing: 2
 
                         StyledText {
-                            text: Services.Network.activeNetwork?.ssid || (Services.Network.hasWiredConnection ? "Wired Connection" : "")
+                            text: Network.active?.ssid || (Network.ethernet ? "Wired Connection" : "")
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: 500
                             color: Appearance.m3colors.m3primary
@@ -190,10 +252,10 @@ ContentPage {
                                 anchors.centerIn: parent
                                 text: "speed"
                                 color: Appearance.m3colors.m3onSecondaryContainer
-                                fill: Services.Network.speedTestRunning ? 1 : 0
+                                fill: Network.speedTestRunning ? 1 : 0
 
                                 SequentialAnimation on opacity {
-                                    running: Services.Network.speedTestRunning && root.showConnectionDetails
+                                    running: Network.speedTestRunning && root.showConnectionDetails
                                     loops: Animation.Infinite
                                     NumberAnimation { from: 1;   to: 0.4; duration: 550; easing.type: Easing.InOutQuad }
                                     NumberAnimation { from: 0.4; to: 1;   duration: 550; easing.type: Easing.InOutQuad }
@@ -205,13 +267,13 @@ ContentPage {
                             id: speedTestHeaderArea
                             anchors.fill: parent
                             hoverEnabled: true
-                            cursorShape: Services.Network.speedTestRunning ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            enabled: !Services.Network.speedTestRunning
-                            onClicked: Services.Network.startSpeedTest()
+                            cursorShape: Network.speedTestRunning ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            enabled: !Network.speedTestRunning
+                            onClicked: Network.startSpeedTest()
 
                             StyledToolTip {
                                 extraVisibleCondition: speedTestHeaderArea.containsMouse
-                                text: Services.Network.speedTestRunning ? "Testing…" : "Perform a network speed test\nUses the Cloudflare provider"
+                                text: Network.speedTestRunning ? "Testing…" : "Perform a network speed test\nUses the Cloudflare provider"
                             }
                         }
                     }
@@ -228,10 +290,10 @@ ContentPage {
                                 anchors.centerIn: parent
                                 text: "refresh"
                                 color: Appearance.m3colors.m3onSecondaryContainer
-                                fill: Services.Network.fetchingNetworkInfo ? 1 : 0
+                                fill: Network.fetchingNetworkInfo ? 1 : 0
 
                                 RotationAnimation on rotation {
-                                    running: Services.Network.fetchingNetworkInfo && root.showConnectionDetails
+                                    running: Network.fetchingNetworkInfo && root.showConnectionDetails
                                     loops: Animation.Infinite
                                     from: 0; to: 360; duration: 900
                                 }
@@ -243,7 +305,7 @@ ContentPage {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: Services.Network.fetchNetworkInfo()
+                            onClicked: Network.fetchNetworkInfo()
 
                             StyledToolTip {
                                 extraVisibleCondition: refreshInfoArea.containsMouse
@@ -261,8 +323,8 @@ ContentPage {
 
                 StyledText {
                     Layout.fillWidth: true
-                    visible: Services.Network.netInfoError !== ""
-                    text: Services.Network.netInfoError
+                    visible: Network.netInfoError !== ""
+                    text: Network.netInfoError
                     color: Appearance.m3colors.m3error
                     font.pixelSize: Appearance.font.pixelSize.small
                     wrapMode: Text.WordWrap
@@ -274,7 +336,7 @@ ContentPage {
                     height: 100
 
                     Rectangle {
-                        visible: Services.Network.activeNetwork !== null
+                        visible: Network.active !== null
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: Appearance.rounding.small
@@ -305,7 +367,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
 
                                 Rectangle {
-                                    width: parent.width * Math.min(Services.Network.activeNetwork?.strength ?? 0, 100) / 100
+                                    width: parent.width * Math.min(Network.active?.strength ?? 0, 100) / 100
                                     height: parent.height
                                     radius: 2
                                     color: Appearance.m3colors.m3primary
@@ -313,7 +375,7 @@ ContentPage {
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: (Services.Network.activeNetwork?.strength ?? 0) + "%"
+                                text: (Network.active?.strength ?? 0) + "%"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
                                 color: Appearance.m3colors.m3primary
@@ -329,8 +391,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
-                        readonly property real pingValue: Services.Network.speedTestPing(targetSsid)
+                        readonly property string targetSsid: Network.active ? Network.active.ssid : ""
+                        readonly property real pingValue: root.speedTestPing(targetSsid)
                         readonly property bool hasResult: pingValue >= 0
 
                         ColumnLayout {
@@ -374,8 +436,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
-                        readonly property real downloadValue: Services.Network.speedTestDownload(targetSsid)
+                        readonly property string targetSsid: Network.active ? Network.active.ssid : ""
+                        readonly property real downloadValue: root.speedTestDownload(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -412,8 +474,8 @@ ContentPage {
                         border.width: 1
                         border.color: Appearance.colors.colOutlineVariant
 
-                        readonly property string targetSsid: Services.Network.activeNetwork ? Services.Network.activeNetwork.ssid : ""
-                        readonly property real uploadValue: Services.Network.speedTestUpload(targetSsid)
+                        readonly property string targetSsid: Network.active ? Network.active.ssid : ""
+                        readonly property real uploadValue: root.speedTestUpload(targetSsid)
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -492,7 +554,7 @@ ContentPage {
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
                                     width: infoContent.width
-                                    text: Services.Network.detailValue(modelData.valueIdx)
+                                    text: modelData.value
                                     font.pixelSize: Appearance.font.pixelSize.large
                                     font.weight: 600
                                     color: Appearance.colors.colOnLayer1
@@ -509,7 +571,7 @@ ContentPage {
 
     Item {
         Layout.fillWidth: true
-        readonly property real targetHeight: Services.Network.activeNetwork !== null
+        readonly property real targetHeight: Network.active !== null
             ? customDnsSection.implicitHeight : 0
         height: targetHeight
         implicitHeight: targetHeight
@@ -522,7 +584,7 @@ ContentPage {
         ContentSection {
             id: customDnsSection
             width: parent.width
-            visible: Services.Network.activeNetwork !== null
+            visible: Network.active !== null
             title: "Custom DNS"
             icon: "dns"
 
@@ -533,14 +595,14 @@ ContentPage {
                 ConfigSwitch {
                     text: "Custom DNS"
                     checked: root.customDnsEnabled
-                    enabled: !Services.Network.dnsApplying
+                    enabled: !Network.dnsApplying
                     onClicked: {
                         root.customDnsEnabled = !root.customDnsEnabled;
                         Config.options.networking.dnsSwitch = root.customDnsEnabled;
-                        Services.Network.applyDnsSettings(root.customDnsEnabled, root.customDnsProviderId);
+                        Network.applyDnsSettings(root.customDnsEnabled, root.customDnsProviderId);
                     }
                     StyledToolTip {
-                        text: Services.Network.dnsApplying
+                        text: Network.dnsApplying
                             ? "Applying DNS settings…"
                             : (root.customDnsEnabled
                                 ? "Click to use this network's default DNS"
@@ -582,7 +644,7 @@ ContentPage {
                                         required property string modelData
                                         required property int index
 
-                                        readonly property var provider:    Services.Network.dnsProviderMap[modelData] ?? null
+                                        readonly property var provider:    Network.providerById(modelData) ?? null
                                         readonly property bool isSelected:  root.customDnsProviderId === modelData
                                         readonly property string primaryIp: provider?.servers.split(",")[0] ?? ""
 
@@ -639,12 +701,12 @@ ContentPage {
 
                                         MouseArea {
                                             anchors.fill: parent
-                                            enabled: !Services.Network.dnsApplying
+                                            enabled: !Network.dnsApplying
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 root.customDnsProviderId = modelData;
                                                 Config.options.networking.dnsProvider = modelData;
-                                                Services.Network.applyDnsSettings(root.customDnsEnabled, modelData);
+                                                Network.applyDnsSettings(root.customDnsEnabled, modelData);
                                             }
                                         }
                                     }
@@ -657,7 +719,7 @@ ContentPage {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    visible: Services.Network.dnsApplyError !== ""
+                    visible: Network.dnsApplyError !== ""
 
                     MaterialSymbol {
                         text: "error_outline"
@@ -670,7 +732,7 @@ ContentPage {
                         wrapMode: Text.WordWrap
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.m3colors.m3error
-                        text: Services.Network.dnsApplyError
+                        text: Network.dnsApplyError
                     }
                 }
             }
@@ -705,7 +767,7 @@ ContentPage {
                     }
 
                     Rectangle {
-                        visible: Services.Network.activeNetwork !== null
+                        visible: Network.active !== null
                         radius: Appearance.rounding.full
                         color: Appearance.colors.colLayer2
                         implicitWidth: connectedPillRow.implicitWidth + 20
@@ -723,7 +785,7 @@ ContentPage {
                                 color: Appearance.m3colors.m3primary
 
                                 SequentialAnimation on opacity {
-                                    running: Services.Network.activeNetwork !== null
+                                    running: Network.active !== null
                                     loops: Animation.Infinite
                                     NumberAnimation { from: 1;    to: 0.35; duration: 900; easing.type: Easing.InOutQuad }
                                     NumberAnimation { from: 0.35; to: 1;    duration: 900; easing.type: Easing.InOutQuad }
@@ -812,20 +874,20 @@ ContentPage {
 
                 RippleButton {
                     id: discoverBtn
-                    visible: Services.Network.wifiEnabled
+                    visible: Network.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
-                        color: Services.Network.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                        color: Network.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
                         implicitWidth: height
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "refresh"
-                            color: Services.Network.wifiScanning
+                            color: Network.wifiScanning
                                 ? Appearance.m3colors.m3onSecondary
                                 : Appearance.m3colors.m3onSecondaryContainer
-                            fill: Services.Network.wifiScanning ? 1 : 0
+                            fill: Network.wifiScanning ? 1 : 0
                         }
                     }
 
@@ -844,7 +906,7 @@ ContentPage {
 
                 RippleButton {
                     id: searchToggleBtn
-                    visible: Services.Network.wifiEnabled
+                    visible: Network.wifiEnabled
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
@@ -888,7 +950,7 @@ ContentPage {
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
-                visible: !Services.Network.wifiEnabled
+                visible: !Network.wifiEnabled
                 spacing: 14
 
                 MaterialSymbol {
@@ -910,7 +972,7 @@ ContentPage {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 14
-                visible: Services.Network.wifiEnabled
+                visible: Network.wifiEnabled
 
                 Repeater {
                     id: networkRepeater
@@ -918,7 +980,7 @@ ContentPage {
                     model: ScriptModel {
                         id: networkModel
                         values: {
-                            let _t = Services.Network.refreshTrigger; // forces re-evaluation on bump
+                            let _t = root.refreshTrigger; // forces re-evaluation on bump
                             const search = root.searchText.toLowerCase().trim();
                             let nets = [...(Network.networks || [])];
                             if (search) nets = nets.filter(n => n.ssid.toLowerCase().includes(search));
@@ -1007,11 +1069,11 @@ ContentPage {
 
                                         StyledText {
                                             Layout.fillWidth: true
-                                            text: "Failed to connect: " + Services.Network.lastConnectionError
+                                            text: "Failed to connect: " + Network.lastConnectionError
                                             font.pixelSize: Appearance.font.pixelSize.small
                                             color: Appearance.m3colors.m3error
                                             wrapMode: Text.WordWrap
-                                            visible: Services.Network.showConnectionError && Services.Network.errorSsid === networkItem.modelData.ssid
+                                            visible: Network.showConnectionError && Network.errorSsid === networkItem.modelData.ssid
                                         }
                                     }
 
@@ -1137,7 +1199,7 @@ ContentPage {
                                             ColumnLayout {
                                                 spacing: 2
                                                 StyledText { text: "Frequency"; font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colSubtext }
-                                                StyledText { text: Services.Network.formatFrequency(networkItem.modelData.frequency); font.pixelSize: Appearance.font.pixelSize.small }
+                                                StyledText { text: root.formatFrequency(networkItem.modelData.frequency); font.pixelSize: Appearance.font.pixelSize.small }
                                             }
                                         }
 
@@ -1153,8 +1215,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: latencyRow
-                                            readonly property real pingValue: Services.Network.speedTestPing(networkItem.modelData.ssid)
-                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real pingValue: root.speedTestPing(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: pingValue >= 0 || isLive
                                             MaterialSymbol { text: "timer"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -1172,8 +1234,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: downloadRow
-                                            readonly property real downloadValue: Services.Network.speedTestDownload(networkItem.modelData.ssid)
-                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real downloadValue: root.speedTestDownload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: downloadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_downward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -1191,8 +1253,8 @@ ContentPage {
 
                                         RowLayout {
                                             id: uploadRow
-                                            readonly property real uploadValue: Services.Network.speedTestUpload(networkItem.modelData.ssid)
-                                            readonly property bool isLive: Services.Network.speedTestIsLive(networkItem.modelData.ssid)
+                                            readonly property real uploadValue: root.speedTestUpload(networkItem.modelData.ssid)
+                                            readonly property bool isLive: root.speedTestIsLive(networkItem.modelData.ssid)
                                             spacing: 10
                                             visible: uploadValue >= 0 || isLive
                                             MaterialSymbol { text: "arrow_upward"; font.pixelSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnSecondaryContainer }
@@ -1345,13 +1407,13 @@ ContentPage {
 
                                                 RippleButtonWithIcon {
                                                     materialIcon: "speed"
-                                                    mainText: Services.Network.speedTestRunning
+                                                    mainText: Network.speedTestRunning
                                                         ? "Testing…"
-                                                        : Services.Network.speedTestIsDone(networkItem.modelData.ssid)
+                                                        : root.speedTestIsDone(networkItem.modelData.ssid)
                                                             ? "Test Again"
                                                             : "Speed Test"
-                                                    enabled: !Services.Network.speedTestRunning
-                                                    onClicked: Services.Network.startSpeedTest()
+                                                    enabled: !Network.speedTestRunning
+                                                    onClicked: Network.startSpeedTest()
                                                 }
 
                                                 Rectangle {
@@ -1360,10 +1422,10 @@ ContentPage {
                                                     Layout.alignment: Qt.AlignVCenter
                                                     radius: 3
                                                     color: Appearance.m3colors.m3primary
-                                                    visible: Services.Network.speedTestRunning
+                                                    visible: Network.speedTestRunning
 
                                                     SequentialAnimation on opacity {
-                                                        running: Services.Network.speedTestRunning && networkItem.expanded
+                                                        running: Network.speedTestRunning && networkItem.expanded
                                                         loops: Animation.Infinite
                                                         NumberAnimation { from: 1;    to: 0.25; duration: 550; easing.type: Easing.InOutQuad }
                                                         NumberAnimation { from: 0.25; to: 1;    duration: 550; easing.type: Easing.InOutQuad }
@@ -1377,18 +1439,16 @@ ContentPage {
                                                 visible: networkItem.isActive
                                                 enabled: true
                                                 onClicked: {
-                                                    if (Services.Network.qrGenerating)
+                                                    if (Network.qrGenerating)
                                                         return;
 
-                                                    if (Services.Network.qrActiveSsid === networkItem.modelData.ssid &&
-                                                        (Services.Network.qrImagePath !== "" || Services.Network.qrError !== "")) {
-                                                        Services.Network.qrActiveSsid = "";
-                                                        Services.Network.qrImagePath  = "";
-                                                        Services.Network.qrError      = "";
+                                                    if (Network.qrActiveSsid === networkItem.modelData.ssid &&
+                                                        (Network.qrImagePath !== "" || Network.qrError !== "")) {
+                                                        Network.clearQrCode();
                                                         qrPanel.opacity = 0;
                                                         qrFadeInAnim.stop();
                                                     } else {
-                                                        Services.Network.generateQrCode(networkItem.modelData.ssid,
+                                                        Network.generateQrCode(networkItem.modelData.ssid,
                                                             networkItem.modelData.security || "");
                                                         qrPanel.opacity = 0;
                                                         qrFadeInAnim.restart();
@@ -1411,9 +1471,9 @@ ContentPage {
 
                                         Item {
                                             Layout.fillWidth: true
-                                            readonly property bool qrActive: Services.Network.qrActiveSsid === networkItem.modelData.ssid &&
+                                            readonly property bool qrActive: Network.qrActiveSsid === networkItem.modelData.ssid &&
                                                                              networkItem.isActive &&
-                                                                             (Services.Network.qrGenerating || Services.Network.qrImagePath !== "" || Services.Network.qrError !== "")
+                                                                             (Network.qrGenerating || Network.qrImagePath !== "" || Network.qrError !== "")
                                             readonly property real targetH: qrActive ? qrPanel.implicitHeight : 0
                                             height: targetH
                                             implicitHeight: targetH
@@ -1440,8 +1500,8 @@ ContentPage {
                                                     implicitHeight: 76
                                                     radius: Appearance.rounding.small
                                                     clip: true
-                                                    visible: Services.Network.qrGenerating &&
-                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Network.qrGenerating &&
+                                                             Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
                                                                    Appearance.m3colors.m3primaryContainer.g,
                                                                    Appearance.m3colors.m3primaryContainer.b, 0.22)
@@ -1460,7 +1520,7 @@ ContentPage {
                                                             color: Appearance.m3colors.m3primary
 
                                                             SequentialAnimation on opacity {
-                                                                running: Services.Network.qrGenerating && Services.Network.qrActiveSsid === networkItem.modelData.ssid
+                                                                running: Network.qrGenerating && Network.qrActiveSsid === networkItem.modelData.ssid
                                                                 loops: Animation.Infinite
                                                                 NumberAnimation { from: 1.0; to: 0.2; duration: 650; easing.type: Easing.InOutQuad }
                                                                 NumberAnimation { from: 0.2; to: 1.0; duration: 650; easing.type: Easing.InOutQuad }
@@ -1500,7 +1560,7 @@ ContentPage {
                                                             color: Appearance.m3colors.m3primary
 
                                                             SequentialAnimation on x {
-                                                                running: Services.Network.qrGenerating && Services.Network.qrActiveSsid === networkItem.modelData.ssid
+                                                                running: Network.qrGenerating && Network.qrActiveSsid === networkItem.modelData.ssid
                                                                 loops: Animation.Infinite
                                                                 NumberAnimation { from: -qrScanBar.width; to: qrScanBar.parent.width; duration: 1000; easing.type: Easing.InOutCubic }
                                                             }
@@ -1512,8 +1572,8 @@ ContentPage {
                                                     Layout.fillWidth: true
                                                     implicitHeight: qrErrorRow.implicitHeight + 24
                                                     radius: Appearance.rounding.small
-                                                    visible: Services.Network.qrError !== "" &&
-                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Network.qrError !== "" &&
+                                                             Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3errorContainer.r,
                                                                    Appearance.m3colors.m3errorContainer.g,
                                                                    Appearance.m3colors.m3errorContainer.b, 0.35)
@@ -1534,7 +1594,7 @@ ContentPage {
                                                         }
                                                         StyledText {
                                                             Layout.fillWidth: true
-                                                            text: Services.Network.qrError
+                                                            text: Network.qrError
                                                             font.pixelSize: Appearance.font.pixelSize.small
                                                             color: Appearance.m3colors.m3error
                                                             wrapMode: Text.WordWrap
@@ -1546,8 +1606,8 @@ ContentPage {
                                                     Layout.fillWidth: true
                                                     implicitHeight: qrReadyRow.implicitHeight + 32
                                                     radius: Appearance.rounding.small
-                                                    visible: Services.Network.qrImagePath !== "" &&
-                                                             Services.Network.qrActiveSsid === networkItem.modelData.ssid
+                                                    visible: Network.qrImagePath !== "" &&
+                                                             Network.qrActiveSsid === networkItem.modelData.ssid
                                                     color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
                                                                    Appearance.m3colors.m3primaryContainer.g,
                                                                    Appearance.m3colors.m3primaryContainer.b, 0.22)
@@ -1567,7 +1627,7 @@ ContentPage {
 
                                                             Image {
                                                                 anchors { fill: parent; margins: 8 }
-                                                                source: Services.Network.qrImagePath
+                                                                source: Network.qrImagePath
                                                                 smooth: false
                                                                 fillMode: Image.PreserveAspectFit
                                                                 cache: false
@@ -1581,7 +1641,7 @@ ContentPage {
 
                                                             StyledText {
                                                                 Layout.fillWidth: true
-                                                                text: Services.Network.qrActiveSsid
+                                                                text: Network.qrActiveSsid
                                                                 font.pixelSize: Appearance.font.pixelSize.large
                                                                 font.weight: 600
                                                                 color: Appearance.m3colors.m3primary
