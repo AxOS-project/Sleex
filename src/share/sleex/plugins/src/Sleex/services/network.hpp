@@ -355,7 +355,6 @@ private:
     QString m_qrImagePath;
     QString m_qrError;
     QString m_qrActiveSsid;
-    QString m_qrPassword;
 };
 
 } // namespace sleex::services
