@@ -1148,7 +1148,6 @@ void Network::generateQrCode(const QString &ssid, const QString &securityStr) {
     setQrGenerating(true);
     setQrImagePath(QString());
     setQrError(QString());
-    m_qrPassword.clear();
 
     const QString sec = securityStr.toLower();
     if (sec.isEmpty() || sec == "none" || sec == "--") {
@@ -1188,7 +1187,11 @@ void Network::encodeQr(const QString &ssid, const QString &password, const QStri
     const QString content = "WIFI:T:" + authType + ";S:" + esc(ssid) + ";P:" + esc(password) + ";;";
     QString shellArg = content;
     shellArg.replace("'", "'\\''");
-    const QString cmd = QString("printf '%%s' '%1' | qrencode -o /tmp/sleex_wifi_qr.png -s 8 -m 4").arg(shellArg);
+    // QString::arg() only substitutes %1-%99 (digit-prefixed placeholders), so
+    // plain '%s' here is untouched by .arg() - no need to (wrongly) escape it
+    // to '%%s', which made bash's own printf swallow the '%' and print a
+    // literal "%s" instead of the QR content.
+    const QString cmd = QString("printf '%s' '%1' | qrencode -o /tmp/sleex_wifi_qr.png -s 8 -m 4").arg(shellArg);
 
     auto *proc = new QProcess(this);
     connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
