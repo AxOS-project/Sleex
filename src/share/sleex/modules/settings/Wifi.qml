@@ -219,7 +219,7 @@ ContentPage {
                         Layout.alignment: Qt.AlignVCenter
                         text: Network.active !== null ? "wifi" : "settings_ethernet"
                         font.pixelSize: Appearance.font.pixelSize.title
-                        color: Appearance.m3colors.m3primary
+                        color: Appearance.colors.colPrimary
                     }
 
                     ColumnLayout {
@@ -229,7 +229,7 @@ ContentPage {
                             text: Network.active?.ssid || (Network.ethernet ? "Wired Connection" : "")
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: 500
-                            color: Appearance.m3colors.m3primary
+                            color: Appearance.colors.colPrimary
                         }
                         StyledText {
                             text: "Connected"
@@ -251,7 +251,7 @@ ContentPage {
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "speed"
-                                color: Appearance.m3colors.m3onSecondaryContainer
+                                color: Appearance.colors.colOnSecondaryContainer
                                 fill: Network.speedTestRunning ? 1 : 0
 
                                 SequentialAnimation on opacity {
@@ -289,7 +289,7 @@ ContentPage {
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "refresh"
-                                color: Appearance.m3colors.m3onSecondaryContainer
+                                color: Appearance.colors.colOnSecondaryContainer
                                 fill: Network.fetchingNetworkInfo ? 1 : 0
 
                                 RotationAnimation on rotation {
@@ -325,7 +325,7 @@ ContentPage {
                     Layout.fillWidth: true
                     visible: Network.netInfoError !== ""
                     text: Network.netInfoError
-                    color: Appearance.m3colors.m3error
+                    color: Appearance.colors.colError
                     font.pixelSize: Appearance.font.pixelSize.small
                     wrapMode: Text.WordWrap
                 }
@@ -351,7 +351,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "signal_cellular_alt"
                                 font.pixelSize: 24
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
@@ -370,7 +370,7 @@ ContentPage {
                                     width: parent.width * Math.min(Network.active?.strength ?? 0, 100) / 100
                                     height: parent.height
                                     radius: 2
-                                    color: Appearance.m3colors.m3primary
+                                    color: Appearance.colors.colPrimary
                                 }
                             }
                             StyledText {
@@ -378,7 +378,7 @@ ContentPage {
                                 text: (Network.active?.strength ?? 0) + "%"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                         }
                     }
@@ -402,7 +402,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "timer"
                                 font.pixelSize: 24
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
@@ -417,7 +417,7 @@ ContentPage {
                                     : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: parent.parent.hasResult ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
+                                color: parent.parent.hasResult ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -446,7 +446,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "arrow_downward"
                                 font.pixelSize: 24
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
@@ -461,7 +461,7 @@ ContentPage {
                                     : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: parent.parent.downloadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
+                                color: parent.parent.downloadValue >= 0 ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -484,7 +484,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "arrow_upward"
                                 font.pixelSize: 24
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
@@ -499,7 +499,7 @@ ContentPage {
                                     : "…"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: 600
-                                color: parent.parent.uploadValue >= 0 ? Appearance.m3colors.m3primary : Appearance.colors.colSubtext
+                                color: parent.parent.uploadValue >= 0 ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
                         }
                     }
@@ -541,7 +541,7 @@ ContentPage {
                                     Layout.alignment: Qt.AlignHCenter
                                     text: modelData.icon
                                     font.pixelSize: 20
-                                    color: Appearance.m3colors.m3primary
+                                    color: Appearance.colors.colPrimary
                                 }
                                 StyledText {
                                     Layout.alignment: Qt.AlignHCenter
@@ -653,9 +653,9 @@ ContentPage {
                                         radius: Appearance.rounding.small
 
                                         color: isSelected
-                                            ? Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
-                                                      Appearance.m3colors.m3primaryContainer.g,
-                                                      Appearance.m3colors.m3primaryContainer.b, 0.55)
+                                            ? Qt.rgba(Appearance.colors.colPrimaryContainer.r,
+                                                      Appearance.colors.colPrimaryContainer.g,
+                                                      Appearance.colors.colPrimaryContainer.b, 0.55)
                                             : Appearance.colors.colLayer2
                                         border.width: isSelected ? 0 : 1
                                         border.color: Appearance.colors.colOutlineVariant
@@ -674,7 +674,7 @@ ContentPage {
                                                     visible: isSelected
                                                     text: "check"
                                                     font.pixelSize: Appearance.font.pixelSize.small
-                                                    color: Appearance.m3colors.m3primary
+                                                    color: Appearance.colors.colPrimary
                                                 }
 
                                                 StyledText {
@@ -682,7 +682,7 @@ ContentPage {
                                                     font.pixelSize: Appearance.font.pixelSize.normal
                                                     font.weight: isSelected ? 600 : 400
                                                     color: isSelected
-                                                        ? Appearance.m3colors.m3primary
+                                                        ? Appearance.colors.colPrimary
                                                         : Appearance.colors.colOnLayer1
                                                     Behavior on color { ColorAnimation { duration: 150 } }
                                                 }
@@ -692,7 +692,7 @@ ContentPage {
                                                 text: primaryIp
                                                 font.pixelSize: Appearance.font.pixelSize.small
                                                 color: isSelected
-                                                    ? Appearance.m3colors.m3primary
+                                                    ? Appearance.colors.colPrimary
                                                     : Appearance.colors.colSubtext
                                                 opacity: isSelected ? 0.75 : 1.0
                                                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -724,14 +724,14 @@ ContentPage {
                     MaterialSymbol {
                         text: "error_outline"
                         font.pixelSize: Appearance.font.pixelSize.larger
-                        color: Appearance.m3colors.m3error
+                        color: Appearance.colors.colError
                     }
 
                     StyledText {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.m3colors.m3error
+                        color: Appearance.colors.colError
                         text: Network.dnsApplyError
                     }
                 }
@@ -782,7 +782,7 @@ ContentPage {
                                 Layout.alignment: Qt.AlignVCenter
                                 width: 6; height: 6
                                 radius: Appearance.rounding.full
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
 
                                 SequentialAnimation on opacity {
                                     running: Network.active !== null
@@ -796,7 +796,7 @@ ContentPage {
                                 text: qsTr("Connected")
                                 font.pixelSize: Appearance.font.pixelSize.small
                                 font.weight: 500
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.colors.colPrimary
                             }
                         }
                     }
@@ -835,7 +835,7 @@ ContentPage {
 
                             Text {
                                 text: "Search networks…"
-                                color: Appearance.m3colors.m3outline
+                                color: Appearance.colors.colOutline
                                 font.pixelSize: Appearance.font.pixelSize.small
                                 visible: !searchInputField.text && !searchInputField.activeFocus
                                 anchors.verticalCenter: parent.verticalCenter
@@ -878,16 +878,16 @@ ContentPage {
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
-                        color: Network.wifiScanning ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                        color: Network.scanning ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
                         implicitWidth: height
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "refresh"
-                            color: Network.wifiScanning
-                                ? Appearance.m3colors.m3onSecondary
-                                : Appearance.m3colors.m3onSecondaryContainer
-                            fill: Network.wifiScanning ? 1 : 0
+                            color: Network.scanning
+                                ? Appearance.colors.colOnSecondary
+                                : Appearance.colors.colOnSecondaryContainer
+                            fill: Network.scanning ? 1 : 0
                         }
                     }
 
@@ -910,15 +910,15 @@ ContentPage {
 
                     contentItem: Rectangle {
                         radius: Appearance.rounding.full
-                        color: root.networkSearchVisible ? Appearance.m3colors.m3primary : Appearance.colors.colLayer2
+                        color: root.networkSearchVisible ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
                         implicitWidth: height
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "search"
                             color: root.networkSearchVisible
-                                ? Appearance.m3colors.m3onSecondary
-                                : Appearance.m3colors.m3onSecondaryContainer
+                                ? Appearance.colors.colOnSecondary
+                                : Appearance.colors.colOnSecondaryContainer
                             fill: root.networkSearchVisible ? 1 : 0
                         }
                     }
@@ -1016,7 +1016,7 @@ ContentPage {
                             radius: Appearance.rounding.small
                             color: Appearance.colors.colLayer2
                             border.width: networkItem.isActive ? 2 : 0
-                            border.color: Appearance.m3colors.m3primary
+                            border.color: Appearance.colors.colPrimary
 
                             Behavior on border.width { NumberAnimation { duration: 150 } }
 
@@ -1055,7 +1055,7 @@ ContentPage {
                                             font.pixelSize: Appearance.font.pixelSize.large
                                             font.weight: networkItem.isActive ? 500 : 400
                                             color: networkItem.isActive
-                                                ? Appearance.m3colors.m3primary
+                                                ? Appearance.colors.colPrimary
                                                 : Appearance.colors.colOnLayer1
                                         }
 
@@ -1071,7 +1071,7 @@ ContentPage {
                                             Layout.fillWidth: true
                                             text: "Failed to connect: " + Network.lastConnectionError
                                             font.pixelSize: Appearance.font.pixelSize.small
-                                            color: Appearance.m3colors.m3error
+                                            color: Appearance.colors.colError
                                             wrapMode: Text.WordWrap
                                             visible: Network.showConnectionError && Network.errorSsid === networkItem.modelData.ssid
                                         }
@@ -1089,7 +1089,7 @@ ContentPage {
                                             MaterialSymbol {
                                                 anchors.centerIn: parent
                                                 text: networkItem.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
-                                                color: Appearance.m3colors.m3onSecondaryContainer
+                                                color: Appearance.colors.colOnSecondaryContainer
                                                 fill: 0
                                             }
                                         }
@@ -1309,7 +1309,7 @@ ContentPage {
 
                                                     Text {
                                                         text: "Enter password..."
-                                                        color: Appearance.m3colors.m3outline
+                                                        color: Appearance.colors.colOutline
                                                         font.pixelSize: Appearance.font.pixelSize.small
                                                         visible: !passwdInput.text && !passwdInput.activeFocus
                                                         anchors.verticalCenter: parent.verticalCenter
@@ -1421,7 +1421,7 @@ ContentPage {
                                                     Layout.preferredHeight: 6
                                                     Layout.alignment: Qt.AlignVCenter
                                                     radius: 3
-                                                    color: Appearance.m3colors.m3primary
+                                                    color: Appearance.colors.colPrimary
                                                     visible: Network.speedTestRunning
 
                                                     SequentialAnimation on opacity {
@@ -1502,9 +1502,9 @@ ContentPage {
                                                     clip: true
                                                     visible: Network.qrGenerating &&
                                                              Network.qrActiveSsid === networkItem.modelData.ssid
-                                                    color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
-                                                                   Appearance.m3colors.m3primaryContainer.g,
-                                                                   Appearance.m3colors.m3primaryContainer.b, 0.22)
+                                                    color: Qt.rgba(Appearance.colors.colPrimaryContainer.r,
+                                                                   Appearance.colors.colPrimaryContainer.g,
+                                                                   Appearance.colors.colPrimaryContainer.b, 0.22)
 
                                                     RowLayout {
                                                         anchors {
@@ -1517,7 +1517,7 @@ ContentPage {
                                                         MaterialSymbol {
                                                             text: "qr_code_2"
                                                             font.pixelSize: 30
-                                                            color: Appearance.m3colors.m3primary
+                                                            color: Appearance.colors.colPrimary
 
                                                             SequentialAnimation on opacity {
                                                                 running: Network.qrGenerating && Network.qrActiveSsid === networkItem.modelData.ssid
@@ -1535,7 +1535,7 @@ ContentPage {
                                                                 text: "Generating QR code"
                                                                 font.pixelSize: Appearance.font.pixelSize.normal
                                                                 font.weight: 500
-                                                                color: Appearance.m3colors.m3primary
+                                                                color: Appearance.colors.colPrimary
                                                             }
                                                             StyledText {
                                                                 text: "Retrieving network credentials…"
@@ -1548,16 +1548,16 @@ ContentPage {
                                                     Rectangle {
                                                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                                                         height: 3
-                                                        color: Qt.rgba(Appearance.m3colors.m3primary.r,
-                                                                       Appearance.m3colors.m3primary.g,
-                                                                       Appearance.m3colors.m3primary.b, 0.25)
+                                                        color: Qt.rgba(Appearance.colors.colPrimary.r,
+                                                                       Appearance.colors.colPrimary.g,
+                                                                       Appearance.colors.colPrimary.b, 0.25)
 
                                                         Rectangle {
                                                             id: qrScanBar
                                                             height: parent.height
                                                             width: 80
                                                             radius: 2
-                                                            color: Appearance.m3colors.m3primary
+                                                            color: Appearance.colors.colPrimary
 
                                                             SequentialAnimation on x {
                                                                 running: Network.qrGenerating && Network.qrActiveSsid === networkItem.modelData.ssid
@@ -1574,9 +1574,9 @@ ContentPage {
                                                     radius: Appearance.rounding.small
                                                     visible: Network.qrError !== "" &&
                                                              Network.qrActiveSsid === networkItem.modelData.ssid
-                                                    color: Qt.rgba(Appearance.m3colors.m3errorContainer.r,
-                                                                   Appearance.m3colors.m3errorContainer.g,
-                                                                   Appearance.m3colors.m3errorContainer.b, 0.35)
+                                                    color: Qt.rgba(Appearance.colors.colErrorContainer.r,
+                                                                   Appearance.colors.colErrorContainer.g,
+                                                                   Appearance.colors.colErrorContainer.b, 0.35)
 
                                                     RowLayout {
                                                         id: qrErrorRow
@@ -1590,13 +1590,13 @@ ContentPage {
                                                             Layout.alignment: Qt.AlignTop
                                                             text: "error_outline"
                                                             font.pixelSize: Appearance.font.pixelSize.larger
-                                                            color: Appearance.m3colors.m3error
+                                                            color: Appearance.colors.colError
                                                         }
                                                         StyledText {
                                                             Layout.fillWidth: true
                                                             text: Network.qrError
                                                             font.pixelSize: Appearance.font.pixelSize.small
-                                                            color: Appearance.m3colors.m3error
+                                                            color: Appearance.colors.colError
                                                             wrapMode: Text.WordWrap
                                                         }
                                                     }
@@ -1608,9 +1608,9 @@ ContentPage {
                                                     radius: Appearance.rounding.small
                                                     visible: Network.qrImagePath !== "" &&
                                                              Network.qrActiveSsid === networkItem.modelData.ssid
-                                                    color: Qt.rgba(Appearance.m3colors.m3primaryContainer.r,
-                                                                   Appearance.m3colors.m3primaryContainer.g,
-                                                                   Appearance.m3colors.m3primaryContainer.b, 0.22)
+                                                    color: Qt.rgba(Appearance.colors.colPrimaryContainer.r,
+                                                                   Appearance.colors.colPrimaryContainer.g,
+                                                                   Appearance.colors.colPrimaryContainer.b, 0.22)
 
                                                     RowLayout {
                                                         id: qrReadyRow
@@ -1644,15 +1644,15 @@ ContentPage {
                                                                 text: Network.qrActiveSsid
                                                                 font.pixelSize: Appearance.font.pixelSize.large
                                                                 font.weight: 600
-                                                                color: Appearance.m3colors.m3primary
+                                                                color: Appearance.colors.colPrimary
                                                                 elide: Text.ElideRight
                                                             }
 
                                                             Rectangle {
                                                                 radius: Appearance.rounding.full
-                                                                color: Qt.rgba(Appearance.m3colors.m3primary.r,
-                                                                               Appearance.m3colors.m3primary.g,
-                                                                               Appearance.m3colors.m3primary.b, 0.12)
+                                                                color: Qt.rgba(Appearance.colors.colPrimary.r,
+                                                                               Appearance.colors.colPrimary.g,
+                                                                               Appearance.colors.colPrimary.b, 0.12)
                                                                 implicitWidth: qrSecBadge.implicitWidth + 16
                                                                 implicitHeight: qrSecBadge.implicitHeight + 8
 
@@ -1664,12 +1664,12 @@ ContentPage {
                                                                     MaterialSymbol {
                                                                         text: networkItem.isSecure ? "lock" : "lock_open"
                                                                         font.pixelSize: Appearance.font.pixelSize.small
-                                                                        color: Appearance.m3colors.m3primary
+                                                                        color: Appearance.colors.colPrimary
                                                                     }
                                                                     StyledText {
                                                                         text: networkItem.modelData.security || "Open"
                                                                         font.pixelSize: Appearance.font.pixelSize.small
-                                                                        color: Appearance.m3colors.m3primary
+                                                                        color: Appearance.colors.colPrimary
                                                                     }
                                                                 }
                                                             }
