@@ -3,8 +3,32 @@
 #include <QMap>
 #include <QByteArray>
 #include <QTimer>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 namespace sleex::services {
+
+// nmcli TYPE is "802-3-ethernet" for wired, "802-11-wireless" for WiFi -
+// kept here only as a comment for context; icon/label logic now lives in QML
+// off of `active`/`ethernet` directly.
+
+static const QVariantList &staticDnsProviders() {
+    static const QVariantList providers = {
+        QVariantMap{{"id", "cloudflare"},         {"name", "Cloudflare"},            {"servers", "1.1.1.1,1.0.0.1"}},
+        QVariantMap{{"id", "google"},             {"name", "Google"},                {"servers", "8.8.8.8,8.8.4.4"}},
+        QVariantMap{{"id", "quad9"},              {"name", "Quad9"},                 {"servers", "9.9.9.9,149.112.112.112"}},
+        QVariantMap{{"id", "cloudflare-malware"}, {"name", "Cloudflare (Security)"}, {"servers", "1.1.1.2,1.0.0.2"}},
+        QVariantMap{{"id", "opendns"},            {"name", "OpenDNS"},               {"servers", "208.67.222.222,208.67.220.220"}},
+        QVariantMap{{"id", "cloudflare-family"},  {"name", "Cloudflare (Family)"},   {"servers", "1.1.1.3,1.0.0.3"}},
+        QVariantMap{{"id", "opendns-family"},     {"name", "OpenDNS FamilyShield"},  {"servers", "208.67.222.123,208.67.220.123"}}
+    };
+    return providers;
+}
 
 struct ConnectionCallbackData {
     Network *network;
@@ -155,6 +179,24 @@ Network::Network(QObject *parent)
     updateEthernetStatus();
     updateActiveConnection();
     updateKnownNetworks();
+
+    // --- Ported from Network.qml ---
+    m_cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/sleex/network";
+    QDir().mkpath(m_cacheDir);
+    loadSpeedTestCache();
+
+    m_errorTimer.setSingleShot(true);
+    connect(&m_errorTimer, &QTimer::timeout, this, [this]() { setShowConnectionError(false); });
+
+    connect(this, &Network::connectionFailed, this, &Network::_onConnectionFailedInternal);
+    connect(this, &Network::connectionSucceeded, this, &Network::_onConnectionSucceededInternal);
+
+    connect(this, &Network::activeChanged, this, &Network::hasActiveConnectionChanged);
+    connect(this, &Network::ethernetChanged, this, &Network::hasActiveConnectionChanged);
+    connect(this, &Network::hasActiveConnectionChanged, this, [this]() {
+        if (hasActiveConnection()) fetchNetworkInfo();
+    });
+    if (hasActiveConnection()) fetchNetworkInfo();
 }
 
 Network::~Network() {
@@ -789,6 +831,381 @@ void Network::emitConnectionFailedOnce(const QString &ssid, const QString &messa
 
 bool Network::hasConnectionFailed(const QString &ssid) const {
     return m_failedConnections.contains(ssid);
+}
+
+
+// =====================================================================
+// Ported from the deprecated Network.qml QML wrapper. Everything below
+// this point used to live in QML/JS driving `Process` items; it is now
+// owned entirely by this singleton, using QProcess for the same
+// nmcli/curl/qrencode shell invocations.
+// =====================================================================
+
+bool Network::hasActiveConnection() const {
+    return m_active != nullptr || m_ethernet;
+}
+
+void Network::setLastConnectionError(const QString &v) {
+    if (m_lastConnectionError == v) return;
+    m_lastConnectionError = v;
+    emit lastConnectionErrorChanged();
+}
+void Network::setErrorSsid(const QString &v) {
+    if (m_errorSsid == v) return;
+    m_errorSsid = v;
+    emit errorSsidChanged();
+}
+void Network::setShowConnectionError(bool v) {
+    if (m_showConnectionError == v) return;
+    m_showConnectionError = v;
+    emit showConnectionErrorChanged();
+}
+
+void Network::_onConnectionFailedInternal(const QString &ssid, const QString &error) {
+    setLastConnectionError(error);
+    setErrorSsid(ssid);
+    setShowConnectionError(true);
+    m_errorTimer.start(5000);
+}
+
+void Network::_onConnectionSucceededInternal(const QString &ssid) {
+    Q_UNUSED(ssid);
+    setShowConnectionError(false);
+    setLastConnectionError(QString());
+    setErrorSsid(QString());
+    fetchNetworkInfo();
+}
+
+// --- Connection info (local IP / gateway / DNS / public IP) ---
+
+void Network::setLocalIp(const QString &v)    { if (m_localIp != v)    { m_localIp = v;    emit localIpChanged(); } }
+void Network::setGatewayIp(const QString &v)  { if (m_gatewayIp != v)  { m_gatewayIp = v;  emit gatewayIpChanged(); } }
+void Network::setDnsServers(const QString &v) { if (m_dnsServers != v) { m_dnsServers = v; emit dnsServersChanged(); } }
+void Network::setPublicIp(const QString &v)   { if (m_publicIp != v)   { m_publicIp = v;   emit publicIpChanged(); } }
+void Network::setNetInfoError(const QString &v) { if (m_netInfoError != v) { m_netInfoError = v; emit netInfoErrorChanged(); } }
+
+void Network::beginInfoFetch() {
+    if (m_activeInfoProcesses == 0) emit fetchingNetworkInfoChanged();
+    m_activeInfoProcesses++;
+}
+void Network::endInfoFetch() {
+    m_activeInfoProcesses = qMax(0, m_activeInfoProcesses - 1);
+    if (m_activeInfoProcesses == 0) emit fetchingNetworkInfoChanged();
+}
+
+void Network::fetchNetworkInfo() {
+    if (!hasActiveConnection()) return;
+    setNetInfoError(QString());
+
+    beginInfoFetch();
+    auto *localProc = new QProcess(this);
+    connect(localProc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, localProc](int exitCode, QProcess::ExitStatus) {
+            const QString out   = QString::fromUtf8(localProc->readAllStandardOutput());
+            const auto     parts = out.split("||");
+            const QString route = parts.value(0).trimmed();
+            const QString dns   = parts.value(1).trimmed();
+
+            static const QRegularExpression srcRe("src\\s+(\\S+)");
+            static const QRegularExpression viaRe("via\\s+(\\S+)");
+            const auto srcMatch = srcRe.match(route);
+            const auto viaMatch = viaRe.match(route);
+
+            setLocalIp(srcMatch.hasMatch() ? srcMatch.captured(1) : QStringLiteral("—"));
+            setGatewayIp(viaMatch.hasMatch() ? viaMatch.captured(1) : QStringLiteral("—"));
+
+            // Skip clobbering the display while a DNS apply is in flight; Config's
+            // dnsSwitch preference (whether to keep showing the custom value) is a
+            // QML/UI concern and is applied on top of this in the settings page.
+            if (!m_dnsApplying)
+                setDnsServers(dns.isEmpty() ? QStringLiteral("—") : dns);
+
+            if (exitCode != 0) setNetInfoError("Couldn't read local network info");
+            localProc->deleteLater();
+            endInfoFetch();
+        });
+    localProc->start("bash", {"-c",
+        "ip -4 route get 1.1.1.1 2>/dev/null | head -n1; echo '||'; "
+        "awk '/^nameserver/{print $2}' /etc/resolv.conf 2>/dev/null | paste -sd ',' -"});
+
+    beginInfoFetch();
+    auto *publicProc = new QProcess(this);
+    connect(publicProc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, publicProc](int exitCode, QProcess::ExitStatus) {
+            const QString v = QString::fromUtf8(publicProc->readAllStandardOutput()).trimmed();
+            setPublicIp(exitCode == 0 && !v.isEmpty() ? v : QStringLiteral("—"));
+            publicProc->deleteLater();
+            endInfoFetch();
+        });
+    publicProc->start("bash", {"-c", "curl --max-time 6 -s https://api.ipify.org"});
+}
+
+// --- Custom DNS ---
+
+void Network::setDnsApplying(bool v)          { if (m_dnsApplying != v)   { m_dnsApplying = v;   emit dnsApplyingChanged(); } }
+void Network::setDnsApplyError(const QString &v) { if (m_dnsApplyError != v) { m_dnsApplyError = v; emit dnsApplyErrorChanged(); } }
+
+QVariantList Network::dnsProviders() const {
+    return staticDnsProviders();
+}
+
+QVariantMap Network::providerById(const QString &id) const {
+    for (const QVariant &v : staticDnsProviders()) {
+        const QVariantMap m = v.toMap();
+        if (m.value("id").toString() == id) return m;
+    }
+    return staticDnsProviders().first().toMap();
+}
+
+void Network::applyDnsSettings(bool enabled, const QString &providerId) {
+    if (!m_active) return;
+    m_pendingDnsEnabled    = enabled;
+    m_pendingDnsProviderId = providerId;
+
+    if (m_dnsApplying) {
+        // Re-run once the in-flight apply finishes instead of dropping this change
+        m_dnsReapplyQueued = true;
+        return;
+    }
+
+    setDnsApplyError(QString());
+    setDnsServers(enabled ? providerById(providerId).value("servers").toString() : QStringLiteral("—"));
+    setDnsApplying(true);
+
+    auto *findProc = new QProcess(this);
+    connect(findProc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, findProc](int exitCode, QProcess::ExitStatus) {
+            const QString out   = QString::fromUtf8(findProc->readAllStandardOutput()).trimmed();
+            const auto     parts  = out.split('|');
+            const QString name   = parts.value(0);
+            const QString device = parts.value(1);
+            findProc->deleteLater();
+
+            if (exitCode != 0 || name.isEmpty() || device.isEmpty()) {
+                setDnsApplyError("Couldn't find the active connection");
+                setDnsApplying(false);
+                if (m_dnsReapplyQueued) {
+                    m_dnsReapplyQueued = false;
+                    applyDnsSettings(m_pendingDnsEnabled, m_pendingDnsProviderId);
+                }
+                return;
+            }
+
+            const QString escName   = QString(name).replace("\"", "\\\"");
+            const QString escDevice = QString(device).replace("\"", "\\\"");
+            const QString reapply   = QString("(nmcli device reapply \"%1\" || nmcli connection up \"%2\")")
+                                           .arg(escDevice, escName);
+            const QString cmd = m_pendingDnsEnabled
+                ? QString("nmcli connection modify \"%1\" ipv4.ignore-auto-dns yes ipv4.dns \"%2\" && %3")
+                      .arg(escName, providerById(m_pendingDnsProviderId).value("servers").toString(), reapply)
+                : QString("nmcli connection modify \"%1\" ipv4.ignore-auto-dns no ipv4.dns \"\" && %2")
+                      .arg(escName, reapply);
+
+            auto *modProc = new QProcess(this);
+            connect(modProc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+                [this, modProc](int exitCode, QProcess::ExitStatus) {
+                    modProc->deleteLater();
+                    setDnsApplying(false);
+                    if (exitCode != 0) setDnsApplyError("Failed to apply DNS settings");
+                    QTimer::singleShot(0, this, [this]() { fetchNetworkInfo(); });
+                    if (m_dnsReapplyQueued) {
+                        m_dnsReapplyQueued = false;
+                        applyDnsSettings(m_pendingDnsEnabled, m_pendingDnsProviderId);
+                    }
+                });
+            modProc->start("bash", {"-c", cmd});
+        });
+    findProc->start("bash", {"-c",
+        "nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | "
+        "awk -F: '$3==\"802-11-wireless\"{print $1\"|\"$2; exit}'"});
+}
+
+// --- Speed test ---
+
+void Network::setSpeedTestRunning(bool v)        { if (m_speedTestRunning != v)   { m_speedTestRunning = v;   emit speedTestRunningChanged(); } }
+void Network::setSpeedTestStage(const QString &v){ if (m_speedTestStage != v)     { m_speedTestStage = v;     emit speedTestStageChanged(); } }
+void Network::setSpeedTestPingMs(double v)       { if (m_speedTestPingMs != v)    { m_speedTestPingMs = v;    emit speedTestPingMsChanged(); } }
+void Network::setSpeedTestDownloadMbps(double v) { if (m_speedTestDownloadMbps != v) { m_speedTestDownloadMbps = v; emit speedTestDownloadMbpsChanged(); } }
+void Network::setSpeedTestUploadMbps(double v)   { if (m_speedTestUploadMbps != v)   { m_speedTestUploadMbps = v;   emit speedTestUploadMbpsChanged(); } }
+void Network::setSpeedTestError(const QString &v){ if (m_speedTestError != v)     { m_speedTestError = v;     emit speedTestErrorChanged(); } }
+void Network::setSpeedTestSsid(const QString &v) { if (m_speedTestSsid != v)      { m_speedTestSsid = v;      emit speedTestSsidChanged(); } }
+
+void Network::loadSpeedTestCache() {
+    QFile f(m_cacheDir + "/network.json");
+    if (!f.open(QIODevice::ReadOnly)) { m_speedTestResults = QVariantMap(); return; }
+    const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    f.close();
+    m_speedTestResults = doc.isObject() ? doc.object().toVariantMap() : QVariantMap();
+}
+
+void Network::cacheSpeedTestResult(const QString &ssid) {
+    if (ssid.isEmpty()) return;
+    QVariantMap entry;
+    entry["pingMs"]       = m_speedTestPingMs;
+    entry["downloadMbps"] = m_speedTestDownloadMbps;
+    entry["uploadMbps"]   = m_speedTestUploadMbps;
+    m_speedTestResults[ssid] = entry;
+    emit speedTestResultsChanged();
+
+    QFile f(m_cacheDir + "/network.json");
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        f.write(QJsonDocument(QJsonObject::fromVariantMap(m_speedTestResults)).toJson(QJsonDocument::Indented));
+        f.close();
+    }
+}
+
+void Network::startSpeedTest() {
+    if (m_speedTestRunning) return;
+    setSpeedTestSsid(m_active ? m_active->ssid() : QString());
+    setSpeedTestRunning(true);
+    setSpeedTestStage("ping");
+    setSpeedTestPingMs(-1);
+    setSpeedTestDownloadMbps(-1);
+    setSpeedTestUploadMbps(-1);
+    setSpeedTestError(QString());
+
+    auto *proc = new QProcess(this);
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, proc](int exitCode, QProcess::ExitStatus) {
+            const QString out = QString::fromUtf8(proc->readAllStandardOutput());
+            proc->deleteLater();
+            bool ok = false;
+            const double v = out.toDouble(&ok);
+            if (exitCode != 0 || !ok) {
+                setSpeedTestError("Couldn't reach the network (ping failed)");
+                setSpeedTestStage("error");
+                setSpeedTestRunning(false);
+                cacheSpeedTestResult(m_speedTestSsid);
+                return;
+            }
+            setSpeedTestPingMs(v * 1000.0);
+            setSpeedTestStage("download");
+            runSpeedTestDownload();
+        });
+    proc->start("bash", {"-c",
+        "LC_ALL=C curl --max-time 10 -o /dev/null -s -w '%{time_connect}' "
+        "'https://speed.cloudflare.com/__down?bytes=0'"});
+}
+
+void Network::runSpeedTestDownload() {
+    auto *proc = new QProcess(this);
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, proc](int exitCode, QProcess::ExitStatus) {
+            const QString out = QString::fromUtf8(proc->readAllStandardOutput());
+            proc->deleteLater();
+            bool ok = false;
+            const double v = out.toDouble(&ok);
+            if (exitCode != 0 || !ok) {
+                setSpeedTestError("Download test failed");
+                setSpeedTestStage("error");
+                setSpeedTestRunning(false);
+                cacheSpeedTestResult(m_speedTestSsid);
+                return;
+            }
+            setSpeedTestDownloadMbps((v * 8) / 1000000.0);
+            setSpeedTestStage("upload");
+            runSpeedTestUpload();
+        });
+    proc->start("bash", {"-c",
+        "LC_ALL=C curl --max-time 20 -o /dev/null -s -w '%{speed_download}' "
+        "'https://speed.cloudflare.com/__down?bytes=25000000'"});
+}
+
+void Network::runSpeedTestUpload() {
+    auto *proc = new QProcess(this);
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, proc](int exitCode, QProcess::ExitStatus) {
+            const QString out = QString::fromUtf8(proc->readAllStandardOutput());
+            proc->deleteLater();
+            bool ok = false;
+            const double v = out.toDouble(&ok);
+            setSpeedTestStage(exitCode != 0 ? "error" : "done");
+            setSpeedTestRunning(false);
+            if (exitCode != 0 || !ok) setSpeedTestError("Upload test failed");
+            else setSpeedTestUploadMbps((v * 8) / 1000000.0);
+            cacheSpeedTestResult(m_speedTestSsid);
+        });
+    proc->start("bash", {"-c",
+        "LC_ALL=C curl --max-time 20 -X POST -s -o /dev/null -w '%{speed_upload}' "
+        "--data-binary @<(head -c 8000000 /dev/urandom) 'https://speed.cloudflare.com/__up'"});
+}
+
+// --- WiFi QR code sharing ---
+
+void Network::setQrGenerating(bool v)         { if (m_qrGenerating != v) { m_qrGenerating = v; emit qrGeneratingChanged(); } }
+void Network::setQrImagePath(const QString &v){ if (m_qrImagePath != v)  { m_qrImagePath = v;  emit qrImagePathChanged(); } }
+void Network::setQrError(const QString &v)    { if (m_qrError != v)      { m_qrError = v;      emit qrErrorChanged(); } }
+void Network::setQrActiveSsid(const QString &v){ if (m_qrActiveSsid != v){ m_qrActiveSsid = v;  emit qrActiveSsidChanged(); } }
+
+void Network::clearQrCode() {
+    setQrActiveSsid(QString());
+    setQrImagePath(QString());
+    setQrError(QString());
+}
+
+void Network::generateQrCode(const QString &ssid, const QString &securityStr) {
+    setQrActiveSsid(ssid);
+    setQrGenerating(true);
+    setQrImagePath(QString());
+    setQrError(QString());
+
+    const QString sec = securityStr.toLower();
+    if (sec.isEmpty() || sec == "none" || sec == "--") {
+        encodeQr(ssid, QString(), "nopass");
+        return;
+    }
+
+    auto *proc = new QProcess(this);
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, proc](int exitCode, QProcess::ExitStatus) {
+            const QString pw = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+            proc->deleteLater();
+            if (exitCode != 0 || pw.isEmpty()) {
+                setQrError("Couldn't retrieve the stored WiFi password.\n"
+                           "Ensure NetworkManager has this connection saved with a password.");
+                setQrGenerating(false);
+                return;
+            }
+            const QString sec2     = m_active ? m_active->security().toLower() : QString();
+            const QString authType = sec2.contains("wep") ? "WEP" : "WPA";
+            encodeQr(m_qrActiveSsid, pw, authType);
+        });
+    proc->start("bash", {"-c",
+        "nmcli -s -g 802-11-wireless-security.psk connection show "
+        "\"$(nmcli -t -f NAME,TYPE connection show --active 2>/dev/null | "
+        "awk -F: '$2==\"802-11-wireless\"{print $1; exit}')\" 2>/dev/null"});
+}
+
+void Network::encodeQr(const QString &ssid, const QString &password, const QString &authType) {
+    auto esc = [](QString s) {
+        return s.replace("\\", "\\\\")
+                .replace(";", "\\;")
+                .replace(",", "\\,")
+                .replace("\"", "\\\"")
+                .replace(":", "\\:");
+    };
+    const QString content = "WIFI:T:" + authType + ";S:" + esc(ssid) + ";P:" + esc(password) + ";;";
+    QString shellArg = content;
+    shellArg.replace("'", "'\\''");
+    // QString::arg() only substitutes %1-%99 (digit-prefixed placeholders), so
+    // plain '%s' here is untouched by .arg() - no need to (wrongly) escape it
+    // to '%%s', which made bash's own printf swallow the '%' and print a
+    // literal "%s" instead of the QR content.
+    const QString cmd = QString("printf '%s' '%1' | qrencode -o /tmp/sleex_wifi_qr.png -s 8 -m 4").arg(shellArg);
+
+    auto *proc = new QProcess(this);
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+        [this, proc](int exitCode, QProcess::ExitStatus) {
+            proc->deleteLater();
+            setQrGenerating(false);
+            if (exitCode != 0) {
+                setQrError("QR generation failed. Is 'qrencode' installed?\n(sudo pacman -S qrencode)");
+                return;
+            }
+            setQrImagePath(QString());
+            QTimer::singleShot(0, this, [this]() { setQrImagePath("file:///tmp/sleex_wifi_qr.png"); });
+        });
+    proc->start("bash", {"-c", cmd});
 }
 
 } // namespace sleex::services
