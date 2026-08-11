@@ -292,6 +292,70 @@ Singleton {
             property string nightLightFrom: "19:00"
             property string nightLightTo: "06:30"
             property int nightLightTemperature: 5000
+
+            property bool captureGPUrendering: false
+            property bool freezeOnCapture: false
+
+            property bool screenshotCopyToClipboard: true
+            property bool screenshotCompressionEnabled: false
+            property int screenshotQuality: 6
+            property bool screenshotSaveDirEnabled: false
+            property string screenshotSaveDir: ""
+
+            property int screenRecordingFPS: 60
+            property bool autoBitrate: true
+            property int screenRecordingBitrate: 8000
+            property bool recordingSaveDirEnabled: false
+            property string recordingSaveDir: ""
+
+            property bool snapToWindows: true
+            property bool showCapturedNotifications: true
+
+            property bool autoFps: true
+        }
+    }
+
+    IpcHandler {
+        target: "config"
+
+        function onGetCaptureGPURendering(): string {
+            return configOptionsObj.display.captureGPUrendering ? "true" : "false"
+        }
+        function onGetFreezeOnCapture(): string {
+            return configOptionsObj.display.freezeOnCapture ? "true" : "false"
+        }
+        function onGetScreenshotCopyToClipboard(): string {
+            return configOptionsObj.display.screenshotCopyToClipboard ? "true" : "false"
+        }
+        function onGetScreenshotCompressionEnabled(): string {
+            return configOptionsObj.display.screenshotCompressionEnabled ? "true" : "false"
+        }
+        function onGetScreenRecordingFPS(): string {
+            return String(configOptionsObj.display.screenRecordingFPS)
+        }
+        function onGetAutoBitrate(): string {
+            return configOptionsObj.display.autoBitrate ? "true" : "false"
+        }
+        function onGetScreenRecordingBitrate(): string {
+            return String(configOptionsObj.display.screenRecordingBitrate)
+        }
+        function onGetScreenshotQuality(): string {
+            return String(configOptionsObj.display.screenshotQuality)
+        }
+        function onGetScreenshotSaveDirEnabled(): string {
+            return configOptionsObj.display.screenshotSaveDirEnabled ? "true" : "false"
+        }
+        function onGetScreenshotSaveDir(): string {
+            return configOptionsObj.display.screenshotSaveDir || ""
+        }
+        function onGetRecordingSaveDirEnabled(): string {
+            return configOptionsObj.display.recordingSaveDirEnabled ? "true" : "false"
+        }
+        function onGetRecordingSaveDir(): string {
+            return configOptionsObj.display.recordingSaveDir || ""
+        }
+        function onGetShowCapturedNotifications(): string {
+            return configOptionsObj.display.showCapturedNotifications ? "true" : "false"
         }
     }
 }
