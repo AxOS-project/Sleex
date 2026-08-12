@@ -1,3 +1,4 @@
+import qs
 import qs.modules.common
 import SleexUiKit.Widgets
 import qs.services
@@ -397,7 +398,7 @@ Item {
     }
 
     Timer {
-        running: player?.playbackState == MprisPlaybackState.Playing
+        running: player?.playbackState == MprisPlaybackState.Playing && (GlobalStates.dashboardOpen || playerController.isLockscreen)
         interval: 100; repeat: true
         onTriggered: player.positionChanged()
     }
