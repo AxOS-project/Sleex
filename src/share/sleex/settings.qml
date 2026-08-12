@@ -55,6 +55,8 @@ ApplicationWindow {
 
     onClosing: Qt.quit()
 
+    AppearanceBridge {} // Init the bridge to populate the Appearance singleton
+
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
         Idle.init()
