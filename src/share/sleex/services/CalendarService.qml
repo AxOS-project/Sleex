@@ -250,7 +250,7 @@ Singleton {
 
     Process {
         id: syncProcess
-        running: Config.options.dashboard.calendar.useVdirsyncer && !getEventsProcess.running
+        running: false
         command: ["vdirsyncer", "sync"]
         onExited: (exitCode) => {
             if (exitCode === 0) {
