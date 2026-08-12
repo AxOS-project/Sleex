@@ -35,7 +35,7 @@ Item {
         switch(type) {
             case "image": cmd = [Config.options.apps.imageViewer, filePath]; break;
             case "video": cmd = [Config.options.apps.videoPlayer, filePath]; break;
-            case "audio": cmd = [Config.options.apps.audioPlayer, filePath]; break;
+            case "audio": cmd = [Config.options.apps.musicPlayer, filePath]; break;
             case "archive": cmd = [Config.options.apps.archiveManager, filePath]; break;
             case "directory": cmd = [Config.options.apps.fileManager, filePath]; break;
             case "code":
