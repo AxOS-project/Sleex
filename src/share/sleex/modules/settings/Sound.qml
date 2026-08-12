@@ -137,25 +137,6 @@ ContentPage {
         }
     }
 
-    ContentSection {
-        title: "Default Media Player"
-        icon: "play_circle"
-    
-            
-        
-        MaterialTextField {
-            
-            id: mediaPlayer
-            Layout.fillWidth: true
-            placeholderText: "Default Media Player"
-            text: Config.options.dashboard.mediaPlayer
-            wrapMode: TextEdit.Wrap
-            onEditingFinished: {
-                Config.options.dashboard.mediaPlayer = text
-            }
-        }
-    }
-
     Item {
         implicitHeight: 24
     }
