@@ -187,8 +187,22 @@ ContentPage {
     }
 
     ContentSection {
+        id: captureSection
         title: "Capture Settings"
         icon: "photo_camera"
+
+        property bool gsrAvailable: true
+
+        Process {
+            id: gsrCheckProcess
+            command: ["bash", "-c", "command -v gpu-screen-recorder >/dev/null 2>&1 && echo yes || echo no"]
+            running: true
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    captureSection.gsrAvailable = this.text.includes("yes")
+                }
+            }
+        }
 
         ConfigSwitch {
             text: "Freeze display on capture"
@@ -217,83 +231,245 @@ ContentPage {
             StyledToolTip { text: "Shows a notification when a screenshot or recording finishes saving. Error notifications always show regardless of this setting." }
             onCheckedChanged: Config.options.display.showCapturedNotifications = checked
         }
-    }
+        Item { implicitHeight: 16 }
 
-    ContentSection {
-        title: "Screenshots"
-        icon: "photo_camera"
+        ContentSubsection {
+            title: "Screenshots"
 
-        ConfigSwitch {
-            text: "Copy to Clipboard"
-            checked: Config.options.display.screenshotCopyToClipboard
-            onClicked: checked = !checked
-            StyledToolTip { text: "When enabled, screenshots are copied to the clipboard in addition to being saved. When disabled, they're only saved to the chosen location." }
-            onCheckedChanged: Config.options.display.screenshotCopyToClipboard = checked
-        }
+            ConfigSwitch {
+                text: "Copy to Clipboard"
+                checked: Config.options.display.screenshotCopyToClipboard
+                onClicked: checked = !checked
+                StyledToolTip { text: "When enabled, screenshots are copied to the clipboard in addition to being saved. When disabled, they're only saved to the chosen location." }
+                onCheckedChanged: Config.options.display.screenshotCopyToClipboard = checked
+            }
 
-        Item { implicitHeight: 12 }
+            Item { implicitHeight: 12 }
 
-        ConfigSwitch {
-            id: screenshotCompressionSwitch
-            text: "Screenshot Compression"
-            checked: Config.options.display.screenshotCompressionEnabled
-            onClicked: checked = !checked
-            StyledToolTip { text: "When disabled, a default compression level is used. When enabled, adjust it manually below. Screenshots are lossless PNG either way — this trades encode time for file size, not image quality." }
-            onCheckedChanged: Config.options.display.screenshotCompressionEnabled = checked
-        }
+            ConfigSwitch {
+                id: screenshotCompressionSwitch
+                text: "Screenshot Compression"
+                checked: Config.options.display.screenshotCompressionEnabled
+                onClicked: checked = !checked
+                StyledToolTip { text: "When disabled, a default compression level is used. When enabled, adjust it manually below. Screenshots are lossless PNG either way — this trades encode time for file size, not image quality." }
+                onCheckedChanged: Config.options.display.screenshotCompressionEnabled = checked
+            }
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            visible: screenshotCompressionSwitch.checked
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: screenshotCompressionSwitch.checked
 
-            Item { implicitHeight: 8 }
+                Item { implicitHeight: 8 }
 
-            StyledSlider {
-                id: screenshotQualitySlider
-                from: 0
-                to: 9
-                value: Config.options.display.screenshotQuality
-                tooltipContent: Math.round(value)
-                onMoved: Config.options.display.screenshotQuality = Math.round(value)
+                StyledSlider {
+                    id: screenshotQualitySlider
+                    from: 0
+                    to: 9
+                    value: Config.options.display.screenshotQuality
+                    tooltipContent: Math.round(value)
+                    onMoved: Config.options.display.screenshotQuality = Math.round(value)
+                }
+            }
+
+            Item { implicitHeight: 12 }
+
+            ConfigSwitch {
+                id: screenshotSaveDirSwitch
+                text: "Custom screenshot save location"
+                checked: Config.options.display.screenshotSaveDirEnabled
+                onClicked: checked = !checked
+                StyledToolTip { text: "When disabled, screenshots save to the default location. When enabled, choose a custom folder below." }
+                onCheckedChanged: Config.options.display.screenshotSaveDirEnabled = checked
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: screenshotSaveDirSwitch.checked
+
+                Item { implicitHeight: 8 }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    MaterialTextField {
+                        id: screenshotDirField
+                        Layout.fillWidth: true
+                        placeholderText: "Default (~/Pictures/Screenshots)"
+                        text: Config.options.display.screenshotSaveDir
+                        onEditingFinished: {
+                            Config.options.display.screenshotSaveDir = text;
+                        }
+                    }
+
+                    RippleButtonWithIcon {
+                        materialIcon: "folder_open"
+                        materialIconFill: false
+                        mainText: "Browse"
+                        onClicked: screenshotDirPickerDialog.open()
+                    }
+                }
             }
         }
 
-        Item { implicitHeight: 12 }
+        Item { implicitHeight: 16 }
 
-        ConfigSwitch {
-            id: screenshotSaveDirSwitch
-            text: "Custom screenshot save location"
-            checked: Config.options.display.screenshotSaveDirEnabled
-            onClicked: checked = !checked
-            StyledToolTip { text: "When disabled, screenshots save to the default location. When enabled, choose a custom folder below." }
-            onCheckedChanged: Config.options.display.screenshotSaveDirEnabled = checked
-        }
+        ContentSubsection {
+            title: "Screen Recordings"
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            visible: screenshotSaveDirSwitch.checked
-
-            Item { implicitHeight: 8 }
-
-            RowLayout {
+            // ----- Group: Hardware Acceleration -----
+            ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 4
 
-                MaterialTextField {
-                    id: screenshotDirField
-                    Layout.fillWidth: true
-                    placeholderText: "Default (~/Pictures/Screenshots)"
-                    text: Config.options.display.screenshotSaveDir
-                    onEditingFinished: {
-                        Config.options.display.screenshotSaveDir = text;
+                ConfigSwitch {
+                    id: gpuRenderSwitch
+                    text: "Hardware Acceleration"
+                    checked: Config.options.display.captureGPUrendering
+                    onClicked: {
+                        if (!checked && !captureSection.gsrAvailable) {
+                            Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "Screen Recorder",
+                                "Missing dependency: gpu-screen-recorder", "Install gpu-screen-recorder to enable hardware acceleration."])
+                            return
+                        }
+                        checked = !checked
                     }
+                    StyledToolTip {
+                        text: gpuRenderSwitch.checked
+                            ? "Fullscreen recordings use the GPU encoder for best performance. A selected region always uses wf-recorder instead, since the GPU encoder can't crop to a custom area."
+                            : "All recordings use wf-recorder, regardless of the selected region."
+                    }
+                    onCheckedChanged: Config.options.display.captureGPUrendering = checked
+                }
+            }
+
+            Item { implicitHeight: 12 }
+
+            // ----- Group: Automatic FPS -----
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                ConfigSwitch {
+                    id: autoFpsSwitch
+                    text: "Automatic FPS"
+                    checked: Config.options.display.autoFps
+                    onClicked: checked = !checked
+                    StyledToolTip {
+                        text: "When enabled, the recording frame rate will match your monitor’s native refresh rate. When disabled, you can set a custom rate below."
+                    }
+                    onCheckedChanged: Config.options.display.autoFps = checked
                 }
 
-                RippleButtonWithIcon {
-                    materialIcon: "folder_open"
-                    materialIconFill: false
-                    mainText: "Browse"
-                    onClicked: screenshotDirPickerDialog.open()
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: !autoFpsSwitch.checked
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+
+                    StyledText {
+                        text: qsTr("Recording frame rate")
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                        Layout.fillWidth: true
+                    }
+
+                    StyledSlider {
+                        id: fpsSlider
+                        Layout.fillWidth: true
+                        from: 15
+                        to: 144
+                        value: Config.options.display.screenRecordingFPS
+                        tooltipContent: Math.round(value) + " fps"
+                        onMoved: Config.options.display.screenRecordingFPS = Math.round(value)
+                    }
+                }
+            }
+
+            Item { implicitHeight: 12 }
+
+            // ----- Group: Automatic Bitrate -----
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                ConfigSwitch {
+                    id: autoBitrateSwitch
+                    text: "Automatic Bitrate"
+                    checked: Config.options.display.autoBitrate
+                    onClicked: checked = !checked
+                    StyledToolTip { text: "When enabled, the recorder automatically picks the optimal bitrate. When disabled, set it manually below." }
+                    onCheckedChanged: Config.options.display.autoBitrate = checked
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: !autoBitrateSwitch.checked
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+
+                    StyledText {
+                        text: qsTr("Recording bitrate")
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                        Layout.fillWidth: true
+                    }
+
+                    StyledSlider {
+                        id: bitrateSlider
+                        Layout.fillWidth: true
+                        from: 500
+                        to: 50000
+                        value: Config.options.display.screenRecordingBitrate
+                        tooltipContent: Math.round(value) + " kbps"
+                        onMoved: Config.options.display.screenRecordingBitrate = Math.round(value)
+                    }
+                }
+            }
+
+            Item { implicitHeight: 12 }
+
+            // ----- Group: Custom save location (recordings) -----
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                ConfigSwitch {
+                    id: recordingSaveDirSwitch
+                    text: "Custom screen recording save location"
+                    checked: Config.options.display.recordingSaveDirEnabled
+                    onClicked: checked = !checked
+                    StyledToolTip { text: "When disabled, recordings save to the default location. When enabled, choose a custom folder below." }
+                    onCheckedChanged: Config.options.display.recordingSaveDirEnabled = checked
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: recordingSaveDirSwitch.checked
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        MaterialTextField {
+                            id: recordingDirField
+                            Layout.fillWidth: true
+                            placeholderText: "Default (~/Videos/Recordings)"
+                            text: Config.options.display.recordingSaveDir
+                            onEditingFinished: {
+                                Config.options.display.recordingSaveDir = text;
+                            }
+                        }
+
+                        RippleButtonWithIcon {
+                            materialIcon: "folder_open"
+                            materialIconFill: false
+                            mainText: "Browse"
+                            onClicked: recordingDirPickerDialog.open()
+                        }
+                    }
                 }
             }
         }
@@ -305,181 +481,6 @@ ContentPage {
         onAccepted: {
             Config.options.display.screenshotSaveDir = selectedFolder.toString().replace("file://", "")
             screenshotDirField.text = Config.options.display.screenshotSaveDir
-        }
-    }
-
-    ContentSection {
-        id: recordingsSection
-        title: "Screen Recordings"
-        icon: "screen_record"
-
-        property bool gsrAvailable: true
-
-        Process {
-            id: gsrCheckProcess
-            command: ["bash", "-c", "command -v gpu-screen-recorder >/dev/null 2>&1 && echo yes || echo no"]
-            running: true
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    recordingsSection.gsrAvailable = this.text.includes("yes")
-                }
-            }
-        }
-
-        // ----- Group: Hardware Acceleration -----
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 4
-
-            ConfigSwitch {
-                id: gpuRenderSwitch
-                text: "Hardware Acceleration"
-                checked: Config.options.display.captureGPUrendering
-                onClicked: {
-                    if (!checked && !recordingsSection.gsrAvailable) {
-                        Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "Screen Recorder",
-                            "Missing dependency: gpu-screen-recorder", "Install gpu-screen-recorder to enable hardware acceleration."])
-                        return
-                    }
-                    checked = !checked
-                }
-                StyledToolTip {
-                    text: gpuRenderSwitch.checked
-                        ? "Fullscreen recordings use the GPU encoder for best performance. A selected region always uses wf-recorder instead, since the GPU encoder can't crop to a custom area."
-                        : "All recordings use wf-recorder, regardless of the selected region."
-                }
-                onCheckedChanged: Config.options.display.captureGPUrendering = checked
-            }
-        }
-
-        Item { implicitHeight: 12 }
-
-        // ----- Group: Automatic FPS -----
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 4
-
-            ConfigSwitch {
-                id: autoFpsSwitch
-                text: "Automatic FPS"
-                checked: Config.options.display.autoFps
-                onClicked: checked = !checked
-                StyledToolTip {
-                    text: "When enabled, the recording frame rate will match your monitor’s native refresh rate. When disabled, you can set a custom rate below."
-                }
-                onCheckedChanged: Config.options.display.autoFps = checked
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                visible: !autoFpsSwitch.checked
-                opacity: visible ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 160 } }
-
-                StyledText {
-                    text: qsTr("Recording frame rate")
-                    font.pixelSize: Appearance.font.pixelSize.normal
-                    color: Appearance.m3colors.m3onSurfaceVariant
-                    Layout.fillWidth: true
-                }
-
-                StyledSlider {
-                    id: fpsSlider
-                    Layout.fillWidth: true
-                    from: 15
-                    to: 144
-                    value: Config.options.display.screenRecordingFPS
-                    tooltipContent: Math.round(value) + " fps"
-                    onMoved: Config.options.display.screenRecordingFPS = Math.round(value)
-                }
-            }
-        }
-
-        Item { implicitHeight: 12 }
-
-        // ----- Group: Automatic Bitrate -----
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 4
-
-            ConfigSwitch {
-                id: autoBitrateSwitch
-                text: "Automatic Bitrate"
-                checked: Config.options.display.autoBitrate
-                onClicked: checked = !checked
-                StyledToolTip { text: "When enabled, the recorder automatically picks the optimal bitrate. When disabled, set it manually below." }
-                onCheckedChanged: Config.options.display.autoBitrate = checked
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                visible: !autoBitrateSwitch.checked
-                opacity: visible ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 160 } }
-
-                StyledText {
-                    text: qsTr("Recording bitrate")
-                    font.pixelSize: Appearance.font.pixelSize.normal
-                    color: Appearance.m3colors.m3onSurfaceVariant
-                    Layout.fillWidth: true
-                }
-
-                StyledSlider {
-                    id: bitrateSlider
-                    Layout.fillWidth: true
-                    from: 500
-                    to: 50000
-                    value: Config.options.display.screenRecordingBitrate
-                    tooltipContent: Math.round(value) + " kbps"
-                    onMoved: Config.options.display.screenRecordingBitrate = Math.round(value)
-                }
-            }
-        }
-
-        Item { implicitHeight: 12 }
-
-        // ----- Group: Custom save location (recordings) -----
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 4
-
-            ConfigSwitch {
-                id: recordingSaveDirSwitch
-                text: "Custom screen recording save location"
-                checked: Config.options.display.recordingSaveDirEnabled
-                onClicked: checked = !checked
-                StyledToolTip { text: "When disabled, recordings save to the default location. When enabled, choose a custom folder below." }
-                onCheckedChanged: Config.options.display.recordingSaveDirEnabled = checked
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                visible: recordingSaveDirSwitch.checked
-                opacity: visible ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 160 } }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    MaterialTextField {
-                        id: recordingDirField
-                        Layout.fillWidth: true
-                        placeholderText: "Default (~/Videos/Recordings)"
-                        text: Config.options.display.recordingSaveDir
-                        onEditingFinished: {
-                            Config.options.display.recordingSaveDir = text;
-                        }
-                    }
-
-                    RippleButtonWithIcon {
-                        materialIcon: "folder_open"
-                        materialIconFill: false
-                        mainText: "Browse"
-                        onClicked: recordingDirPickerDialog.open()
-                    }
-                }
-            }
         }
     }
 
