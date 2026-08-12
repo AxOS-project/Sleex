@@ -17,6 +17,7 @@ import Quickshell.Hyprland
 Item {
     id: root
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
+    readonly property bool windowShown: Window.window?.visible ?? false
     readonly property var realPlayers: Mpris.players.values.filter(player => isRealPlayer(player))
     readonly property var meaningfulPlayers: filterDuplicatePlayers(realPlayers)
     readonly property real osdWidth: Appearance.sizes.osdWidth
@@ -72,7 +73,7 @@ Item {
 
     Process {
         id: cavaProc
-        running: root.visible
+        running: root.windowShown
         onRunningChanged: {
             if (!cavaProc.running) {
                 root.visualizerPoints = [];
