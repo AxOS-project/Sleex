@@ -116,7 +116,7 @@ Singleton {
             property string videoPlayer: "mpv.desktop"
             property string archiveManager: "org.gnome.FileRoller.desktop"
             property string textEditor: "code.desktop"
-            property string audioPlayer: "axuralis.desktop"
+            property string musicPlayer: "axuralis.desktop"
             property string documentViewer: "onlyoffice-desktopeditors.desktop"
         }
 
