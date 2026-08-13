@@ -23,6 +23,7 @@ import qs.modules.background
 import qs.modules.lockscreen
 import qs.modules.BatteryPopup
 import qs.modules.cornerPopup
+import qs.modules.CaptureOverlay
 
 import Quickshell
 import QtQuick
@@ -72,6 +73,7 @@ ShellRoot {
     LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
     LazyLoader { active: true; component: BatteryPopup {} }
+    LazyLoader { active: true; component: CaptureOverlay {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
     LazyLoader { active: enableDashboard; component: Dashboard {} }
