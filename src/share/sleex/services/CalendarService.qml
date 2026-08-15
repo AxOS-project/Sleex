@@ -368,14 +368,6 @@ Singleton {
         onTriggered: root._periodicResync()
     }
 
-    Timer {
-        id: syncInterval
-        running: Config.options.dashboard.calendar.useVdirsyncer
-        interval: 600000 // 10 minutes
-        repeat: true
-        onTriggered: root._periodicResync()
-    }
-
     property bool remindersEnabled: Config.options.dashboard.calendar.reminders
     property int reminderTime: Config.options.dashboard.calendar.reminderTime
     property var _notifiedReminders
@@ -630,7 +622,7 @@ Singleton {
         const quotedBody = root._buildIcsBody("@@UID@@", item).replace(/'/g, "'\\''")
         const script = "uid=$(cat /proc/sys/kernel/random/uuid);" +
             " dir=$(grep -m1 -E '^[[:space:]]*path[[:space:]]*=' \"$HOME/.config/khal/config\" 2>/dev/null | sed -E 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*//');" +
-            " dir=${dir/#\\~/\"$HOME\"}; [ -z \"$dir\" ] && dir=\"$HOME/.local/share/khal/calendars\";" +
+            " dir=${dir/#\\~/\"$HOME\"}; dir=${dir%/\\*}; [ -z \"$dir\" ] && dir=\"$HOME/.local/share/khal/calendars\";" +
             " mkdir -p \"$dir\" || exit 1;" +
             " printf '%s' '" + quotedBody + "' | sed -e \"s/@@UID@@/$uid/\" -e \"s/@@COLOR@@/$1/\" > \"$dir/$uid.ics\""
         return ["bash", "-c", script, "_", item.color]
