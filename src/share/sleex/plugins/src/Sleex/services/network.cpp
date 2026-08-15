@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QDBusConnection>
 
 namespace sleex::services {
 
@@ -197,6 +198,8 @@ Network::Network(QObject *parent)
         if (hasActiveConnection()) fetchNetworkInfo();
     });
     if (hasActiveConnection()) fetchNetworkInfo();
+
+    registerSleepSignals();
 }
 
 Network::~Network() {
@@ -252,11 +255,16 @@ QString Network::getNetworkIcon(int strength) {
 }
 
 QString Network::getWifiIcon() {
-    if (!m_wifiEnabled)
-        return "signal_wifi_off";
+    if (m_wifiDevice) {
+        if (nm_device_get_state(NM_DEVICE(m_wifiDevice)) == NM_DEVICE_STATE_ACTIVATED) {
+            if (NMAccessPoint *ap = nm_device_wifi_get_active_access_point(m_wifiDevice))
+                return strengthToIcon(nm_access_point_get_strength(ap));
+            return strengthToIcon(m_active ? m_active->strength() : 100);
+        }
+    }
 
-    if (m_active && m_active->active())
-        return strengthToIcon(m_active->strength());
+    if (m_ethernet)
+        return "lan";
 
     return "signal_wifi_off";
 }
@@ -491,10 +499,14 @@ void Network::onAccessPointRemoved(NMDeviceWifi*, NMAccessPoint*, gpointer user_
     static_cast<Network*>(user_data)->updateNetworks();
 }
 void Network::onDeviceAdded(NMClient*, NMDevice*, gpointer user_data) {
-    static_cast<Network*>(user_data)->updateEthernetStatus();
+    auto *self = static_cast<Network*>(user_data);
+    self->refreshWifiDevice();
+    self->updateEthernetStatus();
 }
 void Network::onDeviceRemoved(NMClient*, NMDevice*, gpointer user_data) {
-    static_cast<Network*>(user_data)->updateEthernetStatus();
+    auto *self = static_cast<Network*>(user_data);
+    self->refreshWifiDevice();
+    self->updateEthernetStatus();
 }
 void Network::onConnectionAdded(NMClient*, NMRemoteConnection*, gpointer user_data) {
     static_cast<Network*>(user_data)->updateKnownNetworks();
@@ -690,6 +702,69 @@ void Network::updateActiveConnection() {
     }
 
     emit wifiIconChanged();
+}
+
+void Network::registerSleepSignals() {
+    QDBusConnection bus = QDBusConnection::systemBus();
+    if (!bus.isConnected()) {
+        qWarning() << "Network: not connected to the system D-Bus;"
+                      " sleep/resume refresh is disabled";
+        return;
+    }
+
+    if (!bus.connect(QStringLiteral("org.freedesktop.login1"),
+                     QStringLiteral("/org/freedesktop/login1"),
+                     QStringLiteral("org.freedesktop.login1.Manager"),
+                     QStringLiteral("PrepareForSleep"),
+                     this, SLOT(onPrepareForSleep(bool)))) {
+        qWarning() << "Network: failed to subscribe to logind PrepareForSleep;"
+                      " sleep/resume refresh is disabled";
+    }
+}
+
+void Network::onPrepareForSleep(bool sleeping) {
+    if (sleeping) return;
+
+    qDebug() << "Network: wakeup detected, re-syncing network state";
+
+    refreshAfterResume();
+    QTimer::singleShot(2000, this, [this]() { refreshAfterResume(); });
+    QTimer::singleShot(5000, this, [this]() { refreshAfterResume(); });
+}
+
+void Network::refreshAfterResume() {
+    const bool enabled = nm_client_wireless_get_enabled(m_client);
+    if (m_wifiEnabled != enabled) { m_wifiEnabled = enabled; emit wifiEnabledChanged(); }
+
+    refreshWifiDevice();
+    updateEthernetStatus();
+    updateKnownNetworks();
+    updateNetworks();
+    updateActiveConnection();
+    emit hasActiveConnectionChanged();
+
+    if (hasActiveConnection()) fetchNetworkInfo();
+}
+
+void Network::refreshWifiDevice() {
+    NMDeviceWifi *dev = getPrimaryWifiDevice();
+    if (dev == m_wifiDevice) return;
+
+    if (m_wifiDevice) {
+        if (m_apAddedId)           g_signal_handler_disconnect(m_wifiDevice, m_apAddedId);
+        if (m_apRemovedId)         g_signal_handler_disconnect(m_wifiDevice, m_apRemovedId);
+        if (m_deviceStateChangedId)g_signal_handler_disconnect(m_wifiDevice, m_deviceStateChangedId);
+        m_apAddedId = m_apRemovedId = m_deviceStateChangedId = 0;
+    }
+
+    m_wifiDevice = dev;
+    if (!m_wifiDevice) return;
+
+    m_apAddedId = g_signal_connect(m_wifiDevice, "access-point-added",   G_CALLBACK(onAccessPointAdded),   this);
+    m_apRemovedId = g_signal_connect(m_wifiDevice, "access-point-removed", G_CALLBACK(onAccessPointRemoved), this);
+    m_deviceStateChangedId = g_signal_connect(m_wifiDevice, "notify::state", G_CALLBACK(onDeviceStateChanged), this);
+
+    updateActiveConnection();
 }
 
 void Network::updateKnownNetworks() {
