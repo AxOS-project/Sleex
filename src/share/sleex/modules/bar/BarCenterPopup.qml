@@ -189,6 +189,31 @@ Item {
                             barRoot.centerPopupOpen = false;
                         }
                     }
+
+                    RippleButton {
+                        Layout.rightMargin: 4
+                        implicitWidth: 35
+                        implicitHeight: 35
+                        buttonRadius: Appearance.rounding.full
+                        colBackgroundHover: Appearance.colors.colSecondaryContainer
+                        colRipple: Appearance.colors.colSecondaryContainerActive
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "grid_view"
+                            font.pixelSize: 18
+                            color: Appearance.m3colors.m3onSurface
+                        }
+
+                        onClicked: {
+                            barRoot.centerPopupOpen = false;
+                            GlobalStates.overviewOpen = true;
+                        }
+
+                        StyledToolTip {
+                            text: "Switch to Overview"
+                        }
+                    }
                 }
 
                 // Divider

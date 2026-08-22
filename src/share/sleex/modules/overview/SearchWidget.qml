@@ -10,6 +10,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 
 Item { // Wrapper
     id: root
@@ -302,6 +303,32 @@ Item { // Wrapper
 
                     StyledToolTip {
                         text: "Clear clipboard history"
+                    }
+                }
+
+                RippleButton {
+                    id: switchAppLauncherButton
+                    Layout.rightMargin: 8
+                    implicitWidth: 35
+                    implicitHeight: 35
+                    buttonRadius: Appearance.rounding.full
+                    colBackgroundHover: Appearance.colors.colSecondaryContainer
+                    colRipple: Appearance.colors.colSecondaryContainerActive
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "apps"
+                        font.pixelSize: 22
+                        color: Appearance.m3colors.m3onSurface
+                    }
+
+                    onClicked: {
+                        GlobalStates.overviewOpen = false;
+                        GlobalStates.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+                    }
+
+                    StyledToolTip {
+                        text: "Switch to App Launcher"
                     }
                 }
             }
