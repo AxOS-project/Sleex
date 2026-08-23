@@ -90,4 +90,33 @@ Singleton {
             Config.options.background.wallpaperPath = newPath
         }
     }
+
+    signal centerPopupToggleRequested(string screenName)
+    signal centerPopupOpenRequested(string screenName)
+    signal centerPopupCloseRequested(string screenName)
+
+    IpcHandler {
+        target: "centerPopup"
+
+        function toggle(): void {
+            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+        }
+
+        function open(): void {
+            root.centerPopupOpenRequested(Hyprland.focusedMonitor?.name ?? "");
+        }
+
+        function close(): void {
+            root.centerPopupCloseRequested(Hyprland.focusedMonitor?.name ?? "");
+        }
+    }
+
+    GlobalShortcut {
+        name: "centerPopupToggle"
+        description: qsTr("Toggle center bar popup on focused screen")
+
+        onPressed: {
+            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+        }
+    }
 }

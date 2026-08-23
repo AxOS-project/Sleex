@@ -129,7 +129,7 @@ Scope { // Scope
                             DockSeparator {}
                             DockButton {
                                 Layout.fillHeight: true
-                                onClicked: GlobalStates.overviewOpen = !GlobalStates.overviewOpen
+                                onClicked: GlobalStates.centerPopupToggleRequested(dockRoot.screen?.name)
                                 contentItem: MaterialSymbol {
                                     anchors.fill: parent
                                     horizontalAlignment: Text.AlignHCenter

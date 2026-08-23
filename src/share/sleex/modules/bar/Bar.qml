@@ -46,6 +46,7 @@ Scope {
             screen: modelData
 
             property ShellScreen modelData
+            property bool centerPopupOpen: false
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
@@ -54,12 +55,31 @@ Scope {
                 (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened :
                     Appearance.sizes.barCenterSideModuleWidth
 
+            Connections {
+                target: GlobalStates
+                function onCenterPopupToggleRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                }
+                function onCenterPopupOpenRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = true
+                }
+                function onCenterPopupCloseRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = false
+                }
+            }
+
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
-            implicitHeight: barHeight + Appearance.rounding.screenRounding
+            WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
             exclusiveZone: barHeight
             mask: Region {
-                item: barContent
+                Region {
+                    item: barContent
+                }
+                Region {
+                    item: (barRoot.centerPopupOpen || centerPopup.isAnimating ? centerPopup : null)
+                }
             }
             color: "transparent"
 
@@ -68,6 +88,12 @@ Scope {
                 bottom: Config.options.bar.bottom
                 left: true
                 right: true
+            }
+
+            BarCenterPopup {
+                id: centerPopup
+                targetSection: middleSection
+                barRoot: barRoot
             }
 
             Rectangle { // Bar background
@@ -155,7 +181,7 @@ Scope {
                     }
                 }
 
-                // Background Rectangle - completely outside the RowLayout
+                // Background Rectangle
                 Rectangle {
                     id: middleBg
                     anchors.centerIn: parent
@@ -169,6 +195,7 @@ Scope {
 
                     property int bottomRadius: Appearance.rounding.screenRounding
                     property int topRadius: 0
+                    visible: true
 
                     Shape {
                         id: middleShape
@@ -198,10 +225,20 @@ Scope {
                             PathLine { x: 0; y: 0 }
                         }
                     }
-                    visible: true
+
+                    MouseArea { // Right-click to toggle center popup
+                        anchors.fill: parent
+                        acceptedButtons: Qt.RightButton
+
+                        onPressed: (event) => {
+                            if (event.button === Qt.RightButton) {
+                                barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                            }
+                        }
+                    }
                 }
 
-                RowLayout { // Middle section - NO Rectangle inside here
+                RowLayout { // Middle section
                     id: middleSection
                     anchors.centerIn: parent
                     spacing: 0
@@ -260,17 +297,6 @@ Scope {
                             id: workspacesWidget
                             bar: barRoot
                             Layout.fillHeight: true
-
-                            MouseArea { // Right-click to toggle overview
-                                anchors.fill: parent
-                                acceptedButtons: Qt.RightButton
-
-                                onPressed: (event) => {
-                                    if (event.button === Qt.RightButton) {
-                                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen
-                                    }
-                                }
-                            }
 
                             Shape {
                                 id: workspacesBgCanvas
