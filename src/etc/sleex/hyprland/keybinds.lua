@@ -104,6 +104,7 @@ hl.bind(
 hl.bind("SUPER+L", hl.dsp.global("quickshell:lockScreen"), { desc = "Session: Lock session" })
 hl.bind("SUPER+End", hl.dsp.exec_cmd("pkill qs && qs -p /usr/share/sleex/shell.qml"), { desc = "Session: Restart Shell" })
 hl.bind("SUPER+CTRL+End", hl.dsp.exec_cmd("qs -p /usr/share/sleex/shell.qml"), { desc = "Session: Start Shell" })
+hl.bind("XF86PowerOff", hl.dsp.global("quickshell:powerButtonPressed"), { locked = true, desc = "Session: Confirm before powering off" })
 
 ------- Window Management -------
 
