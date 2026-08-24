@@ -187,6 +187,9 @@ Singleton {
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
                 property real syncInterval: 15 // minutes
+                property bool reminders: false
+                property int reminderTime: 30 // minutes before event start
+                property bool reminderSound: false
             }
             property JsonObject opt: JsonObject {
                 property bool enableTodo: true

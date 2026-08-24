@@ -15,11 +15,15 @@ Singleton {
     id: root
 
     Component.onCompleted: {
+        root._notifiedReminders = {}
+        Qt.callLater(root._rearmReminderTimer)
         // console.log("[CalendarService] initialized. khalAvailable=" + root.khalAvailable + " isLoading=" + root.isLoading)
     }
 
     property bool khalAvailable: false
     property bool isLoading: true
+
+    property bool manualRefresh: false
     property var events: []
     property var weekdays: [
         "Sunday",
@@ -70,6 +74,42 @@ Singleton {
         }
     ]
 
+    property bool resyncInFlight: false
+    property bool resyncPending: false
+
+    property int _stateGeneration: 0
+    property int _resyncRequestGeneration: 0
+
+    function requestResync() {
+        if (root.resyncInFlight) {
+            root.resyncPending = true
+            return
+        }
+        root._startResync()
+    }
+
+    function _startResync() {
+        root.resyncInFlight = true
+        root._resyncRequestGeneration = root._stateGeneration
+
+        if (Config.options.dashboard.calendar.useVdirsyncer) {
+            syncProcess.running = true
+        } else {
+            getEventsProcess.running = true
+        }
+    }
+
+    function _resyncFinished() {
+        root.manualRefresh = false
+        root.resyncInFlight = false
+        if (root.resyncPending) {
+            root.resyncPending = false
+            root._startResync()
+        } else {
+            root.isLoading = false
+        }
+    }
+
     // Process for checking khal configuration
     Process {
         id: khalCheckProcess
@@ -84,6 +124,9 @@ Singleton {
                 // Start an initial sync immediately and enable the periodic interval
                 syncCalendars()
                 interval.running = true
+            } else {
+
+                root.isLoading = false
             }
         }
     }
@@ -152,12 +195,13 @@ Singleton {
         id: getEventsProcess
         running: false
         command: [
-            "khal", "list",
-            "--json", "title",
-            "--json", "start-date",
-            "--json", "start-time",
-            "--json", "end-time",
-            "--json", "uid",
+            "bash", "-c",
+            "khal list --json title --json start-date --json start-time --json end-time --json uid \"$1\" \"$2\" || exit $?;" +
+            " echo '@@CUSTOM-COLORS@@';" +
+            " find \"$HOME\" -name '*.ics' -exec grep -l '^X-SLEEX-COLOR:' {} + 2>/dev/null | while read -r f; do" +
+            " u=$(grep -m1 '^UID:' \"$f\" | cut -d: -f2-); c=$(grep -m1 '^X-SLEEX-COLOR:' \"$f\" | cut -d: -f2-);" +
+            " [ -n \"$u\" ] && [ -n \"$c\" ] && echo \"$u $c\"; done",
+            "_",
             Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() - 3); return d; })(), "dd/MM/yyyy"),
             Qt.formatDate((() => { let d = new Date(); d.setMonth(d.getMonth() + 3); return d; })(), "dd/MM/yyyy")
         ]
@@ -168,14 +212,30 @@ Singleton {
                     // Handle blank output gracefully
                     if (!this.text || String(this.text).trim().length === 0) {
                         console.warn("[CalendarService] khal returned blank output; treating as zero events")
-                        root.events = []
-                        root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
-                        root.isLoading = false
+                        root._applyFreshEvents([])
+                        root._resyncFinished()
                         return
                     }
 
                     let events = []
-                    let lines = this.text.split('\n')
+                    const source = String(this.text)
+                    const colorMarker = "@@CUSTOM-COLORS@@"
+                    const markerIndex = source.indexOf(colorMarker)
+                    const khalOutput = markerIndex >= 0 ? source.slice(0, markerIndex) : source
+                    const colorsOutput = markerIndex >= 0 ? source.slice(markerIndex + colorMarker.length) : ""
+
+                    root._customColors = {}
+                    for (let line of colorsOutput.split('\n')) {
+                        line = line.trim()
+                        if (!line) continue
+                        const sep = line.indexOf(' ')
+                        if (sep <= 0) continue
+                        const uid = line.slice(0, sep)
+                        const color = line.slice(sep + 1).trim()
+                        if (uid && color) root._customColors[uid] = color
+                    }
+
+                    let lines = khalOutput.split('\n')
                 for (let line of lines) {
                     line = line.trim()
                     if (!line || line === "[]")
@@ -213,19 +273,22 @@ Singleton {
                             parseInt(endTimeParts[1])
                         )
 
+                        const customColor = root._customColors[event['uid']] || ""
+
                         events.push({
                             "content": event['title'],
                             "startDate": startDate,
                             "endDate": endDate,
-                            "color": ColorUtils.stringToColor(event['title']),
-                            "uid": event['uid']
+                            "color": customColor || ColorUtils.stringToColor(event['title']),
+                            "uid": event['uid'],
+                            "allDay": !event['start-time'] && !event['end-time'],
+                            "customColor": !!customColor
                         })
                     }
                 }
                 // console.log("[CalendarService] parsed events count=", events.length)
-                root.events = events
-                root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
-                root.isLoading = false
+                root._applyFreshEvents(events)
+                root._resyncFinished()
             }
         }
         onStarted: {
@@ -235,15 +298,7 @@ Singleton {
             // console.log("[CalendarService] getEventsProcess exited with code=", exitCode, "stdout_len=", stdoutCollector.text ? stdoutCollector.text.length : 0)
             if (exitCode !== 0) {
                 console.error("[CalendarService] getEventsProcess failed with exit code", exitCode)
-                root.isLoading = false
-                return
-            }
-
-            if (!stdoutCollector.text || String(stdoutCollector.text).trim().length === 0) {
-                console.warn("[CalendarService] getEventsProcess exited with empty stdout; no events loaded")
-                root.events = []
-                root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
-                root.isLoading = false
+                root._resyncFinished()
             }
         }
     }
@@ -258,18 +313,51 @@ Singleton {
                 getEventsProcess.running = true
             } else {
                 // console.log("Error syncing calendars: " + exitCode)
+                console.error("[CalendarService] vdirsyncer sync failed with exit code", exitCode)
+                root._resyncFinished()
             }
         }
     }
 
     function syncCalendars() {
-        root.isLoading = true
-        // console.log("[CalendarService] syncCalendars invoked; useVdirsyncer=", Config.options.dashboard.calendar.useVdirsyncer)
-        if (Config.options.dashboard.calendar.useVdirsyncer) {
-            syncProcess.running = true
-        } else {
-            getEventsProcess.running = true
+        root.manualRefresh = true
+        root.requestResync()
+    }
+
+    property bool dragSuspended: false
+
+    property var pendingEventsInWeek: null
+    property int _pendingGeneration: -1
+
+    function _applyFreshEvents(events) {
+        if (root._resyncRequestGeneration !== root._stateGeneration) {
+            return
         }
+        root.events = events
+        const rebuilt = root.getEventsInWeekWithOffset(root.currentWeekOffset)
+        if (root.dragSuspended) {
+            root.pendingEventsInWeek = rebuilt
+            root._pendingGeneration = root._resyncRequestGeneration
+        } else {
+            root.eventsInWeek = rebuilt
+        }
+    }
+
+    onDragSuspendedChanged: {
+        if (!root.dragSuspended && root.pendingEventsInWeek) {
+            const pending = root.pendingEventsInWeek
+            const pendingGeneration = root._pendingGeneration
+            root.pendingEventsInWeek = null
+            root._pendingGeneration = -1
+            if (pendingGeneration === root._stateGeneration) {
+                root.eventsInWeek = pending
+            }
+        }
+    }
+
+
+    function _periodicResync() {
+        if (!root.dragSuspended) root.requestResync()
     }
 
     Timer {
@@ -277,35 +365,85 @@ Singleton {
         running: false
         interval: Config.options.dashboard.calendar.syncInterval * 60000
         repeat: true
-        onTriggered: {
-            getEventsProcess.running = true
+        onTriggered: root._periodicResync()
+    }
+
+    property bool remindersEnabled: Config.options.dashboard.calendar.reminders
+    property int reminderTime: Config.options.dashboard.calendar.reminderTime
+    property var _notifiedReminders
+
+    onRemindersEnabledChanged: Qt.callLater(root._rearmReminderTimer)
+    onReminderTimeChanged: Qt.callLater(root._rearmReminderTimer)
+    onEventsChanged: Qt.callLater(root._rearmReminderTimer)
+
+    function _pruneNotifiedReminders(now) {
+        for (const key of Object.keys(root._notifiedReminders)) {
+            if (root._notifiedReminders[key] < now) delete root._notifiedReminders[key]
         }
+    }
+
+    function _rearmReminderTimer() {
+        if (!root._notifiedReminders) root._notifiedReminders = {}
+        reminderTimer.stop()
+        if (!root.remindersEnabled || root.reminderTime <= 0) return
+
+        const now = Date.now()
+        root._pruneNotifiedReminders(now)
+        let earliest = null
+        for (let i = 0; i < root.events.length; i++) {
+            const evt = root.events[i]
+            if (evt.allDay || !evt.startDate) continue
+            const start = new Date(evt.startDate).getTime()
+            if (start <= now) continue
+            if (root._notifiedReminders[evt.uid + "@" + start]) continue
+            const reminderAt = start - root.reminderTime * 60000
+            if (earliest === null || reminderAt < earliest) earliest = reminderAt
+        }
+
+        if (earliest === null) return
+        const delay = Math.max(250, earliest - now)
+        reminderTimer.interval = Math.min(delay, 2147483647)
+        reminderTimer.start()
+    }
+
+    function _fireDueReminders() {
+        if (!root._notifiedReminders) root._notifiedReminders = {}
+        const now = Date.now()
+        const tolerance = 1000
+        for (let i = 0; i < root.events.length; i++) {
+            const evt = root.events[i]
+            if (evt.allDay || !evt.startDate) continue
+            const start = new Date(evt.startDate).getTime()
+            if (start <= now) continue
+            const reminderAt = start - root.reminderTime * 60000
+            if (reminderAt - tolerance > now) continue
+            const key = evt.uid + "@" + start
+            if (root._notifiedReminders[key]) continue
+            root._notifiedReminders[key] = start
+            root._sendReminderNotification(evt)
+        }
+
+        root._pruneNotifiedReminders(now)
+
+        Qt.callLater(root._rearmReminderTimer)
+    }
+
+    function _sendReminderNotification(evt) {
+        const startTime = Qt.formatDateTime(evt.startDate, Config.options?.time.format ?? "hh:mm")
+        if (Config.options.dashboard.calendar.reminderSound)
+            Audio.playSound("assets/sounds/battery/calendar_reminder.mp3")
+        Quickshell.execDetached(["notify-send", qsTr("Upcoming event"), `${evt.content} at ${startTime}`, "-a", "Sleex"])
     }
 
     Timer {
-        id: syncInterval
-        running: Config.options.dashboard.calendar.useVdirsyncer
-        interval: 600000 // 10 minutes
-        repeat: true
-        onTriggered: {
-            syncProcess.running = true
-        }
+        id: reminderTimer
+        interval: 1
+        repeat: false
+        onTriggered: root._fireDueReminders()
     }
 
-    Process {
-        id: khalAddTaskProcess
-        running: false
-    }
-
-    function addItem(item) {
-        root.isLoading = true
-        // console.log("[CalendarService] addItem called", item)
-        if (!item || !item.content) {
-            console.error("Cannot add event: missing required fields")
-            return false
-        }
-
-        let title = item.content
+    function _buildNewEventCommand(item) {
+        const title = item.content
         let formattedDate
 
         if (item.date) {
@@ -315,7 +453,7 @@ Singleton {
             formattedDate = Qt.formatDate(new Date(), "dd/MM/yyyy")
         }
 
-        let cmd = ["khal", "new"]
+        const cmd = ["khal", "new"]
 
         if (!item.allDay && item.start) {
             cmd.push(`${formattedDate} ${item.start}`)
@@ -327,75 +465,258 @@ Singleton {
         }
 
         cmd.push(title)
-        khalAddTaskProcess.command = cmd
-        // console.log("[CalendarService] addItem command:", cmd.join(' '))
-        khalAddTaskProcess.running = true
-        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
-        else syncCalendars()
+        return cmd
+    }
+
+    property var _mutationQueue: []
+    property var _customColors: ({})
+    property bool _mutationBusy: false
+
+    function _enqueueMutation(job) {
+        root._mutationQueue.push(job)
+        root._pumpMutationQueue()
+    }
+
+    function _pumpMutationQueue() {
+        if (root._mutationBusy) return
+
+        if (root._mutationQueue.length === 0) {
+
+            root.requestResync()
+            return
+        }
+
+        root._mutationBusy = true
+        const job = root._mutationQueue.shift()
+
+        if (job.kind === "add") {
+            khalAddTaskProcess.command = job.payload.color
+                ? root._buildCreateCommand(job.payload)
+                : root._buildNewEventCommand(job.payload)
+            khalAddTaskProcess.running = true
+        } else if (job.kind === "edit") {
+            khalEditProcess.command = root._buildRewriteCommand(job.payload.uid, job.payload.item)
+            khalEditProcess.running = true
+        } else if (job.kind === "remove") {
+            khalRemoveProcess.command = root._buildRemoveCommand(job.payload)
+            khalRemoveProcess.running = true
+        }
+    }
+
+    function _mutationSettled() {
+        root._mutationBusy = false
+        root._pumpMutationQueue()
+    }
+
+    function _onMutationExited(label, exitCode) {
+        if (exitCode !== 0) {
+            console.error("[CalendarService] " + label + " failed with exit code", exitCode)
+        }
+        root._mutationSettled()
+    }
+
+    Process {
+        id: khalAddTaskProcess
+        running: false
+        onExited: (exitCode) => root._onMutationExited("khal new", exitCode)
+    }
+
+    function addItem(item) {
+
+        if (!item || !item.content) {
+            console.error("[CalendarService] Cannot add event: missing required fields")
+            return false
+        }
+
+        root.manualRefresh = true
+        root._stateGeneration++
+        root._enqueueMutation({ kind: "add", payload: item })
         return true
     }
 
     Process {
         id: khalRemoveProcess
         running: false
+        onExited: (exitCode) => root._onMutationExited("event file removal", exitCode)
     }
 
-    function removeItem(item) {
-        root.isLoading = true
-        let taskToDelete = item['uid']
-        khalRemoveProcess.command = [
-            "sqlite3",
-            String(StandardPaths.standardLocations(StandardPaths.HomeLocation)[0]).replace("file://", "") + "/.local/share/khal/khal.db",
-            "DELETE FROM events WHERE item LIKE '%UID:" + taskToDelete + "%';"
+    property string _icsLookup: 'grep -rlZF --include="*.ics" "UID:$1" "$HOME" 2>/dev/null'
+
+    function _buildRemoveCommand(uid) {
+        return [
+            "bash", "-c",
+            root._icsLookup + " | xargs -0 -r rm -f --",
+            "_", uid
         ]
-        khalRemoveProcess.running = true
-        // console.log("[CalendarService] removeItem command:", khalRemoveProcess.command.join(' '))
-        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
-        else syncCalendars()
+    }
+
+    function _buildIcsBody(uid, item) {
+        const pad = (n) => String(n).padStart(2, '0')
+        const dateStr = item.date || Qt.formatDate(new Date(), "yyyy-MM-dd")
+        const dateParts = String(dateStr).split('-')
+        const icsDate = dateParts[0] + dateParts[1] + dateParts[2]
+        const icsTime = (t) => {
+            const hm = root._parseHM(t)
+            return hm ? pad(hm.hour) + pad(hm.minute) + '00' : '000000'
+        }
+        const escapeIcsText = (text) => String(text)
+            .replace(/\\/g, "\\\\")
+            .replace(/;/g, "\\;")
+            .replace(/,/g, "\\,")
+            .replace(/\r/g, "")
+            .replace(/\n/g, "\\n")
+
+        const now = new Date()
+        const stamp = String(now.getFullYear()) + pad(now.getMonth() + 1) + pad(now.getDate()) +
+            "T" + pad(now.getHours()) + pad(now.getMinutes()) + "00Z"
+
+        const lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//Quickshell Calendar//EN",
+            "BEGIN:VEVENT",
+            "UID:" + uid,
+            "DTSTAMP:" + stamp,
+            "X-SLEEX-COLOR:@@COLOR@@"
+        ]
+
+        if (!item.allDay && item.start) {
+            lines.push("DTSTART:" + icsDate + "T" + icsTime(item.start))
+            if (item.end) {
+                let endDateStr = icsDate
+                const startMin = parseInt(item.start.split(':')[0]) * 60 + parseInt(item.start.split(':')[1])
+                const endMin = parseInt(item.end.split(':')[0]) * 60 + parseInt(item.end.split(':')[1])
+                if (endMin <= startMin) {
+                    const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2])
+                    d.setDate(d.getDate() + 1)
+                    endDateStr = String(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate())
+                }
+                lines.push("DTEND:" + endDateStr + "T" + icsTime(item.end))
+            }
+        } else {
+            lines.push("DTSTART;VALUE=DATE:" + icsDate)
+
+            const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2])
+            d.setDate(d.getDate() + 1)
+            lines.push("DTEND;VALUE=DATE:" + String(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()))
+        }
+
+        lines.push("SUMMARY:" + escapeIcsText(item.content))
+        lines.push("END:VEVENT")
+        lines.push("END:VCALENDAR")
+
+        return lines.join("\n") + "\n"
+    }
+
+    function _buildRewriteCommand(uid, item) {
+        const quotedBody = root._buildIcsBody(uid, item).replace(/'/g, "'\\''")
+        const findScript = "f=$(" + root._icsLookup + " | tr '\\0' '\\n' | head -n1); [ -n \"$f\" ] || exit 0;"
+        const colorScript = "col=$2; if [ \"$col\" = NONE ]; then col=; elif [ -z \"$col\" ]; then col=$(grep -m1 '^X-SLEEX-COLOR:' \"$f\" | cut -d: -f2-); fi;"
+        const writeScript = "printf '%s' '" + quotedBody + "' > \"$f.tmp.$$\";" +
+            " if [ -n \"$col\" ]; then sed -i \"s/@@COLOR@@/$col/\" \"$f.tmp.$$\"; else sed -i '/^X-SLEEX-COLOR:@@COLOR@@$/d' \"$f.tmp.$$\"; fi;" +
+            " mv -f -- \"$f.tmp.$$\" \"$f\" && touch -- \"$(dirname \"$f\")\""
+        return ["bash", "-c", findScript + " " + colorScript + " " + writeScript, "_", uid, item.color || ""]
+    }
+
+    function _buildCreateCommand(item) {
+        const quotedBody = root._buildIcsBody("@@UID@@", item).replace(/'/g, "'\\''")
+        const script = "uid=$(cat /proc/sys/kernel/random/uuid);" +
+            " dir=$(grep -m1 -E '^[[:space:]]*path[[:space:]]*=' \"$HOME/.config/khal/config\" 2>/dev/null | sed -E 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*//');" +
+            " dir=${dir/#\\~/\"$HOME\"}; dir=${dir%/\\*}; [ -z \"$dir\" ] && dir=\"$HOME/.local/share/khal/calendars\";" +
+            " mkdir -p \"$dir\" || exit 1;" +
+            " printf '%s' '" + quotedBody + "' | sed -e \"s/@@UID@@/$uid/\" -e \"s/@@COLOR@@/$1/\" > \"$dir/$uid.ics\""
+        return ["bash", "-c", script, "_", item.color]
     }
 
     Process {
         id: khalEditProcess
         running: false
+        onExited: (exitCode) => root._onMutationExited("event file rewrite", exitCode)
     }
 
-    function editItem(uid, item) {
-        root.isLoading = true
-        // console.log("[CalendarService] editItem called uid=", uid, "item=", item)
-
-        if (!uid || !item || !item.content) {
-            console.error("Cannot edit event: missing required fields")
+    function removeItem(item) {
+        if (!item || !item['uid']) {
+            console.error("[CalendarService] Cannot remove event: missing uid")
             return false
         }
 
-        let title = item.content
-        let formattedDate
+        let taskToDelete = item['uid']
 
-        if (item.date) {
-            const parts = item.date.split('-')
-            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`
-        } else {
-            formattedDate = Qt.formatDate(new Date(), "dd/MM/yyyy")
-        }
+        root._stateGeneration++
+        root.events = root.events.filter((e) => e['uid'] !== taskToDelete)
+        root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
 
-        let cmd = ["khal", "edit", "--show-past", uid]
-
-        if (!item.allDay && item.start) {
-            cmd.push(`${formattedDate} ${item.start}`)
-            if (item.end) {
-                cmd.push(`${item.end}`)
-            }
-        } else {
-            cmd.push(formattedDate)
-        }
-
-        cmd.push(title)
-        // console.log("[CalendarService] editItem command:", cmd.join(' '))
-        khalEditProcess.command = cmd
-        khalEditProcess.running = true
-        if (Config.options.dashboard.calendar.useVdirsyncer) syncProcess.running = true
-        else syncCalendars()
+        root._enqueueMutation({ kind: "remove", payload: taskToDelete })
         return true
+    }
+
+    function editItem(uid, item, silent) {
+
+        if (!uid || !item || !item.content) {
+            console.error("[CalendarService] Cannot edit event: missing required fields")
+            return false
+        }
+
+        if (!silent) {
+            root.manualRefresh = true
+        }
+        root._stateGeneration++
+        root.events = root.events.map((e) => {
+            if (e['uid'] !== uid) return e
+            const parsedDate = root._parseSlashOrDashDate(item.date) || e['startDate']
+            let startH = 0, startM = 0, endH = 23, endM = 59
+            if (!item.allDay && item.start) {
+                const sp = root._parseHM(item.start)
+                if (sp) { startH = sp.hour; startM = sp.minute }
+            }
+            if (!item.allDay && item.end) {
+                const ep = root._parseHM(item.end)
+                if (ep) { endH = ep.hour; endM = ep.minute }
+            }
+            const newStart = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), startH, startM)
+            const newEnd = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), endH, endM)
+
+            let newColor = e['color']
+            let newCustomColor = !!e['customColor']
+            if (item.color === "NONE") {
+                newColor = ColorUtils.stringToColor(item.content)
+                newCustomColor = false
+            } else if (item.color) {
+                newColor = item.color
+                newCustomColor = true
+            }
+
+            return Object.assign({}, e, { startDate: newStart, endDate: newEnd, content: item.content, allDay: !!item.allDay, color: newColor, customColor: newCustomColor })
+        })
+        root.eventsInWeek = root.getEventsInWeekWithOffset(root.currentWeekOffset)
+
+        root._enqueueMutation({ kind: "edit", payload: { uid: uid, item: item } })
+        return true
+    }
+
+    function _parseSlashOrDashDate(dateStr) {
+        if (!dateStr) return null
+        let m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]))
+        m = String(dateStr).match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+        if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]))
+        return null
+    }
+
+    function _parseHM(timeStr) {
+        if (!timeStr) return null
+        let m = String(timeStr).match(/^(\d{1,2}):(\d{2})$/)
+        if (m) return { hour: parseInt(m[1]), minute: parseInt(m[2]) }
+        m = String(timeStr).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+        if (m) {
+            let hour = parseInt(m[1])
+            const minute = parseInt(m[2])
+            const isPM = m[3].toUpperCase() === 'PM'
+            if (hour === 12) hour = 0
+            if (isPM) hour += 12
+            return { hour, minute }
+        }
+        return null
     }
 
     property int currentWeekOffset: 0
@@ -439,8 +760,11 @@ Singleton {
                     "start": start_time,
                     "end": end_time,
                     "title": title,
+                    "date": Qt.formatDateTime(evt["startDate"], "yyyy-MM-dd"),
                     "color": evt['color'],
-                    "uid": evt['uid']
+                    "uid": evt['uid'],
+                    "allDay": !!evt['allDay'],
+                    "customColor": !!evt['customColor']
                 })
             })
             result.push(obj)

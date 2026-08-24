@@ -19,6 +19,7 @@ function findSuitableMaterialSymbol(summary = "") {
         'configuration reloaded': 'reset_wrench',
         'config': 'reset_wrench',
         'update': 'update',
+        'event': 'calendar_today',
         'control': 'settings',
         'upscale': 'compare',
         'install': 'deployed_code_update',

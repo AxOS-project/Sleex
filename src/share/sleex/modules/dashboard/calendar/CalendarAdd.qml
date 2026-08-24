@@ -1,14 +1,10 @@
 import qs
-import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 import qs.services
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import Quickshell.Io
 
-Rectangle {
+Item {
     id: root
 
     required property bool editMode
@@ -22,304 +18,389 @@ Rectangle {
     property int endMinute: 0
     // which field is being edited by the time picker: "start" or "end"
     property string editingTarget: "start"
-    property var selectedDate: new Date()
 
-    property string startTime: DateTime.is24Hour ? 
-        String(startHour).padStart(2, '0') + ":" + String(startMinute).padStart(2, '0') : 
+    property var colorOptions: [
+        "#F44336", "#E91E63", "#9C27B0", "#673AB7",
+        "#3F51B5", "#2196F3", "#03A9F4", "#009688",
+        "#4CAF50", "#8BC34A", "#CDDC39", "#FFEB3B",
+        "#FF9800", "#FF5722", "#795548", "#607D8B",
+        "#7E57C2", "#26A69A"
+    ]
+    property string selectedColorHex: root.colorOptions[0]
+
+    readonly property var selectedDates: datePicker.selectedDates
+    readonly property int selectedDateCount: selectedDates ? selectedDates.length : 0
+
+    property string startTime: DateTime.is24Hour ?
+        String(startHour).padStart(2, '0') + ":" + String(startMinute).padStart(2, '0') :
         ((startHour % 12) || 12) + ":" + String(startMinute).padStart(2, '0') + (startHour >= 12 ? " PM" : " AM")
-    property string endTime: DateTime.is24Hour ? 
-        String(endHour).padStart(2, '0') + ":" + String(endMinute).padStart(2, '0') : 
+    property string endTime: DateTime.is24Hour ?
+        String(endHour).padStart(2, '0') + ":" + String(endMinute).padStart(2, '0') :
         ((endHour % 12) || 12) + ":" + String(endMinute).padStart(2, '0') + (endHour >= 12 ? " PM" : " AM")
 
-    property string selectedDateLabel: Qt.formatDate(selectedDate, "ddd, MMM d yyyy")
-
-    property var newEventData: {
-        content: ""
-        start: undefined
-        end: undefined
-        date: undefined
-        allDay: false
+    readonly property string selectedDateLabel: {
+        if (root.selectedDateCount === 0) return qsTr("Select a date");
+        if (root.selectedDateCount === 1) return Qt.formatDate(root.selectedDates[0], "MMM d");
+        const sorted = root.selectedDates;
+        const first = Qt.formatDate(sorted[0], "MMM d");
+        const last = Qt.formatDate(sorted[sorted.length - 1], "MMM d");
+        return root.selectedDateCount + qsTr(" dates · ") + first + " – " + last;
     }
+
+    readonly property bool canSubmit: eventTitleInput.text.trim().length > 0 && root.selectedDateCount > 0
+
+    function resetForm() {
+        eventTitleInput.text = "";
+        datePicker.setSelection([new Date()]);
+        // reset times to defaults
+        startHour = 12;
+        startMinute = 0;
+        endHour = 13;
+        endMinute = 0;
+        allDaySwitch.checked = false;
+        customColorSwitch.checked = false;
+    }
+
+    Component.onCompleted: datePicker.setSelection([new Date()])
 
     anchors.fill: parent
-    gradient: Gradient {
-        GradientStop { position: 0.0; color: Appearance.m3colors.m3surface }
-        GradientStop { position: 0.3; color: Appearance.m3colors.m3surface }
-        GradientStop { position: 1.0; color: Appearance.colors.colLayer0 }
-        orientation: Gradient.Horizontal
-    }
-    radius: Appearance.rounding.large
-    z: 100
     visible: root.editMode
     opacity: visible ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: 180 } }
+    Behavior on opacity { NumberAnimation { duration: 160 } }
+
+    function opaque(c) {
+        return Qt.rgba(c.r, c.g, c.b, 1.0)
+    }
 
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
         preventStealing: true
+        onClicked: {
+            root.resetForm();
+            root.editMode = false;
+            root.addingFinished();
+        }
     }
 
-    Column {
+    Item {
         anchors.centerIn: parent
-        spacing: 16
-        width: parent.width * 0.8
-
-        StyledText {
-            text: qsTr("Add a new event.")
-            font.pixelSize: Appearance.font.pixelSize.title
-            font.weight: Font.Medium
-            color: Appearance.colors.colOnLayer0
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-        }
-
-        MaterialTextField {
-            id: eventTitleInput
-            Layout.fillWidth: true
-            implicitWidth: 330
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            padding: 10
-            placeholderText: qsTr("Title")
-            validator: RegularExpressionValidator {
-                // Allow any non-empty string
-                regularExpression: /^(?!\s*$).+/
-            }
-        }
+        width: Math.min(420, parent.width - 48)
+        height: Math.min(Math.max(cardColumn.implicitHeight + 48, 560), parent.height - 32)
 
         Rectangle {
-            id: datePickerButton
-            width: 336
-            height: 56
-            color: "transparent"
-            radius: Appearance.rounding.normal
+            anchors.fill: parent
+            radius: Appearance.rounding.large
+            color: root.opaque(Appearance.colors.colLayer0)
+            border.width: 1
+            border.color: Appearance.colors.colOutlineVariant
 
-            property color borderColor: Appearance.m3colors.m3outline
-            border.color: borderColor
-            border.width: dateHoverArea.containsMouse ? 2 : 1.5
-
-            Behavior on border.width { NumberAnimation { duration: 100 } }
-            Behavior on borderColor  { ColorAnimation  { duration: 120 } }
-
-            states: State {
-                name: "hovered"
-                when: dateHoverArea.containsMouse
-                PropertyChanges {
-                    target: datePickerButton
-                    borderColor: Appearance.m3colors.m3primary
-                }
-            }
-
-            Rectangle {
-                x: 12
-                y: -(height / 2)
-                width: floatingLabel.implicitWidth + 8
-                height: floatingLabel.implicitHeight
-                color: Appearance.m3colors.m3background
-            }
-
-            StyledText {
-                id: floatingLabel
-                x: 16
-                y: -(implicitHeight / 2)
-                text: qsTr("Date")
-                font.pixelSize: Appearance.font.pixelSize.small
-                color: dateHoverArea.containsMouse
-                    ? Appearance.m3colors.m3primary
-                    : Appearance.m3colors.m3outline
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-            }
-
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                text: root.selectedDateLabel
-                font.pixelSize: Appearance.font.pixelSize.larger
-                font.weight: Font.Medium
-                color: Appearance.m3colors.m3onSurface
-            }
-
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                anchors.rightMargin: 14
-                text: "›"
-                font.pixelSize: Appearance.font.pixelSize.title
-                rotation: 90
-                color: dateHoverArea.containsMouse
-                    ? Appearance.m3colors.m3primary
-                    : Appearance.m3colors.m3outline
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: parent.radius
-                color: Appearance.m3colors.m3onSurface
-                opacity: dateHoverArea.containsMouse ? 0.05 : 0
-                Behavior on opacity { NumberAnimation { duration: 120 } }
-            }
-
-            MouseArea {
-                id: dateHoverArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    datePicker.displayYear  = root.selectedDate.getFullYear()
-                    datePicker.displayMonth = root.selectedDate.getMonth()
-                    datePickerDialog.visible = true
-                }
-            }
+            MouseArea { anchors.fill: parent; onClicked: {} }
         }
 
-        ConfigSwitch {
-            id: allDaySwitch
-            Layout.fillWidth: true
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            text: qsTr("All Day Event")
-            checked: false
-            onCheckedChanged: root.newEventData.allDay = checked
-        }
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 24
+            contentWidth: width
+            contentHeight: cardColumn.implicitHeight
+            clip: true
+            interactive: contentHeight > height
 
-        Row {
-            spacing: 16
+            Column {
+                id: cardColumn
+                width: parent.width
+                spacing: 18
 
-            RippleButton {
-                buttonRadius: Appearance.rounding.normal
-                height: 40
-                width: 160
-                colBackground: Appearance.colors.colPrimary
-                colBackgroundHover: Appearance.colors.colPrimaryHover
-                contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: qsTr(startTime)
-                    color: Appearance.colors.colOnPrimary
-                    font.pixelSize: Appearance.font.pixelSize.larger
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-                onClicked: {
-                    // open time picker to edit start time
-                    editingTarget = "start"
-                    timePicker.hour = startHour
-                    timePicker.minute = startMinute
-                    timePickerDialog.visible = true
-                }
-            }
+                Row {
+                    width: parent.width
+                    height: 32
 
-            RippleButton {
-                buttonRadius: Appearance.rounding.normal
-                height: 40
-                width: 160
-                colBackground: Appearance.colors.colPrimary
-                colBackgroundHover: Appearance.colors.colPrimaryHover
-                contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: qsTr(endTime)
-                    color: Appearance.colors.colOnPrimary
-                    font.pixelSize: Appearance.font.pixelSize.larger
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-                onClicked: {
-                    // open time picker to edit end time
-                    editingTarget = "end"
-                    timePicker.hour = endHour
-                    timePicker.minute = endMinute
-                    timePickerDialog.visible = true
-                }
-            }
-        }
-
-        Row {
-            spacing: 16
-
-            RippleButton {
-                buttonRadius: Appearance.rounding.normal
-                height: 40
-                width: 160
-                colBackground: Appearance.colors.colPrimary
-                colBackgroundHover: Appearance.colors.colPrimaryHover
-                contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: qsTr("Validate")
-                    color: Appearance.colors.colOnPrimary
-                    font.pixelSize: Appearance.font.pixelSize.larger
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-                onClicked: {
-                    try {
-                        const title = eventTitleInput.text.trim();
-
-                        if (!title) {
-                            console.error("Event title is required");
-                            return;
+                    Row {
+                        spacing: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        MaterialSymbol {
+                            text: "event"
+                            iconSize: Appearance.font.pixelSize.title
+                            color: Appearance.colors.colPrimary
                         }
-
-                        const formattedDate = Qt.formatDate(root.selectedDate, "yyyy-MM-dd");
-
-                        root.newEventData = {
-                            content: title,
-                            date: formattedDate,
-                            start: startTime,
-                            end: endTime,
-                            allDay: allDaySwitch.checked
-                        };
-
-                        console.log("Adding event:", JSON.stringify(root.newEventData));
-                        CalendarService.addItem(root.newEventData);
-
-                        eventTitleInput.text = "";
-                        root.selectedDate = new Date();
-                        // reset times to defaults
-                        startHour = 12;
-                        startMinute = 0;
-                        endHour = 13;
-                        endMinute = 0;
-                        allDaySwitch.checked = false;
-                        root.editMode = false;
-                    } catch (e) {
-                        console.error("Error adding event:", e);
+                        StyledText {
+                            text: qsTr("New Event")
+                            font.pixelSize: Appearance.font.pixelSize.title
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnLayer0
+                        }
                     }
-                    root.addingFinished();
-                }
-            }
 
-            RippleButton {
-                buttonRadius: Appearance.rounding.normal
-                height: 40
-                width: 160
-                colBackground: Appearance.m3colors.m3surfaceVariant
-                colBackgroundHover: Appearance.m3colors.m3surfaceVariant
-                contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: qsTr("Cancel")
-                    color: Appearance.m3colors.m3onSurfaceVariant
+                    RippleButton {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 32; height: 32
+                        buttonRadius: 16
+                        colBackground: "transparent"
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "close"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: Appearance.colors.colOnSurfaceVariant
+                        }
+                        onClicked: {
+                            root.resetForm();
+                            root.editMode = false;
+                            root.addingFinished();
+                        }
+                    }
+                }
+
+                MaterialTextField {
+                    id: eventTitleInput
+                    width: parent.width
+                    padding: 12
                     font.pixelSize: Appearance.font.pixelSize.larger
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
+                    placeholderText: qsTr("Event title")
+                    validator: RegularExpressionValidator {
+                        // Allow any non-empty string
+                        regularExpression: /^(?!\s*$).+/
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Appearance.colors.colOutlineVariant
+                }
+
+                FieldRow {
+                    width: parent.width
+                    icon: "calendar_month"
+                    label: qsTr("Date")
+                    valueText: root.selectedDateLabel
+                    onClicked: {
+                        const anchorDate = datePicker.selectedDates.length > 0
+                            ? datePicker.selectedDates[datePicker.selectedDates.length - 1]
+                            : new Date();
+                        datePicker.displayYear = anchorDate.getFullYear();
+                        datePicker.displayMonth = anchorDate.getMonth();
+                        datePickerDialog.visible = true;
+                    }
+                }
+
+                StyledText {
+                    visible: root.selectedDateCount > 1
+                    width: parent.width
+                    text: qsTr("This event will be added to all %1 selected dates.").arg(root.selectedDateCount)
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colOnSurfaceVariant
                     wrapMode: Text.WordWrap
                 }
-                onClicked: {
-                    root.newEventData = {
-                        title: "",
-                        start: "",
-                        end: "",
-                        date: "",
-                        allDay: false
-                    };
-                    root.editMode = false;
-                    root.addingFinished();
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    FieldRow {
+                        id: startField
+                        width: (parent.width - 10) / 2
+                        icon: "schedule"
+                        label: qsTr("Starts")
+                        enabled: !allDaySwitch.checked
+                        opacity: allDaySwitch.checked ? 0.35 : 1
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                        valueText: allDaySwitch.checked ? "—" : root.startTime
+                        onClicked: {
+                            if (allDaySwitch.checked) return
+                            // open time picker to edit start time
+                            editingTarget = "start"
+                            timePicker.hour = startHour
+                            timePicker.minute = startMinute
+                            timePickerDialog.visible = true
+                        }
+                    }
+
+                    FieldRow {
+                        id: endField
+                        width: (parent.width - 10) / 2
+                        icon: "update"
+                        label: qsTr("Ends")
+                        enabled: !allDaySwitch.checked
+                        opacity: allDaySwitch.checked ? 0.35 : 1
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                        valueText: allDaySwitch.checked ? "—" : root.endTime
+                        onClicked: {
+                            if (allDaySwitch.checked) return
+                            // open time picker to edit end time
+                            editingTarget = "end"
+                            timePicker.hour = endHour
+                            timePicker.minute = endMinute
+                            timePickerDialog.visible = true
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 36
+
+                    Row {
+                        spacing: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        MaterialSymbol {
+                            text: "wb_sunny"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: Appearance.colors.colOnSurfaceVariant
+                        }
+                        StyledText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("All day")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            color: Appearance.colors.colOnLayer0
+                        }
+                    }
+
+                    ConfigSwitch {
+                        id: allDaySwitch
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: false
+                        onClicked: checked = !checked
+                        onCheckedChanged: {
+                            if (checked)
+                                timePickerDialog.visible = false
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 36
+
+                    Row {
+                        spacing: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        MaterialSymbol {
+                            text: "palette"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: Appearance.colors.colOnSurfaceVariant
+                        }
+                        StyledText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Custom color")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            color: Appearance.colors.colOnLayer0
+                        }
+                    }
+
+                    ConfigSwitch {
+                        id: customColorSwitch
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: false
+                        onClicked: checked = !checked
+                    }
+                }
+
+                Grid {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    columns: 9
+                    spacing: 8
+                    visible: customColorSwitch.checked
+
+                    Repeater {
+                        model: root.colorOptions
+                        delegate: Rectangle {
+                            required property string modelData
+                            width: 26
+                            height: 26
+                            radius: 13
+                            color: modelData
+                            scale: modelData === root.selectedColorHex ? 1.15 : 1
+                            Behavior on scale { NumberAnimation { duration: 100 } }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: "transparent"
+                                border.width: modelData === root.selectedColorHex ? 2 : 0
+                                border.color: "#FFFFFF"
+                                Behavior on border.width { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.selectedColorHex = modelData
+                            }
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    RippleButton {
+                        width: (parent.width - parent.spacing) / 2
+                        height: 46
+                        buttonRadius: Appearance.rounding.normal
+                        enabled: root.canSubmit
+                        opacity: enabled ? 1 : 0.5
+                        colBackground: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryHover
+                        contentItem: StyledText {
+                            anchors.centerIn: parent
+                            text: root.selectedDateCount > 1
+                                ? qsTr("Add to %1 dates").arg(root.selectedDateCount)
+                                : qsTr("Add event")
+                            color: Appearance.colors.colOnPrimary
+                            font.pixelSize: Appearance.font.pixelSize.larger
+                            font.weight: Font.Medium
+                        }
+                        onClicked: {
+                            if (!root.canSubmit) return;
+                            try {
+                                const title = eventTitleInput.text.trim();
+                                for (const d of root.selectedDates) {
+                                    const formattedDate = Qt.formatDate(d, "yyyy-MM-dd");
+                                    const eventData = {
+                                        content: title,
+                                        date: formattedDate,
+                                        start: startTime,
+                                        end: endTime,
+                                        allDay: allDaySwitch.checked
+                                    };
+                                    if (customColorSwitch.checked) {
+                                        eventData.color = root.selectedColorHex;
+                                    }
+                                    CalendarService.addItem(eventData);
+                                }
+                                root.resetForm();
+                                root.editMode = false;
+                            } catch (e) {
+                                console.error("Error adding event:", e);
+                            }
+                            root.addingFinished();
+                        }
+                    }
+
+                    RippleButton {
+                        width: (parent.width - parent.spacing) / 2
+                        height: 46
+                        buttonRadius: Appearance.rounding.normal
+                        colBackground: "transparent"
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        contentItem: StyledText {
+                            anchors.centerIn: parent
+                            text: qsTr("Cancel")
+                            color: Appearance.colors.colOnSurfaceVariant
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.Medium
+                        }
+                        onClicked: {
+                            root.resetForm();
+                            root.editMode = false;
+                            root.addingFinished();
+                        }
+                    }
                 }
             }
         }
@@ -328,180 +409,27 @@ Rectangle {
     Rectangle {
         id: datePickerDialog
         anchors.fill: parent
-        color: Appearance.colors.colSurfaceContainer
+        color: "transparent"
         visible: false
         opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
+        Behavior on opacity { NumberAnimation { duration: 160 } }
 
         Rectangle {
             id: dateDialogContent
-            width: 480
-            height: 540
+            width: Math.min(420, parent.width - 48)
+            height: Math.min(560, parent.height - 32)
             anchors.centerIn: parent
             radius: Appearance.rounding.large
-            color: Appearance.m3colors.m3background
+            color: root.opaque(Appearance.colors.colLayer0)
+            border.width: 1
+            border.color: Appearance.colors.colOutlineVariant
 
-            Item {
+            CalendarDatePicker {
                 id: datePicker
                 anchors.fill: parent
                 anchors.margins: 16
-
-                property int displayYear:  new Date().getFullYear()
-                property int displayMonth: new Date().getMonth()
-
-                property string monthLabel: {
-                    const d = new Date(displayYear, displayMonth, 1);
-                    return Qt.formatDate(d, "MMMM yyyy");
-                }
-
-                property int daysInMonth: new Date(displayYear, displayMonth + 1, 0).getDate()
-                property int firstDayOfWeek: new Date(displayYear, displayMonth, 1).getDay()
-
-                Column {
-                    anchors.fill: parent
-                    spacing: 8
-
-                    Row {
-                        width: parent.width
-                        height: 40
-
-                        RippleButton {
-                            height: 40; width: 40
-                            buttonRadius: 20
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.m3colors.m3surfaceVariant
-                            contentItem: StyledText {
-                                anchors.centerIn: parent
-                                text: "‹"
-                                font.pixelSize: Appearance.font.pixelSize.title
-                                color: Appearance.m3colors.m3onBackground
-                                horizontalAlignment: Text.AlignHCenter
-                            }
-                            onClicked: {
-                                if (datePicker.displayMonth === 0) {
-                                    datePicker.displayMonth = 11;
-                                    datePicker.displayYear -= 1;
-                                } else {
-                                    datePicker.displayMonth -= 1;
-                                }
-                            }
-                        }
-
-                        StyledText {
-                            text: datePicker.monthLabel
-                            font.pixelSize: Appearance.font.pixelSize.larger
-                            font.weight: Font.Medium
-                            color: Appearance.m3colors.m3onBackground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            width: parent.width - 80
-                            height: 40
-                        }
-
-                        RippleButton {
-                            height: 40; width: 40
-                            buttonRadius: 20
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.m3colors.m3surfaceVariant
-                            contentItem: StyledText {
-                                anchors.centerIn: parent
-                                text: "›"
-                                font.pixelSize: Appearance.font.pixelSize.title
-                                color: Appearance.m3colors.m3onBackground
-                                horizontalAlignment: Text.AlignHCenter
-                            }
-                            onClicked: {
-                                if (datePicker.displayMonth === 11) {
-                                    datePicker.displayMonth = 0;
-                                    datePicker.displayYear += 1;
-                                } else {
-                                    datePicker.displayMonth += 1;
-                                }
-                            }
-                        }
-                    }
-
-                    Row {
-                        width: parent.width
-                        height: 28
-                        Repeater {
-                            model: ["Su","Mo","Tu","We","Th","Fr","Sa"]
-                            StyledText {
-                                width: datePicker.width / 7
-                                text: modelData
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: Appearance.m3colors.m3outline
-                                horizontalAlignment: Text.AlignHCenter
-                            }
-                        }
-                    }
-
-                    Grid {
-                        width: parent.width
-                        columns: 7
-                        rowSpacing: 2
-                        columnSpacing: 0
-
-                        Repeater {
-                            model: 42
-                            delegate: Item {
-                                width: datePicker.width / 7
-                                height: datePicker.width / 7
-
-                                property int dayNumber: index - datePicker.firstDayOfWeek + 1
-                                property bool isValid: dayNumber >= 1 && dayNumber <= datePicker.daysInMonth
-                                property bool isSelected: {
-                                    if (!isValid) return false;
-                                    const s = root.selectedDate;
-                                    return s.getFullYear() === datePicker.displayYear &&
-                                           s.getMonth()    === datePicker.displayMonth &&
-                                           s.getDate()     === dayNumber;
-                                }
-                                property bool isToday: {
-                                    if (!isValid) return false;
-                                    const t = new Date();
-                                    return t.getFullYear() === datePicker.displayYear &&
-                                           t.getMonth()    === datePicker.displayMonth &&
-                                           t.getDate()     === dayNumber;
-                                }
-
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width - 4
-                                    height: parent.height - 4
-                                    radius: (parent.width - 4) / 2
-                                    color: isSelected ? Appearance.colors.colPrimary
-                                         : isToday    ? Appearance.m3colors.m3secondaryContainer
-                                         :              "transparent"
-                                    visible: isValid
-                                }
-
-                                StyledText {
-                                    anchors.centerIn: parent
-                                    text: isValid ? dayNumber : ""
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: isSelected ? Appearance.colors.colOnPrimary
-                                         : isToday    ? Appearance.m3colors.m3onSecondaryContainer
-                                         :              Appearance.m3colors.m3onBackground
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    enabled: isValid
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.selectedDate = new Date(
-                                            datePicker.displayYear,
-                                            datePicker.displayMonth,
-                                            dayNumber
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                anchors.bottomMargin: 64
+                multiSelect: true
             }
 
             RippleButton {
@@ -520,8 +448,6 @@ Rectangle {
                     color: Appearance.colors.colOnPrimary
                     font.pixelSize: Appearance.font.pixelSize.larger
                     font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
                 }
                 onClicked: datePickerDialog.visible = false
             }
@@ -532,18 +458,19 @@ Rectangle {
     Rectangle {
         id: timePickerDialog
         anchors.fill: parent
-        color: Appearance.colors.colSurfaceContainer
+        color: "transparent"
         visible: false
         opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
+        Behavior on opacity { NumberAnimation { duration: 160 } }
 
         Rectangle {
-            id: dialogContent
-            width: 400
-            height: 500
+            width: Math.min(420, parent.width - 48)
+            height: Math.min(560, parent.height - 32)
             anchors.centerIn: parent
             radius: Appearance.rounding.large
-            color: Appearance.m3colors.m3background
+            color: root.opaque(Appearance.colors.colLayer0)
+            border.width: 1
+            border.color: Appearance.colors.colOutlineVariant
 
             TimePicker {
                 id: timePicker
@@ -551,6 +478,9 @@ Rectangle {
                 is24h: DateTime.is24Hour
                 hour: 12
                 minute: 0
+
+                enabled: !allDaySwitch.checked
+                opacity: allDaySwitch.checked ? 0.4 : 1
             }
 
             RippleButton {
@@ -569,8 +499,6 @@ Rectangle {
                     color: Appearance.colors.colOnPrimary
                     font.pixelSize: Appearance.font.pixelSize.larger
                     font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
                 }
                 onClicked: {
                     // apply picked time to the appropriate target
@@ -584,6 +512,65 @@ Rectangle {
                     timePickerDialog.visible = false;
                 }
             }
+        }
+    }
+
+    component FieldRow: Rectangle {
+        id: fieldRoot
+        property string icon: ""
+        property string label: ""
+        property string valueText: ""
+        signal clicked()
+
+        height: 56
+        radius: Appearance.rounding.normal
+        color: rowMouse.containsMouse ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer1
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 12
+
+            MaterialSymbol {
+                anchors.verticalCenter: parent.verticalCenter
+                text: fieldRoot.icon
+                iconSize: Appearance.font.pixelSize.larger
+                color: Appearance.colors.colOnSurfaceVariant
+            }
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1
+                StyledText {
+                    text: fieldRoot.label
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
+                StyledText {
+                    text: fieldRoot.valueText
+                    font.pixelSize: Appearance.font.pixelSize.normal
+                    font.weight: Font.Medium
+                    color: Appearance.colors.colOnLayer1
+                }
+            }
+        }
+
+        MaterialSymbol {
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: "chevron_right"
+            iconSize: Appearance.font.pixelSize.larger
+            color: Appearance.colors.colOnSurfaceVariant
+        }
+
+        MouseArea {
+            id: rowMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: fieldRoot.clicked()
         }
     }
 }

@@ -56,6 +56,7 @@ Item {
     property var days: CalendarService.eventsInWeek
     readonly property int allDayChipHeight: 36
     readonly property int allDayChipSpacing: 6
+    readonly property int maxVisibleAllDayChips: 4
     readonly property int maxAllDayEventCount: {
         if (!root.days || root.days.length === 0)
             return 0;
@@ -116,9 +117,167 @@ Item {
         return Qt.rgba(color.r, color.g, color.b, alpha);
     }
 
+    property var dragEventData: null
+    property int dragOriginalDurationMin: 60
+    property point dragStartRootPos: Qt.point(0, 0)
+    property real dragGhostWidth: 150
+    property real dragGhostHeight: 48
+    property bool dragActive: false
+    onDragActiveChanged: CalendarService.dragSuspended = root.dragActive
+    property int dragPreviewDayIndex: -1
+    property int dragPreviewStartMinutes: -1
+
+    property bool dragPreviewAllDay: false
+
+    function startEventDrag(evt, dayIndex, tileItem, isAllDay) {
+        root.dragEventData = evt
+        root._dragOriginDayIndex = dayIndex
+        if (isAllDay) {
+            root.dragOriginalDurationMin = 60
+        } else {
+            const startParts = (evt.start || "0:0").split(":").map(Number)
+            const endParts = (evt.end || "1:0").split(":").map(Number)
+            root.dragOriginalDurationMin = Math.max(15, (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1]))
+        }
+        root.dragStartRootPos = tileItem.mapToItem(root, 0, 0)
+        root.dragGhostWidth = tileItem.width
+        root.dragGhostHeight = tileItem.height
+        root.dragPreviewDayIndex = dayIndex
+        root.dragPreviewStartMinutes = -1
+        root.dragPreviewAllDay = false
+        root.dragActive = true
+    }
+
+    function updateEventDrag(dx, dy) {
+        if (!root.dragActive) return
+        dragGhost.x = root.dragStartRootPos.x + dx
+        dragGhost.y = root.dragStartRootPos.y + dy
+
+        const ghostCenterX = dragGhost.x + dragGhost.width / 2
+        const ghostCenterY = dragGhost.y + 2
+
+        const posInBanner = allDayBannerRow.mapFromItem(root, ghostCenterX, ghostCenterY)
+        const onBanner = allDayBannerRow.height > 0 &&
+            posInBanner.x >= 0 && posInBanner.x <= allDayBannerRow.width &&
+            posInBanner.y >= 0 && posInBanner.y <= allDayBannerRow.height
+
+        const posInHeader = headerRow.mapFromItem(root, ghostCenterX, ghostCenterY)
+        const onHeader = posInHeader.x >= 0 && posInHeader.x <= headerRow.width &&
+            posInHeader.y >= 0 && posInHeader.y <= headerRow.height
+
+        const centerInEventsRow = eventsRow.mapFromItem(root, ghostCenterX, ghostCenterY)
+        let col = Math.floor(centerInEventsRow.x / (root.dayColumnWidth + root.spacing))
+        col = Math.max(0, Math.min((root.days ? root.days.length - 1 : 0), col))
+        root.dragPreviewDayIndex = col
+        root.dragPreviewAllDay = onBanner || onHeader
+
+        const topInEventsRow = eventsRow.mapFromItem(root, dragGhost.x, dragGhost.y)
+        const minutesFromTop = topInEventsRow.y / root.pixelsPerMinute
+        const snapped = Math.round(minutesFromTop / 15) * 15
+        const baseMinutes = root.startHour * 60 + root.startMinute
+        let newStart = baseMinutes + snapped
+        const maxStart = root.endHour * 60 - root.dragOriginalDurationMin
+        newStart = Math.max(baseMinutes, Math.min(maxStart, newStart))
+        root.dragPreviewStartMinutes = newStart
+    }
+
+    function finishEventDrag() {
+        if (root.dragActive && root.dragEventData && root.dragPreviewDayIndex >= 0 && root.dragPreviewStartMinutes >= 0) {
+            const newDate = root.dateForColumn(root.dragPreviewDayIndex)
+
+            let eventData
+            if (root.dragPreviewAllDay) {
+
+                eventData = {
+                    content: root.dragEventData.title,
+                    date: Qt.formatDate(newDate, "yyyy-MM-dd"),
+                    start: "00:00",
+                    end: "23:59",
+                    allDay: true
+                }
+            } else {
+                const newStartH = Math.floor(root.dragPreviewStartMinutes / 60)
+                const newStartM = root.dragPreviewStartMinutes % 60
+                const newEndTotal = root.dragPreviewStartMinutes + root.dragOriginalDurationMin
+                const newEndH = Math.floor(newEndTotal / 60)
+                const newEndM = newEndTotal % 60
+                eventData = {
+                    content: root.dragEventData.title,
+                    date: Qt.formatDate(newDate, "yyyy-MM-dd"),
+                    start: root._pad2(newStartH) + ":" + root._pad2(newStartM),
+                    end: root._pad2(newEndH) + ":" + root._pad2(newEndM),
+                    allDay: false
+                }
+            }
+
+            const originalDate = Qt.formatDate(root.dateForColumn(root._dragOriginDayIndex), "yyyy-MM-dd")
+            const shouldPersist = eventData.date !== originalDate || eventData.start !== root.dragEventData.start
+            const uid = root.dragEventData.uid
+
+            root.cancelEventDrag()
+
+            if (shouldPersist) {
+                CalendarService.editItem(uid, eventData, true)
+            }
+        } else {
+            root.cancelEventDrag()
+        }
+    }
+
+    function cancelEventDrag() {
+        root.dragActive = false
+        root.dragEventData = null
+        root._dragOriginDayIndex = -1
+        root.dragPreviewDayIndex = -1
+        root.dragPreviewStartMinutes = -1
+        root.dragPreviewAllDay = false
+    }
+
+    function _dragPressed(area, mouse) {
+        area.pressScenePos = area.mapToItem(root, mouse.x, mouse.y)
+        area.dragging = false
+    }
+
+    function _dragMoved(area, mouse, modelData, dayIndex, tile, isAllDay) {
+        if (!area.pressed) return
+        const scenePos = area.mapToItem(root, mouse.x, mouse.y)
+        const dx = scenePos.x - area.pressScenePos.x
+        const dy = scenePos.y - area.pressScenePos.y
+        if (!area.dragging && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+            area.dragging = true
+            root.startEventDrag(modelData, dayIndex, tile, isAllDay)
+        }
+        if (area.dragging) {
+            root.updateEventDrag(dx, dy)
+        }
+    }
+
+    function _dragReleased(area) {
+        if (area.dragging) {
+            root.finishEventDrag()
+        }
+        area.dragging = false
+    }
+
+    function _dragCanceled(area) {
+        if (area.dragging) {
+            root.cancelEventDrag()
+        }
+        area.dragging = false
+    }
+
+    function _pad2(n) {
+        return String(n).padStart(2, '0')
+    }
+
+    property int _dragOriginDayIndex: -1
+
     function isAllDayEvent(event) {
         if (!event)
             return false;
+
+        if (event.allDay !== undefined)
+            return !!event.allDay;
 
         let start = event.start || "";
         let end = event.end || "";
@@ -250,6 +409,9 @@ Item {
     Connections {
         target: CalendarService
         function onEventsInWeekChanged() {
+
+            if (root.dragActive)
+                root.cancelEventDrag()
             Qt.callLater(root.maybeApplyInitialScroll);
         }
     }
@@ -328,7 +490,6 @@ Item {
                     width: root.dayColumnWidth
                     height: root.headerHeight
 
-                    property var allDayEvents: root.getAllDayEvents(modelData.events)
                     // highlight if this column's date equals today's date (respects week offset)
                     property bool isToday: (function() {
                         const col = root.dateForColumn(index);
@@ -343,7 +504,16 @@ Item {
                         width: parent.width - 4
                         height: 40
                         radius: Appearance.rounding.large
-                        color: allDayEvents.length > 0 ? Appearance.colors.colPrimaryContainer : Appearance.colors.colSurfaceContainerHigh
+                        color: isToday ? Appearance.colors.colPrimaryContainer : Appearance.colors.colSurfaceContainerHigh
+                        border.width: (root.dragActive && root.dragPreviewAllDay && root.dragPreviewDayIndex === index) ? 2 : 0
+                        border.color: Appearance.colors.colPrimary
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            visible: root.dragActive && root.dragPreviewAllDay && root.dragPreviewDayIndex === index
+                            color: root.withOpacity(Appearance.colors.colPrimary, 0.14)
+                        }
 
                         Column {
                             anchors.centerIn: parent
@@ -371,29 +541,174 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
+                    }
+                }
+            }
+        }
 
-                        HoverHandler {
-                            id: allDayHover
-                        }
+        Row {
+            id: allDayBannerRow
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.maxAllDayEventCount > 0
+                ? (Math.min(root.maxAllDayEventCount, root.maxVisibleAllDayChips) * (root.allDayChipHeight + root.allDayChipSpacing)) + 8
+                : 0
+            Layout.bottomMargin: root.maxAllDayEventCount > 0 ? 8 : 0
+            spacing: root.spacing
+            clip: true
 
-                        Column {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: parent.width - 4
-                            spacing: root.allDayChipSpacing
+            Item {
+                width: root.timeColumnWidth
+                height: parent.height
+            }
 
-                            Repeater {
-                                model: allDayEvents
-                                delegate: Rectangle {
-                                    width: parent.width
-                                    height: root.allDayChipHeight
-                                    color: 'transparent'
+            Repeater {
+                model: root.days
+                delegate: Item {
+                    id: dayCell
+                    width: root.dayColumnWidth
+                    height: allDayBannerRow.height
 
-                                    ToolTip {
-                                        visible: allDayHover.hovered
-                                        delay: 250
-                                        timeout: 0
-                                        text: root.formatEventTooltip(modelData)
+                    property int dayIndex: index
+
+                    property var allDayEvents: root.getAllDayEvents(modelData.events)
+                    readonly property var displayChips: (function() {
+                        const cap = root.maxVisibleAllDayChips;
+                        if (allDayEvents.length <= cap) return allDayEvents;
+                        const shown = allDayEvents.slice(0, cap - 1);
+                        shown.push({ __overflow: true, count: allDayEvents.length - (cap - 1) });
+                        return shown;
+                    })()
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Appearance.rounding.normal
+                        color: root.withOpacity(Appearance.colors.colSurfaceContainerHigh, 0.35)
+                        border.width: 1
+                        border.color: root.withOpacity(Appearance.colors.colOutlineVariant, 0.5)
+                        z: -2
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Appearance.rounding.normal
+                        visible: root.dragPreviewAllDay && root.dragPreviewDayIndex === dayIndex
+                        color: root.withOpacity(Appearance.colors.colPrimary, 0.16)
+                        border.width: 1
+                        border.color: Appearance.colors.colPrimary
+                        z: -1
+                    }
+
+                    Column {
+                        anchors.fill: parent
+                        spacing: root.allDayChipSpacing
+
+                        Repeater {
+                            model: displayChips
+                            delegate: Rectangle {
+                                id: chip
+                                width: parent.width
+                                height: (dayCell.height - root.allDayChipSpacing * (dayCell.displayChips.length - 1)) / dayCell.displayChips.length
+                                radius: Appearance.rounding.normal
+                                clip: true
+                                color: modelData.__overflow
+                                    ? Appearance.colors.colSurfaceContainerHigh
+                                    : (modelData.color || Appearance.colors.colTertiaryContainer)
+
+                                opacity: (root.dragActive && root.dragEventData && root.dragEventData.uid === modelData.uid) ? 0.3 : 1
+                                Behavior on opacity { NumberAnimation { duration: 100 } }
+
+                                StyledText {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: modelData.__overflow ? 8 : 60
+                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.weight: Font.Medium
+                                    text: modelData.__overflow
+                                        ? qsTr("+%1 more").arg(modelData.count)
+                                        : (modelData.title || qsTr("Event"))
+                                    color: modelData.__overflow
+                                        ? Appearance.colors.colOnSurfaceVariant
+                                        : ColorUtils.getContrastingTextColor(modelData.color)
+                                }
+
+                                MouseArea {
+                                    id: chipDragArea
+                                    anchors.fill: parent
+                                    preventStealing: true
+                                    enabled: !modelData.__overflow
+                                    property point pressScenePos
+                                    property bool dragging: false
+
+                                    onPressed: (mouse) => root._dragPressed(chipDragArea, mouse)
+                                    onPositionChanged: (mouse) => root._dragMoved(chipDragArea, mouse, modelData, dayIndex, chip, true)
+                                    onReleased: root._dragReleased(chipDragArea)
+                                    onCanceled: root._dragCanceled(chipDragArea)
+                                }
+
+                                HoverHandler {
+                                    id: chipHover
+                                    enabled: !modelData.__overflow
+                                }
+
+                                Row {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+
+                                    RippleButton {
+                                        width: 24
+                                        height: 24
+                                        buttonRadius: Appearance.rounding.small
+                                        opacity: chipHover.hovered ? 1 : 0
+                                        visible: opacity > 0 && !modelData.__overflow
+
+                                        colBackgroundHover: Appearance.colors.colSurfaceContainerHigh
+
+                                        Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                                        contentItem: MaterialSymbol {
+                                            anchors.fill: parent
+                                            horizontalAlignment: Text.AlignHCenter
+                                            font.pixelSize: Appearance.font.pixelSize.small
+                                            text: "edit"
+                                        }
+
+                                        onClicked: {
+                                            root.tempCalendarEvent = modelData;
+                                            root.editMode = true;
+                                        }
                                     }
+
+                                    RippleButton {
+                                        width: 24
+                                        height: 24
+                                        buttonRadius: Appearance.rounding.small
+                                        opacity: chipHover.hovered ? 1 : 0
+                                        visible: opacity > 0 && !modelData.__overflow
+
+                                        colBackgroundHover: Appearance.colors.colSurfaceContainerHigh
+
+                                        Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                                        contentItem: MaterialSymbol {
+                                            anchors.fill: parent
+                                            horizontalAlignment: Text.AlignHCenter
+                                            font.pixelSize: Appearance.font.pixelSize.small
+                                            text: "cancel"
+                                        }
+
+                                        onClicked: CalendarService.removeItem(modelData)
+                                    }
+                                }
+
+                                ToolTip {
+                                    visible: chipHover.hovered
+                                    delay: 250
+                                    timeout: 0
+                                    text: modelData.__overflow ? "" : root.formatEventTooltip(modelData)
                                 }
                             }
                         }
@@ -401,8 +716,6 @@ Item {
                 }
             }
         }
-
-     
 
         // Subtle separator
         Rectangle {
@@ -525,9 +838,13 @@ Item {
                     Repeater {
                         model: root.days
                         delegate: Item {
+                            id: dayColumnItem
                             width: root.dayColumnWidth
                             height: parent.height
                             clip: true
+
+                            property int dayIndex: index
+
                             // highlight if this column's date equals today's date (respects week offset)
                             property bool isToday: (function() {
                                 const col = root.dateForColumn(index);
@@ -541,15 +858,20 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Appearance.rounding.large
-                                color: isToday ? root.todayHighlightFill : Qt.rgba(0, 0, 0, 0)
-                                border.width: isToday ? 1 : 0
-                                border.color: isToday ? root.todayHighlightBorder : Qt.rgba(0, 0, 0, 0)
+                                color: (root.dragActive && root.dragPreviewDayIndex === dayColumnItem.dayIndex)
+                                    ? root.withOpacity(Appearance.colors.colPrimary, 0.16)
+                                    : (isToday ? root.todayHighlightFill : Qt.rgba(0, 0, 0, 0))
+                                border.width: (isToday || (root.dragActive && root.dragPreviewDayIndex === dayColumnItem.dayIndex)) ? 1 : 0
+                                border.color: (root.dragActive && root.dragPreviewDayIndex === dayColumnItem.dayIndex)
+                                    ? Appearance.colors.colPrimary
+                                    : (isToday ? root.todayHighlightBorder : Qt.rgba(0, 0, 0, 0))
                                 z: -1
                             }
 
                             Repeater {
                                 model: timedEvents
                                 Rectangle {
+                                    id: eventTile
                                     width: parent.width - 10
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     radius: Appearance.rounding.large
@@ -572,6 +894,22 @@ Item {
                                     }
 
                                     color: modelData.color || Appearance.colors.colTertiaryContainer
+
+                                    opacity: (root.dragActive && root.dragEventData && root.dragEventData.uid === modelData.uid) ? 0.3 : 1
+                                    Behavior on opacity { NumberAnimation { duration: 100 } }
+
+                                    MouseArea {
+                                        id: dragArea
+                                        anchors.fill: parent
+                                        preventStealing: true
+                                        property point pressScenePos
+                                        property bool dragging: false
+
+                                        onPressed: (mouse) => root._dragPressed(dragArea, mouse)
+                                        onPositionChanged: (mouse) => root._dragMoved(dragArea, mouse, modelData, dayColumnItem.dayIndex, eventTile, false)
+                                        onReleased: root._dragReleased(dragArea)
+                                        onCanceled: root._dragCanceled(dragArea)
+                                    }
 
                                     HoverHandler {
                                         id: eventHover
@@ -766,7 +1104,10 @@ Item {
             colBackgroundHover: Appearance.colors.colPrimaryHover
             anchors.verticalCenter: parent.verticalCenter
 
-            onClicked: CalendarService.syncCalendars();
+            onClicked: {
+                CalendarService.manualRefresh = true;
+                CalendarService.syncCalendars();
+            }
 
             contentItem: MaterialSymbol {
                 anchors.centerIn: parent
@@ -798,19 +1139,60 @@ Item {
     }
 
 
+    Rectangle {
+        id: dragGhost
+        visible: root.dragActive
+        z: 90
+        width: root.dragGhostWidth
+        height: root.dragGhostHeight
+        radius: Appearance.rounding.large
+        color: root.dragEventData ? (root.dragEventData.color || Appearance.colors.colTertiaryContainer) : Appearance.colors.colTertiaryContainer
+        border.width: 2
+        border.color: Appearance.colors.colPrimary
+        scale: 1.03
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 2
+
+            StyledText {
+                text: {
+                    if (root.dragPreviewAllDay) return qsTr("All day")
+                    if (root.dragPreviewStartMinutes < 0) return ""
+                    const fmt = Config.options?.time.format ?? "hh:mm"
+                    const s = new Date(0, 0, 0, Math.floor(root.dragPreviewStartMinutes / 60), root.dragPreviewStartMinutes % 60)
+                    const totalEnd = root.dragPreviewStartMinutes + root.dragOriginalDurationMin
+                    const e = new Date(0, 0, 0, Math.floor(totalEnd / 60), totalEnd % 60)
+                    return Qt.formatTime(s, fmt) + " – " + Qt.formatTime(e, fmt)
+                }
+                width: parent.width
+                elide: Text.ElideRight
+                font.weight: Font.Medium
+                color: root.dragEventData ? ColorUtils.getContrastingTextColor(root.dragEventData.color) : Appearance.colors.colOnLayer0
+            }
+            StyledText {
+                text: root.dragEventData ? root.dragEventData.title : ""
+                width: parent.width
+                elide: Text.ElideRight
+                color: root.dragEventData ? ColorUtils.getContrastingTextColor(root.dragEventData.color) : Appearance.colors.colOnLayer0
+            }
+        }
+    }
+
     // Loading overlay when CalendarService.isLoading is true
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.52)
         radius: Appearance.rounding.large
-        visible: CalendarService.isLoading
+        visible: CalendarService.manualRefresh
         z: 50
         opacity: visible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 180 } }
 
         StyledBusyIndicator {
             anchors.centerIn: parent
-            running: CalendarService.isLoading
+            running: CalendarService.manualRefresh
             implicitSize: 120
             strokeWidth: 8
             internalStrokeWidth: 8
