@@ -177,10 +177,13 @@ Item {
                         focus: root.open
 
                         onAccepted: {
-                            if (appsRepeater.count > 0) {
-                                var firstApp = appsRepeater.itemAt(0);
-                                if (firstApp && firstApp.executeApp) {
-                                    firstApp.executeApp();
+                            if (appsLoader.item) {
+                                for (let i = 0; i < appsLoader.item.children.length; i++) {
+                                    let child = appsLoader.item.children[i];
+                                    if (child && child.executeApp) {
+                                        child.executeApp();
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -231,67 +234,74 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     contentWidth: width
-                    contentHeight: appsGrid.implicitHeight
+                    contentHeight: appsLoader.item ? appsLoader.item.implicitHeight : 0
 
-                    GridLayout {
-                        id: appsGrid
+                    Loader {
+                        id: appsLoader
                         width: appsFlickable.width
-                        rowSpacing: 10
-                        columnSpacing: 10
-                        columns: Math.max(1, Math.floor((width + columnSpacing) / (60 + columnSpacing)))
+                        active: true
+                        asynchronous: true
+                        sourceComponent: GridLayout {
+                            id: appsGrid
+                            width: appsFlickable.width
+                            rowSpacing: 10
+                            columnSpacing: 10
+                            columns: Math.max(1, Math.floor((width + columnSpacing) / (60 + columnSpacing)))
 
-                        Repeater {
-                            id: appsRepeater
-                            model: searchInput.text === "" ? AppSearch.list : AppSearch.fuzzyQuery(searchInput.text)
+                            Repeater {
+                                id: appsRepeater
+                                model: searchInput.text === "" ? AppSearch.list : AppSearch.fuzzyQuery(searchInput.text)
 
-                            Rectangle {
-                                width: 60
-                                height: 75
-                                radius: Appearance.rounding.normal
-                                color: "transparent"
-                                
-                                property bool isHovered: appMouseArea.containsMouse
-                                
                                 Rectangle {
-                                    anchors.fill: parent
+                                    width: 60
+                                    height: 75
                                     radius: Appearance.rounding.normal
-                                    color: Appearance.colors.colSecondaryContainer
-                                    opacity: parent.isHovered ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: 150 } }
-                                }
-                                
-                                ColumnLayout {
-                                    anchors.fill: parent
-                                    anchors.margins: 4
-                                    spacing: 4
+                                    color: "transparent"
                                     
-                                    IconImage {
-                                        Layout.alignment: Qt.AlignHCenter
-                                        implicitSize: 32
-                                        source: Quickshell.iconPath(modelData.icon, "application-x-executable")
-                                    }
-                                    
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        Layout.alignment: Qt.AlignHCenter
-                                        text: modelData.name
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        horizontalAlignment: Text.AlignHCenter
-                                        maximumLineCount: 2
-                                        wrapMode: Text.Wrap
-                                        elide: Text.ElideRight
-                                        color: Appearance.colors.colOnLayer0
-                                    }
-                                }
-                                
-                                MouseArea {
-                                    id: appMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
+                                    property bool isHovered: appMouseArea.containsMouse
+                                    property var executeApp: () => {
                                         modelData.execute();
                                         barRoot.centerPopupOpen = false;
+                                    }
+                                    
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: Appearance.rounding.normal
+                                        color: Appearance.colors.colSecondaryContainer
+                                        opacity: parent.isHovered ? 1.0 : 0.0
+                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                                    }
+                                    
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 4
+                                        
+                                        IconImage {
+                                            Layout.alignment: Qt.AlignHCenter
+                                            implicitSize: 32
+                                            source: Quickshell.iconPath(modelData.icon, "application-x-executable")
+                                        }
+                                        
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            Layout.alignment: Qt.AlignHCenter
+                                            text: modelData.name
+                                            font.pixelSize: Appearance.font.pixelSize.smaller
+                                            horizontalAlignment: Text.AlignHCenter
+                                            maximumLineCount: 2
+                                            wrapMode: Text.Wrap
+                                            elide: Text.ElideRight
+                                            color: Appearance.colors.colOnLayer0
+                                        }
+                                    }
+                                    
+                                    MouseArea {
+                                        id: appMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: executeApp()
                                     }
                                 }
                             }
