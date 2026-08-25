@@ -125,17 +125,17 @@ void ResourceMonitor::updateCpu() {
 }
 
 void ResourceMonitor::discoverTemperaturePath() {
-    for (int i = 0; i < 16; ++i) {
-        QString p = QString("/sys/class/thermal/thermal_zone%1/temp").arg(i);
-        QFile f(p);
-        if (f.open(QIODevice::ReadOnly)) { m_temperaturePath = p; return; }
-    }
-
-    // fallback
     QDir d("/sys/class/hwmon");
     for (const QFileInfo &fi : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         QString p = fi.filePath() + "/temp1_input";
         if (QFileInfo::exists(p)) { m_temperaturePath = p; return; }
+    }
+
+    // fallback
+    for (int i = 0; i < 16; ++i) {
+        QString p = QString("/sys/class/thermal/thermal_zone%1/temp").arg(i);
+        QFile f(p);
+        if (f.open(QIODevice::ReadOnly)) { m_temperaturePath = p; return; }
     }
 }
 
