@@ -275,7 +275,7 @@ Item {
                                         Layout.fillWidth: true
                                         Layout.alignment: Qt.AlignHCenter
                                         text: modelData.name
-                                        font.pixelSize: Appearance.font.pixelSize.tiny
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
                                         horizontalAlignment: Text.AlignHCenter
                                         maximumLineCount: 2
                                         wrapMode: Text.Wrap
