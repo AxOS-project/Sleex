@@ -193,6 +193,7 @@ public:
 
 private slots:
     void verifyDelayedConnection(const QString &ssid);
+    void onPrepareForSleep(bool sleeping);
 
 private:
     void scheduleConnectionVerification(const QString &ssid);
@@ -296,6 +297,9 @@ private:
     
     void updateEthernetStatus();
     void updateKnownNetworks();
+    void refreshAfterResume();
+    void refreshWifiDevice();
+    void registerSleepSignals();
     AccessPoint* findAccessPoint(NMAccessPoint *ap);
     NMDeviceWifi* getPrimaryWifiDevice();
     NMRemoteConnection* findConnectionForSsid(const QString &ssid);
