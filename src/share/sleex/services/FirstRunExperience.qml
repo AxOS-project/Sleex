@@ -12,6 +12,7 @@ Singleton {
     property string firstRunFileContent: "This file is just here to confirm you've been greeted :>"
     property string defaultWallpaperPath: FileUtils.trimFileProtocol(`/usr/share/backgrounds/sleex/twentySix.jpg`) 
     property string welcomeNotifTitle: "Welcome to Sleex!"
+    property bool onLiveEnvironment: false
 
     function load() {
         firstRunFileView.reload()
@@ -20,7 +21,9 @@ Singleton {
     function handleFirstRun() {
         Quickshell.execDetached(["bash", "-c", `hypnos install && hypnos enable && hypnos start`])
         Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} ${root.defaultWallpaperPath} --mode dark`])
-        Quickshell.execDetached(['/bin/sleex-welcome-screen'])
+        if (!root.onLiveEnvironment) {
+            Quickshell.execDetached(['/bin/sleex-welcome-screen'])
+        }
         //Quickshell.reload(true)
     }
 
@@ -32,6 +35,19 @@ Singleton {
             if (error == FileViewError.FileNotFound) {
                 root.handleFirstRun()
                 firstRunFileView.setText(root.firstRunFileContent)
+            }
+        }
+    }
+
+    Process {
+        id: checkIfLiveEnvironment
+        running: true
+        command: ["bash", "-c", "pacman -Q axinstall 2>/dev/null || echo 'not-installed'"]
+        stdout: SplitParser {
+            onRead: (data) => {
+                if (data.trim() == "not-installed") {
+                    root.onLiveEnvironment = true
+                }
             }
         }
     }
