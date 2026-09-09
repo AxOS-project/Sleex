@@ -47,7 +47,11 @@ Item {
     visible: root.open || root.isAnimating || opacity > 0
 
     Behavior on width {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        animation: NumberAnimation {
+    duration: Appearance.animation.elementResize.duration
+    easing.type: Appearance.animation.elementResize.type
+    easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+}
     }
 
     Timer {

@@ -24,7 +24,11 @@ Singleton {
         Quickshell.execDetached(["hyprctl", "keyword", "cursor:zoom_factor", `${root.screenZoom.toString()}`]);
     }
     Behavior on screenZoom {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
     }
 
     // When user is not reluctant while pressing super, they probably don't need to see workspace numbers
