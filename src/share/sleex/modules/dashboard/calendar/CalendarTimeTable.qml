@@ -120,8 +120,6 @@ Item {
     property var dragEventData: null
     property int dragOriginalDurationMin: 60
     property point dragStartRootPos: Qt.point(0, 0)
-    property real dragGhostWidth: 150
-    property real dragGhostHeight: 48
     property bool dragActive: false
     onDragActiveChanged: CalendarService.dragSuspended = root.dragActive
     property int dragPreviewDayIndex: -1
@@ -140,8 +138,6 @@ Item {
             root.dragOriginalDurationMin = Math.max(15, (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1]))
         }
         root.dragStartRootPos = tileItem.mapToItem(root, 0, 0)
-        root.dragGhostWidth = tileItem.width
-        root.dragGhostHeight = tileItem.height
         root.dragPreviewDayIndex = dayIndex
         root.dragPreviewStartMinutes = -1
         root.dragPreviewAllDay = false
@@ -598,6 +594,23 @@ Item {
                         z: -1
                     }
 
+                    DropArea {
+                        anchors.fill: parent
+                        keys: ["application/x-sleex-calendar-event"]
+
+                        onEntered: {
+                            if (root.dragActive) {
+                                root.dragPreviewAllDay = true
+                                root.dragPreviewDayIndex = dayIndex
+                            }
+                        }
+                        onExited: {
+                            if (root.dragActive && root.dragPreviewAllDay && root.dragPreviewDayIndex === dayIndex) {
+                                root.dragPreviewAllDay = false
+                            }
+                        }
+                    }
+
                     Column {
                         anchors.fill: parent
                         spacing: root.allDayChipSpacing
@@ -613,6 +626,10 @@ Item {
                                 color: modelData.__overflow
                                     ? Appearance.colors.colSurfaceContainerHigh
                                     : (modelData.color || Appearance.colors.colTertiaryContainer)
+
+                                Drag.active: chipDragArea.dragging
+                                Drag.keys: ["application/x-sleex-calendar-event"]
+                                Drag.mimeData: ({ "application/x-sleex-calendar-event": modelData })
 
                                 opacity: (root.dragActive && root.dragEventData && root.dragEventData.uid === modelData.uid) ? 0.3 : 1
                                 Behavior on opacity { NumberAnimation { duration: 100 } }
@@ -868,6 +885,31 @@ Item {
                                 z: -1
                             }
 
+                            DropArea {
+                                anchors.fill: parent
+                                keys: ["application/x-sleex-calendar-event"]
+
+                                onPositionChanged: (drag) => {
+                                    if (!root.dragActive) return
+                                    const localY = drag.position.y
+                                    const minutesFromTop = localY / root.pixelsPerMinute
+                                    const snapped = Math.round(minutesFromTop / 15) * 15
+                                    const baseMinutes = root.startHour * 60 + root.startMinute
+                                    let newStart = baseMinutes + snapped
+                                    const maxStart = root.endHour * 60 - root.dragOriginalDurationMin
+                                    newStart = Math.max(baseMinutes, Math.min(maxStart, newStart))
+                                    root.dragPreviewDayIndex = dayColumnItem.dayIndex
+                                    root.dragPreviewStartMinutes = newStart
+                                    root.dragPreviewAllDay = false
+                                }
+                                onEntered: {
+                                    if (root.dragActive) {
+                                        root.dragPreviewDayIndex = dayColumnItem.dayIndex
+                                        root.dragPreviewAllDay = false
+                                    }
+                                }
+                            }
+
                             Repeater {
                                 model: timedEvents
                                 Rectangle {
@@ -876,6 +918,10 @@ Item {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     radius: Appearance.rounding.large
                                     clip: true
+
+                                    Drag.active: dragArea.dragging
+                                    Drag.keys: ["application/x-sleex-calendar-event"]
+                                    Drag.mimeData: ({ "application/x-sleex-calendar-event": modelData })
                                     y: {
                                         let startHr = parseInt(modelData.start.split(":")[0]);
                                         let startMin = parseInt(modelData.start.split(":")[1]);
@@ -1143,8 +1189,8 @@ Item {
         id: dragGhost
         visible: root.dragActive
         z: 90
-        width: root.dragGhostWidth
-        height: root.dragGhostHeight
+        width: 150
+        height: 48
         radius: Appearance.rounding.large
         color: root.dragEventData ? (root.dragEventData.color || Appearance.colors.colTertiaryContainer) : Appearance.colors.colTertiaryContainer
         border.width: 2
