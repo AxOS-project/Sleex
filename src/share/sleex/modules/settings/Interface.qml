@@ -593,6 +593,34 @@ ContentPage {
         title: "Calendar"
         icon: "event"
 
+        ConfigSwitch {
+            text: "Event reminders"
+            checked: Config.options.dashboard.calendar.reminders
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.calendar.reminders = checked;
+            StyledToolTip { text: "Get a notification before your events start." }
+        }
+
+        ConfigSwitch {
+            text: "Reminder sound"
+            checked: Config.options.dashboard.calendar.reminderSound
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.calendar.reminderSound = checked;
+            StyledToolTip { text: "Play a sound alongside the reminder notification." }
+        }
+
+        ConfigSpinBox {
+            visible: Config.options.dashboard.calendar.reminders
+            text: "Remind before event (minutes)"
+            value: Config.options.dashboard.calendar.reminderTime
+            from: 1
+            to: 1440
+            stepSize: 5
+            onValueChanged: {
+                Config.options.dashboard.calendar.reminderTime = value;
+            }
+        }
+
         ContentSubsection {
             title: "Advanced"
             tooltip: "Vdirsyncer is not configured by default.\nPlease refer to the documentation\n to set it up. Enable only after configuring it."
