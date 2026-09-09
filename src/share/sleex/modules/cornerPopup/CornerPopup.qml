@@ -1,3 +1,4 @@
+import qs
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
@@ -33,7 +34,7 @@ Scope {
             }
 
             WlrLayershell.namespace: "quickshell:cornerPopup"
-            WlrLayershell.layer: GlobalStates.tutorialMode ? WlrLayer.Top : WlrLayer.Overlay
+            WlrLayershell.layer: WlrLayer.Overlay
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
@@ -110,18 +111,7 @@ Scope {
         id: ipc
         target: "cornerPopup"
         function toggle(): void { root.forceRevealed = !root.forceRevealed }
-        function close(): void { 
-            root.forceRevealed = false 
-            GlobalStates.tutorialMode = false
-        }
-        function open(): void { 
-            GlobalStates.tutorialMode = false
-            root.forceRevealed = true 
-        }
-        function openTutorial(): void { 
-            GlobalStates.tutorialMode = true
-            root.forceRevealed = true 
-        }
+        function close(): void { root.forceRevealed = false }
+        function open(): void { root.forceRevealed = true }
     }
-
 }
