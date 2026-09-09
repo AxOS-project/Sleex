@@ -132,8 +132,6 @@ Scope {
                     asynchronous: true
                     visible: (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) || scaleWrapper.isAnimating
 
-                    layer.enabled: scaleWrapper.isAnimating
-                    layer.smooth: true
 
                     onLoaded: {
                         Qt.callLater(() => {
