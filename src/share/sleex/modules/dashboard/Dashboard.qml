@@ -38,7 +38,7 @@ Scope {
             implicitWidth: Screen.width
             implicitHeight: Screen.height
             WlrLayershell.namespace: "quickshell:dashboard"
-            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.layer: GlobalStates.tutorialMode ? WlrLayer.Top : WlrLayer.Overlay
       
             color: "transparent"
             mask: GlobalStates.dashboardOpen ? null : emptyRegion
@@ -50,7 +50,7 @@ Scope {
                 windows: [ dashboardRoot ]
                 property bool canBeActive: dashboardRoot.monitorIsFocused
                 active: false
-                onCleared: () => { if (!active) ipc.close() }
+                onCleared: () => { if (!active && !GlobalStates.tutorialMode) ipc.close() }
             }
 
             Connections {
@@ -70,6 +70,7 @@ Scope {
                 repeat: false
                 onTriggered: {
                     if (!grab.canBeActive) return
+                    if (GlobalStates.tutorialMode) return
                     grab.active = GlobalStates.dashboardOpen
                 }
             }
@@ -300,8 +301,17 @@ Scope {
             if (GlobalStates.dashboardOpen) close()
             else open()
         }
-        function close(): void  { GlobalStates.dashboardOpen = false }
+        function close(): void  { 
+            GlobalStates.dashboardOpen = false 
+            GlobalStates.tutorialMode = false
+        }
         function open(): void   {
+            GlobalStates.tutorialMode = false
+            GlobalStates.dashboardOpen = true
+            Notifications.timeoutAll()
+        }
+        function openTutorial(): void {
+            GlobalStates.tutorialMode = true
             GlobalStates.dashboardOpen = true
             Notifications.timeoutAll()
         }

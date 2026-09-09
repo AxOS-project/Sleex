@@ -38,9 +38,9 @@ Scope {
         HyprlandFocusGrab {
             id: grab
             windows: [ wppselectorRoot ]
-            active: GlobalStates.wppselectorOpen
+            active: GlobalStates.wppselectorOpen && !GlobalStates.tutorialMode
             onCleared: () => {
-                if (!active) wppselectorRoot.hide()
+                if (!active && !GlobalStates.tutorialMode) wppselectorRoot.hide()
             }
         }
 
@@ -163,9 +163,16 @@ Scope {
 
         function close(): void {
             GlobalStates.wppselectorOpen = false;
+            GlobalStates.tutorialMode = false;
         }
 
         function open(): void {
+            GlobalStates.tutorialMode = false;
+            GlobalStates.wppselectorOpen = true;
+        }
+
+        function openTutorial(): void {
+            GlobalStates.tutorialMode = true;
             GlobalStates.wppselectorOpen = true;
         }
     }
