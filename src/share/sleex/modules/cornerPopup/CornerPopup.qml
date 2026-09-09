@@ -4,9 +4,12 @@ import SleexUiKit.Appearance
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Io
 
 Scope {
     id: root
+
+    property bool forceRevealed: false
 
     Variants {
         model: Quickshell.screens
@@ -22,7 +25,7 @@ Scope {
             property int triggerWidth: 20
             property int triggerHeight: 20
 
-            property bool revealed: containerArea.containsMouse
+            property bool revealed: containerArea.containsMouse || root.forceRevealed
 
             anchors {
                 bottom: true
@@ -102,4 +105,13 @@ Scope {
             }
         }
     }
+
+    IpcHandler {
+        id: ipc
+        target: "cornerPopup"
+        function toggle(): void { root.forceRevealed = !root.forceRevealed }
+        function close(): void { root.forceRevealed = false }
+        function open(): void { root.forceRevealed = true }
+    }
+
 }
