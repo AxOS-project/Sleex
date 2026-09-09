@@ -99,6 +99,7 @@ Scope {
                 }
 
                 transitions: Transition {
+                    onRunningChanged: if (!running) previousWallpaper.source = ""
                     to: "animating"
                     ParallelAnimation {
                         NumberAnimation {
