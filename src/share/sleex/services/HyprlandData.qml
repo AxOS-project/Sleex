@@ -44,6 +44,8 @@ Singleton {
         }
     }
 
+    property var biggestWindowPerWorkspace: ({})
+
     Process {
         id: getClients
         command: ["bash", "-c", "hyprctl clients -j | jq -c"]
@@ -51,12 +53,20 @@ Singleton {
             onRead: (data) => {
                 root.windowList = JSON.parse(data)
                 let tempWinByAddress = {}
+                let tempBiggest = {}
                 for (var i = 0; i < root.windowList.length; ++i) {
                     var win = root.windowList[i]
                     tempWinByAddress[win.address] = win
+                    
+                    const id = win.workspace.id;
+                    const prev = tempBiggest[id];
+                    const prevArea = prev ? prev.size[0] * prev.size[1] : 0;
+                    const area = win.size[0] * win.size[1];
+                    if (area > prevArea) tempBiggest[id] = win;
                 }
                 root.windowByAddress = tempWinByAddress
                 root.addresses = root.windowList.map((win) => win.address)
+                root.biggestWindowPerWorkspace = tempBiggest
             }
         }
     }

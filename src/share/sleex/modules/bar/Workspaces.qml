@@ -34,17 +34,7 @@ Item {
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
-    property var biggestWindowPerWorkspace: {
-        const map = {};
-        for (const w of HyprlandData.windowList) {
-            const id = w.workspace.id;
-            const prev = map[id];
-            const prevArea = prev ? prev.size[0] * prev.size[1] : 0;
-            const area = w.size[0] * w.size[1];
-            if (area > prevArea) map[id] = w;
-        }
-        return map;
-    }
+    property var biggestWindowPerWorkspace: HyprlandData.biggestWindowPerWorkspace
     
     // Function to update workspaceOccupied
     function updateWorkspaceOccupied() {
@@ -207,27 +197,8 @@ Item {
 
                         property string materialIconName: {
                             if (!biggestWindow) return ""
-
                             const winClass = biggestWindow.class.toLowerCase()
-                            const map = {
-                                "language":    ["firefox", "chromium", "google-chrome", "brave", "edge", "vivaldi", "qutebrowser", "librewolf", "zen-browser"],
-                                "terminal":    ["foot", "kitty", "alacritty", "wezterm", "gnome-terminal", "konsole", "xfce4-terminal", "xterm"],
-                                "code":        ["code", "visual-studio-code", "sublime-text", "jetbrains-idea", "pycharm", "webstorm", "goland", "clion", "rider"],
-                                "chat_bubble": ["discord", "vesktop", "slack", "mattermost", "element", "riot-desktop", "gajim"],
-                                "music_note":  ["spotify", "spotifyd", "clementine", "audacious", "rhythmbox", "deadbeef", "tidal-hifi"],
-                                "email":       ["thunderbird", "evolution", "geary", "mailspring", "mailbird"],
-                                "book_4":      ["obsidian", "notion", "evernote", "joplin", "simplenote", "zotero"],
-                                "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm"],
-                                "video_library": ["vlc", "mpv", "smplayer", "kodi", "plex", "plexamp"],
-                                "edit_document": ["libreoffice", "onlyoffice", "wps-office", "calligra", "evince", "okular", "org.kde.kwrite", "gedit", "mousepad"],
-                                "gamepad":      ["steam", "lutris", "heroic", "itch", "playnite", "gamelauncher"],
-                                "image":        ["gimp", "krita", "darktable", "digikam", "shotwell", "eog", "org.gnome.loupe", "gwenview", "nomacs"],
-                                "settings":     ["gnome-control-center", "systemsettings", "lxqt-config", "mate-control-center", "xfce4-settings-manager", "org.quickshell"],
-                            }
-
-                            const icon = Object.keys(map).find(key => map[key].includes(winClass))
-                            
-                            return icon || "circle"
+                            return AppSearch.materialIconMap[winClass] || "circle"
                         }
 
                         StyledText { // Workspace number text
