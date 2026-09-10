@@ -15,6 +15,7 @@ StyledListView { // Scrollable window
     property bool popup: false
 
     spacing: 3
+    reuseItems: true
 
     model: ScriptModel {
         values: root.popup ? Notifications.popupAppNameList : Notifications.appNameList

@@ -347,6 +347,7 @@ Item { // Wrapper
                 Layout.fillWidth: true
                 implicitHeight: Math.min(600, appResults.contentHeight + topMargin + bottomMargin)
                 clip: true
+                reuseItems: true
                 topMargin: 10
                 bottomMargin: 10
                 spacing: 2

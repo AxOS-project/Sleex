@@ -91,25 +91,19 @@ Scope {
                         radius: Appearance.rounding.small
                     }
 
-                    StyledFlickable {
+                    StyledListView {
                         id: wallpaperFlickable
                         anchors.fill: flickableBg
                         anchors.margins: wppselectorPadding
                         boundsBehavior: Flickable.StopAtBounds
                         interactive: true
                         clip: true
-                        contentWidth: wallpaperRow.implicitWidth
-                        contentHeight: height
                         flickableDirection: Flickable.HorizontalFlick
-
-                        Row {
-                            id: wallpaperRow
-                            spacing: 20
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Repeater {
-                                model: Wallpapers.wallpaperList
-                                delegate: Item {
+                        orientation: ListView.Horizontal
+                        spacing: 20
+                        reuseItems: true
+                        model: Wallpapers.wallpaperList
+                        delegate: Item {
                                     width: 250
                                     height: wppselectorRoot.implicitHeight - wppselectorPadding
 
@@ -145,8 +139,6 @@ Scope {
                                         }
                                     }
                                 }
-                            }
-                        }
                     }
                     
                 }
