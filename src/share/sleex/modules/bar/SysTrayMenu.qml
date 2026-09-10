@@ -158,6 +158,7 @@ PopupWindow {
         spacing: 0
 
         Loader {
+        asynchronous: true
             Layout.fillWidth: true
             visible: submenu.isSubMenu
             active: visible

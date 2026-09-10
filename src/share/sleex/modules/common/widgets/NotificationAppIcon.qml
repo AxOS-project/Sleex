@@ -30,6 +30,7 @@ Rectangle { // App icon
     radius: Appearance.rounding.full
     color: Appearance.colors.colSecondaryContainer
     Loader {
+        asynchronous: true
         id: materialSymbolLoader
         active: root.appIcon == ""
         anchors.fill: parent

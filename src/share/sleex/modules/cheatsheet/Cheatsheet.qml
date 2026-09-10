@@ -18,6 +18,7 @@ Scope { // Scope
     id: root
 
     Loader {
+        asynchronous: true
         id: cheatsheetLoader
         active: false
         

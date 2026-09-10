@@ -139,6 +139,7 @@ Item {
                 height: swipeView.height
 
                 Loader {
+        asynchronous: true
                 anchors.fill: parent
                 sourceComponent: (
                     modelData.icon === "rocket_launch" ? homeComp :

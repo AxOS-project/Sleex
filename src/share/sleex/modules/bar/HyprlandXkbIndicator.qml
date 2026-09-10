@@ -5,6 +5,7 @@ import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 
 Loader {
+        asynchronous: true
     id: root
     property bool vertical: false
     active: HyprlandXkb.layoutCodes.length > 1

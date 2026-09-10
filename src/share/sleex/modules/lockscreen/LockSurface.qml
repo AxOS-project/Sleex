@@ -196,6 +196,7 @@ FocusScope {
             }
 
             Loader {
+        asynchronous: true
                 id: resizeLoader
                 active: Config.options.lockscreen.resizableLockScreenWidget
                 sourceComponent: resizeComponent

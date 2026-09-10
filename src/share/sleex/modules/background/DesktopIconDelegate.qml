@@ -121,6 +121,7 @@ Item {
                 }
 
                 Loader {
+        asynchronous: true
                     id: renameLoader
                     anchors.centerIn: parent
                     width: 110

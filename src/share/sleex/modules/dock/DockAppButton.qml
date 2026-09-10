@@ -29,6 +29,7 @@ DockButton {
     implicitWidth: isSeparator ? 1 : implicitHeight - topInset - bottomInset
 
     Loader {
+        asynchronous: true
         active: isSeparator
         anchors {
             fill: parent
@@ -39,6 +40,7 @@ DockButton {
     }
 
     Loader {
+        asynchronous: true
         anchors.fill: parent
         active: appToplevel.toplevels.length > 0
         sourceComponent: MouseArea {
@@ -81,6 +83,7 @@ DockButton {
     }
 
     contentItem: Loader {
+        asynchronous: true
         active: !isSeparator
         sourceComponent: Item {
             anchors.centerIn: parent

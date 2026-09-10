@@ -25,6 +25,7 @@ Scope {
     }
 
     Loader {
+        asynchronous: true
         id: sessionLoader
         active: false
 
