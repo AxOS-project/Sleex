@@ -35,8 +35,6 @@ Rectangle {
         asynchronous: true
             active: root.connected
             anchors.horizontalCenter: parent.horizontalCenter
-            sourceComponent: GhCalendar {}
-        }
 
         Loader {
         asynchronous: true
