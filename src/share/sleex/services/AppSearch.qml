@@ -46,6 +46,31 @@ Singleton {
         }
     ]
 
+    readonly property var materialIconMap: {
+        const rawMap = {
+            "language":    ["firefox", "chromium", "google-chrome", "brave", "edge", "vivaldi", "qutebrowser", "librewolf", "zen-browser"],
+            "terminal":    ["foot", "kitty", "alacritty", "wezterm", "gnome-terminal", "konsole", "xfce4-terminal", "xterm"],
+            "code":        ["code", "visual-studio-code", "sublime-text", "jetbrains-idea", "pycharm", "webstorm", "goland", "clion", "rider"],
+            "chat_bubble": ["discord", "vesktop", "slack", "mattermost", "element", "riot-desktop", "gajim"],
+            "music_note":  ["spotify", "spotifyd", "clementine", "audacious", "rhythmbox", "deadbeef", "tidal-hifi"],
+            "email":       ["thunderbird", "evolution", "geary", "mailspring", "mailbird"],
+            "book_4":      ["obsidian", "notion", "evernote", "joplin", "simplenote", "zotero"],
+            "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm"],
+            "video_library": ["vlc", "mpv", "smplayer", "kodi", "plex", "plexamp"],
+            "edit_document": ["libreoffice", "onlyoffice", "wps-office", "calligra", "evince", "okular", "org.kde.kwrite", "gedit", "mousepad"],
+            "gamepad":      ["steam", "lutris", "heroic", "itch", "playnite", "gamelauncher"],
+            "image":        ["gimp", "krita", "darktable", "digikam", "shotwell", "eog", "org.gnome.loupe", "gwenview", "nomacs"],
+            "settings":     ["gnome-control-center", "systemsettings", "lxqt-config", "mate-control-center", "xfce4-settings-manager", "org.quickshell"],
+        }
+        let inverted = {}
+        for (let key in rawMap) {
+            for (let app of rawMap[key]) {
+                inverted[app] = key
+            }
+        }
+        return inverted
+    }
+
     readonly property list<DesktopEntry> list: Array.from(DesktopEntries.applications.values)
         .sort((a, b) => a.name.localeCompare(b.name))
 
@@ -79,7 +104,14 @@ Singleton {
             && !iconName.includes("image-missing");
     }
 
+    property var _iconCache: ({})
+
     function guessIcon(str) {
+        if (_iconCache[str] !== undefined) return _iconCache[str];
+        return _iconCache[str] = _guessIconUncached(str);
+    }
+
+    function _guessIconUncached(str) {
         if (!str || str.length == 0) return "image-missing";
 
         // Normal substitutions

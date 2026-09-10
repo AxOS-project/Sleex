@@ -31,24 +31,16 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Item {
-            width: 358
-            height: 61
+        Loader {
+        asynchronous: true
+            active: root.connected
             anchors.horizontalCenter: parent.horizontalCenter
 
-            Loader {
-                anchors.fill: parent
-                active: true
-                visible: root.connected
-                sourceComponent: GhCalendar {}
-            }
-
-            Loader {
-                anchors.fill: parent
-                active: true
-                visible: !root.connected
-                sourceComponent: GhCalendarNoNet {}
-            }
+        Loader {
+        asynchronous: true
+            active: !root.connected
+            anchors.horizontalCenter: parent.horizontalCenter
+            sourceComponent: GhCalendarNoNet {}
         }
 
         Text {

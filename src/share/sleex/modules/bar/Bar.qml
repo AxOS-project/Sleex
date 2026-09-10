@@ -46,6 +46,7 @@ Scope {
             screen: modelData
 
             property ShellScreen modelData
+            property bool centerPopupOpen: false
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
@@ -54,12 +55,31 @@ Scope {
                 (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened :
                     Appearance.sizes.barCenterSideModuleWidth
 
+            Connections {
+                target: GlobalStates
+                function onCenterPopupToggleRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                }
+                function onCenterPopupOpenRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = true
+                }
+                function onCenterPopupCloseRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = false
+                }
+            }
+
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
-            implicitHeight: barHeight + Appearance.rounding.screenRounding
+            WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
             exclusiveZone: barHeight
             mask: Region {
-                item: barContent
+                Region {
+                    item: barContent
+                }
+                Region {
+                    item: (barRoot.centerPopupOpen || centerPopup.isAnimating ? centerPopup : null)
+                }
             }
             color: "transparent"
 
@@ -68,6 +88,12 @@ Scope {
                 bottom: Config.options.bar.bottom
                 left: true
                 right: true
+            }
+
+            BarCenterPopup {
+                id: centerPopup
+                targetSection: middleSection
+                barRoot: barRoot
             }
 
             Rectangle { // Bar background
@@ -155,7 +181,7 @@ Scope {
                     }
                 }
 
-                // Background Rectangle - completely outside the RowLayout
+                // Background Rectangle
                 Rectangle {
                     id: middleBg
                     anchors.centerIn: parent
@@ -163,45 +189,27 @@ Scope {
                     anchors.verticalCenter: middleSection.verticalCenter
                     width: middleSection.width
                     height: middleSection.height
-                    color: "transparent"
+                    color: Appearance.colors.colLayer0
                     antialiasing: true
                     z: -1
 
                     property int bottomRadius: Appearance.rounding.screenRounding
-                    property int topRadius: 0
+                    bottomLeftRadius: bottomRadius
+                    bottomRightRadius: bottomRadius
 
-                    Shape {
-                        id: middleShape
+                    MouseArea { // Right-click to toggle center popup
                         anchors.fill: parent
-                        z: 1
-                        antialiasing: true
+                        acceptedButtons: Qt.RightButton
 
-                        property color bgColor: Appearance.colors.colLayer0
-
-                        ShapePath {
-                            fillColor: middleShape.bgColor
-                            strokeWidth: 0
-                            strokeColor: "transparent"
-
-                            startX: 0; startY: 0
-                            PathLine { x: middleShape.width; y: 0 }
-                            PathLine { x: middleShape.width; y: middleShape.height - middleBg.bottomRadius }
-                            PathQuad { 
-                                x: middleShape.width - middleBg.bottomRadius; y: middleShape.height 
-                                controlX: middleShape.width; controlY: middleShape.height 
+                        onPressed: (event) => {
+                            if (event.button === Qt.RightButton) {
+                                barRoot.centerPopupOpen = !barRoot.centerPopupOpen
                             }
-                            PathLine { x: middleBg.bottomRadius; y: middleShape.height }
-                            PathQuad { 
-                                x: 0; y: middleShape.height - middleBg.bottomRadius 
-                                controlX: 0; controlY: middleShape.height 
-                            }
-                            PathLine { x: 0; y: 0 }
                         }
                     }
-                    visible: true
                 }
 
-                RowLayout { // Middle section - NO Rectangle inside here
+                RowLayout { // Middle section
                     id: middleSection
                     anchors.centerIn: parent
                     spacing: 0
@@ -261,44 +269,13 @@ Scope {
                             bar: barRoot
                             Layout.fillHeight: true
 
-                            MouseArea { // Right-click to toggle overview
-                                anchors.fill: parent
-                                acceptedButtons: Qt.RightButton
-
-                                onPressed: (event) => {
-                                    if (event.button === Qt.RightButton) {
-                                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen
-                                    }
-                                }
-                            }
-
-                            Shape {
-                                id: workspacesBgCanvas
+                            Rectangle {
                                 anchors.fill: parent
                                 z: -1
                                 antialiasing: true
-
-                                property color bgColor: Appearance.colors.colLayer1
-
-                                ShapePath {
-                                    fillColor: workspacesBgCanvas.bgColor
-                                    strokeWidth: 0
-                                    strokeColor: "transparent"
-
-                                    startX: 0; startY: 0
-                                    PathLine { x: workspacesBgCanvas.width; y: 0 }
-                                    PathLine { x: workspacesBgCanvas.width; y: workspacesBgCanvas.height - 20 }
-                                    PathQuad { 
-                                        x: workspacesBgCanvas.width - 20; y: workspacesBgCanvas.height 
-                                        controlX: workspacesBgCanvas.width; controlY: workspacesBgCanvas.height 
-                                    }
-                                    PathLine { x: 20; y: workspacesBgCanvas.height }
-                                    PathQuad { 
-                                        x: 0; y: workspacesBgCanvas.height - 20 
-                                        controlX: 0; controlY: workspacesBgCanvas.height 
-                                    }
-                                    PathLine { x: 0; y: 0 }
-                                }
+                                color: Appearance.colors.colLayer1
+                                bottomLeftRadius: 20
+                                bottomRightRadius: 20
                             }
                         }
 
@@ -474,7 +451,11 @@ Scope {
                                 property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
 
                                 Behavior on colText {
-                                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                                    animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
 
                                 onPressed: {

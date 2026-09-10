@@ -305,6 +305,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: browserPicker
                 Layout.fillWidth: true
                 active: true
@@ -319,6 +320,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: fileManagerPicker
                 Layout.fillWidth: true
                 active: true
@@ -333,6 +335,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: imageViewerPicker
                 Layout.fillWidth: true
                 active: true
@@ -347,6 +350,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: videoPlayerPicker
                 Layout.fillWidth: true
                 active: true
@@ -361,6 +365,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: musicPlayerPicker
                 Layout.fillWidth: true
                 active: true
@@ -375,6 +380,7 @@ ContentPage {
             }
 
             Loader {
+        asynchronous: true
                 id: documentViewerPicker
                 Layout.fillWidth: true
                 active: true

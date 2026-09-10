@@ -34,17 +34,7 @@ Item {
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
-    property var biggestWindowPerWorkspace: {
-        const map = {};
-        for (const w of HyprlandData.windowList) {
-            const id = w.workspace.id;
-            const prev = map[id];
-            const prevArea = prev ? prev.size[0] * prev.size[1] : 0;
-            const area = w.size[0] * w.size[1];
-            if (area > prevArea) map[id] = w;
-        }
-        return map;
-    }
+    property var biggestWindowPerWorkspace: HyprlandData.biggestWindowPerWorkspace
     
     // Function to update workspaceOccupied
     function updateWorkspaceOccupied() {
@@ -115,14 +105,26 @@ Item {
                     opacity: (workspaceOccupied[index] && !(!activeWindow?.activated && monitor.activeWorkspace?.id === index+1)) ? 1 : 0
 
                     Behavior on opacity {
-                        animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+                        animation: NumberAnimation {
+    duration: Appearance.animation.elementMove.duration
+    easing.type: Appearance.animation.elementMove.type
+    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+}
                     }
                     Behavior on radiusLeft {
-                        animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+                        animation: NumberAnimation {
+    duration: Appearance.animation.elementMove.duration
+    easing.type: Appearance.animation.elementMove.type
+    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+}
                     }
 
                     Behavior on radiusRight {
-                        animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+                        animation: NumberAnimation {
+    duration: Appearance.animation.elementMove.duration
+    easing.type: Appearance.animation.elementMove.type
+    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+}
                     }
 
                 }
@@ -147,7 +149,11 @@ Item {
             implicitWidth: Math.abs(idx1 - idx2) * workspaceButtonWidth + workspaceButtonWidth - activeWorkspaceMargin * 2
 
             Behavior on activeWorkspaceMargin {
-                animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
             }
             Behavior on idx1 { // Leading anim
                 NumberAnimation {
@@ -191,27 +197,8 @@ Item {
 
                         property string materialIconName: {
                             if (!biggestWindow) return ""
-
                             const winClass = biggestWindow.class.toLowerCase()
-                            const map = {
-                                "language":    ["firefox", "chromium", "google-chrome", "brave", "edge", "vivaldi", "qutebrowser", "librewolf", "zen-browser"],
-                                "terminal":    ["foot", "kitty", "alacritty", "wezterm", "gnome-terminal", "konsole", "xfce4-terminal", "xterm"],
-                                "code":        ["code", "visual-studio-code", "sublime-text", "jetbrains-idea", "pycharm", "webstorm", "goland", "clion", "rider"],
-                                "chat_bubble": ["discord", "vesktop", "slack", "mattermost", "element", "riot-desktop", "gajim"],
-                                "music_note":  ["spotify", "spotifyd", "clementine", "audacious", "rhythmbox", "deadbeef", "tidal-hifi"],
-                                "email":       ["thunderbird", "evolution", "geary", "mailspring", "mailbird"],
-                                "book_4":      ["obsidian", "notion", "evernote", "joplin", "simplenote", "zotero"],
-                                "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm"],
-                                "video_library": ["vlc", "mpv", "smplayer", "kodi", "plex", "plexamp"],
-                                "edit_document": ["libreoffice", "onlyoffice", "wps-office", "calligra", "evince", "okular", "org.kde.kwrite", "gedit", "mousepad"],
-                                "gamepad":      ["steam", "lutris", "heroic", "itch", "playnite", "gamelauncher"],
-                                "image":        ["gimp", "krita", "darktable", "digikam", "shotwell", "eog", "org.gnome.loupe", "gwenview", "nomacs"],
-                                "settings":     ["gnome-control-center", "systemsettings", "lxqt-config", "mate-control-center", "xfce4-settings-manager", "org.quickshell"],
-                            }
-
-                            const icon = Object.keys(map).find(key => map[key].includes(winClass))
-                            
-                            return icon || "circle"
+                            return AppSearch.materialIconMap[winClass] || "circle"
                         }
 
                         StyledText { // Workspace number text
@@ -233,7 +220,11 @@ Item {
                                     Appearance.colors.colOnLayer1Inactive)
 
                             Behavior on opacity {
-                                animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                             }
                         }
                         Rectangle { // Dot instead of ws number
@@ -253,7 +244,11 @@ Item {
                                     Appearance.colors.colOnLayer1Inactive)
 
                             Behavior on opacity {
-                                animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                             }
                         }
                         Item { // Main app icon
@@ -279,16 +274,32 @@ Item {
                                 implicitSize: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? workspaceIconSize : workspaceIconSizeShrinked
 
                                 Behavior on opacity {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on anchors.bottomMargin {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on anchors.rightMargin {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on implicitSize {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
 
                             }
@@ -307,16 +318,32 @@ Item {
                                     Appearance.m3colors.m3onPrimary : Appearance.m3colors.m3onSecondaryContainer
 
                                 Behavior on opacity {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on anchors.bottomMargin {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on anchors.rightMargin {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                                 Behavior on iconSize {
-                                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
                             }
                         }

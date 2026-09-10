@@ -1,6 +1,6 @@
 pkgname="sleex"
-pkgver="1.36"
-pkgrel="1"
+pkgver="1.39"
+pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -27,13 +27,13 @@ depends=(
   # Tools
   'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils' 'howdy-git'
   # Widgets
-  'fuzzel' 'nm-connection-editor' 'quickshell-git' 'swww' 'translate-shell' 'wlogout'
+  'fuzzel' 'nm-connection-editor' 'quickshell' 'swww' 'translate-shell' 'wlogout'
   # User config
   "sleex-user-config"
   # Artworks
   "sleex-artworks"
-  # Sleex UI Kit
-  "sleex-ui-kit"
+  # Sleex packages
+  "sleex-ui-kit" "sleex-welcome-screen"
 )
 optdepends=(
   "hyprwayland-scanner: Wayland protocol scanner for Hyprland"

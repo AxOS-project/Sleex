@@ -39,6 +39,7 @@ MouseArea {
     }
 
     Loader {
+        asynchronous: true
         id: menu
         function open() {
             menu.active = true;
@@ -74,6 +75,7 @@ MouseArea {
     }
 
     Loader {
+        asynchronous: true
         active: Config.options.bar.tray.monochromeIcons
         anchors.fill: trayIcon
         sourceComponent: Item {

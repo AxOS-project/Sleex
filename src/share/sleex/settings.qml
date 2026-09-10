@@ -186,6 +186,7 @@ ApplicationWindow {
                 radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 Loader {
+        asynchronous: true
                     id: pageLoader
                     anchors.fill: parent
                     source: root.pages[0].component

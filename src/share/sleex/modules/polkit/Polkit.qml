@@ -13,6 +13,7 @@ Scope {
     id: root
     
     Loader {
+        asynchronous: true
         active: PolkitService.active
         sourceComponent: Variants {
             model: Quickshell.screens

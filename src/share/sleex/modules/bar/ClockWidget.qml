@@ -63,11 +63,8 @@ Item {
             anchors.left: true
 
             margins {
-                left: root.mapToGlobal(Qt.point(
-                    (root.width - datePopup.implicitWidth) / 2,
-                    0
-                )).x
-                top: root.mapToGlobal(Qt.point(0, root.height)).y - 30 
+                left: root.QsWindow?.mapFromItem(root, (root.width - datePopup.implicitWidth) / 2, 0).x ?? 0
+                top: (root.QsWindow?.mapFromItem(root, 0, root.height).y ?? 0) - 30 
             }
 
             mask: Region {

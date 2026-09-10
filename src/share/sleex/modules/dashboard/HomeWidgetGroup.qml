@@ -60,6 +60,7 @@ Rectangle {
                 Repeater {
                     model: root.widgetsForColumn(columnDelegate.columnNumber)
                     delegate: Loader {
+        asynchronous: true
                         id: widgetLoader
                         required property var modelData
                         
