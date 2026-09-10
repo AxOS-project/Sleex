@@ -45,7 +45,7 @@ Singleton {
         command: ["bash", "-c", "pacman -Q axinstall 2>/dev/null || echo 'not-installed'"]
         stdout: SplitParser {
             onRead: (data) => {
-                if (data.trim() == "not-installed") {
+                if (data.trim() !== "not-installed") {
                     root.onLiveEnvironment = true
                 }
             }
