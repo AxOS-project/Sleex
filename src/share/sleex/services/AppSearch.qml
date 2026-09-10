@@ -79,7 +79,14 @@ Singleton {
             && !iconName.includes("image-missing");
     }
 
+    property var _iconCache: ({})
+
     function guessIcon(str) {
+        if (_iconCache[str] !== undefined) return _iconCache[str];
+        return _iconCache[str] = _guessIconUncached(str);
+    }
+
+    function _guessIconUncached(str) {
         if (!str || str.length == 0) return "image-missing";
 
         // Normal substitutions
