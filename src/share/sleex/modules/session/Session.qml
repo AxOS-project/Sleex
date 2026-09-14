@@ -214,110 +214,65 @@ Scope {
         id: powerConfirmLoader
         active: false
         property string pendingAction: "poweroff"
+        property int secondsLeft: 60
 
-        sourceComponent: PanelWindow {
-            id: powerConfirmRoot
-            visible: powerConfirmLoader.active
-            screen: root.focusedScreen
-            property int secondsLeft: 60
+        function cancel() {
+            countdownTimer.stop()
+            powerConfirmLoader.active = false
+        }
 
-            function cancel() {
-                countdownTimer.stop()
-                powerConfirmLoader.active = false
+        function confirm() {
+            countdownTimer.stop()
+            powerConfirmLoader.active = false
+            const cmd = powerConfirmLoader.pendingAction === "reboot"
+                ? "loginctl reboot || systemctl reboot"
+                : "loginctl poweroff || systemctl poweroff"
+            Quickshell.execDetached(["sh", "-c", cmd])
+        }
+
+        onActiveChanged: if (active) secondsLeft = 60
+
+        // One shared timer, not one per screen - otherwise each PanelWindow
+        // instance from the Variants below would run its own independent
+        // countdown, drifting apart and each firing confirm() on its own.
+        Timer {
+            id: countdownTimer
+            interval: 1000
+            repeat: true
+            running: powerConfirmLoader.active
+            onTriggered: {
+                powerConfirmLoader.secondsLeft -= 1
+                if (powerConfirmLoader.secondsLeft <= 0) powerConfirmLoader.confirm()
             }
+        }
 
-            function confirm() {
-                countdownTimer.stop()
-                powerConfirmLoader.active = false
-                const cmd = powerConfirmLoader.pendingAction === "reboot"
-                    ? "loginctl reboot || systemctl reboot"
-                    : "loginctl poweroff || systemctl poweroff"
-                Quickshell.execDetached(["sh", "-c", cmd])
-            }
+        // Mirrors Polkit.qml: shown on every screen via Variants, actual
+        // dialog content lives in its own file (PowerConfirmContent.qml).
+        sourceComponent: Variants {
+            model: Quickshell.screens
+            delegate: PanelWindow {
+                id: powerConfirmRoot
+                required property var modelData
+                screen: modelData
+                visible: powerConfirmLoader.active
 
-            onVisibleChanged: if (visible) secondsLeft = 60
+                anchors { top: true; left: true; right: true; bottom: true }
+                color: "transparent"
+                WlrLayershell.namespace: "quickshell:power-confirm"
+                // Exclusive doesn't make sense once this shows on every
+                // screen at once via Variants (only one surface can truly
+                // hold an exclusive grab) - matches Polkit.qml's own choice
+                // here for the same reason.
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+                WlrLayershell.layer: WlrLayer.Overlay
+                exclusionMode: ExclusionMode.Ignore
 
-            anchors { top: true; left: true; right: true; bottom: true }
-            color: "transparent"
-            WlrLayershell.namespace: "quickshell:power-confirm"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-            WlrLayershell.layer: WlrLayer.Overlay
-            exclusionMode: ExclusionMode.Ignore
-
-            Timer {
-                id: countdownTimer
-                interval: 1000
-                repeat: true
-                running: powerConfirmRoot.visible
-                onTriggered: {
-                    powerConfirmRoot.secondsLeft -= 1
-                    if (powerConfirmRoot.secondsLeft <= 0) powerConfirmRoot.confirm()
-                }
-            }
-
-            WindowDialog {
-                // Fills the whole PanelWindow: WindowDialog is its own scrim
-                // (root.height/width need to be real for its internal
-                // vertical-centering math, not just anchors.centerIn) and it
-                // already handles Escape + click-outside-to-dismiss itself.
-                anchors.fill: parent
-                backgroundWidth: 420
-                show: false
-                Component.onCompleted: show = true
-                onDismiss: powerConfirmRoot.cancel()
-
-                MaterialSymbol {
-                    Layout.alignment: Qt.AlignHCenter
-                    iconSize: 32
-                    text: "power_settings_new"
-                    color: Appearance.colors.colSecondary
-                }
-
-                WindowDialogTitle {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    text: powerConfirmLoader.pendingAction === "reboot" ? qsTr("Restart") : qsTr("Power Off")
-                }
-
-                WindowDialogParagraph {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    text: powerConfirmLoader.pendingAction === "reboot"
-                        ? qsTr("The system will restart automatically in %1 seconds.").arg(powerConfirmRoot.secondsLeft)
-                        : qsTr("The system will power off automatically in %1 seconds.").arg(powerConfirmRoot.secondsLeft)
-                }
-
-                WindowDialogButtonRow {
-                    Item { Layout.fillWidth: true }
-                    DialogButton {
-                        id: cancelButton
-                        buttonText: qsTr("Cancel")
-                        onClicked: powerConfirmRoot.cancel()
-                        colBackground: cancelButton.focus ? Appearance.colors.colPrimaryContainer : "transparent"
-                        KeyNavigation.right: confirmButton
-                        // RippleButton (what DialogButton is built on) doesn't
-                        // activate on Enter/Return by default.
-                        Keys.onPressed: (event) => {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                powerConfirmRoot.cancel()
-                                event.accepted = true
-                            }
-                        }
-                    }
-                    DialogButton {
-                        id: confirmButton
-                        focus: true // matches Debian/GNOME: Enter confirms, since the power button press was already the deliberate step
-                        buttonText: powerConfirmLoader.pendingAction === "reboot" ? qsTr("Restart") : qsTr("Power Off")
-                        onClicked: powerConfirmRoot.confirm()
-                        colBackground: confirmButton.focus ? Appearance.colors.colPrimaryContainer : "transparent"
-                        KeyNavigation.left: cancelButton
-                        Keys.onPressed: (event) => {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                powerConfirmRoot.confirm()
-                                event.accepted = true
-                            }
-                        }
-                    }
+                PowerConfirmContent {
+                    anchors.fill: parent
+                    pendingAction: powerConfirmLoader.pendingAction
+                    secondsLeft: powerConfirmLoader.secondsLeft
+                    onCancelRequested: powerConfirmLoader.cancel()
+                    onConfirmRequested: powerConfirmLoader.confirm()
                 }
             }
         }
