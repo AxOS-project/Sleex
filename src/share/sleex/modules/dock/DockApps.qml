@@ -24,6 +24,12 @@ Item {
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show
 
+    // Only refresh the dock when the pinned list's content actually changes (fix animation happening on every desktop change)
+    property var pinnedAppsStable: []
+    readonly property string pinnedAppsKey: JSON.stringify(Config.options?.dock.pinnedApps ?? [])
+    onPinnedAppsKeyChanged: pinnedAppsStable = Config.options?.dock.pinnedApps ?? []
+    Component.onCompleted: pinnedAppsStable = Config.options?.dock.pinnedApps ?? []
+
     Layout.fillHeight: true
     Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
     implicitWidth: listView.implicitWidth
@@ -48,7 +54,7 @@ Item {
                 var map = new Map();
 
                 // Pinned apps
-                const pinnedApps = Config.options?.dock.pinnedApps ?? [];
+                const pinnedApps = root.pinnedAppsStable;
                 for (const appId of pinnedApps) {
                     if (!map.has(appId.toLowerCase())) map.set(appId.toLowerCase(), ({
                         pinned: true,
