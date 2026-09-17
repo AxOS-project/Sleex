@@ -6,7 +6,7 @@
 }
 {
     "label" : "hibernate",
-    "action" : "/usr/share/sleex/scripts/power-action.sh hibernate",
+    "action" : "qs -p /usr/share/sleex ipc call powerAction hibernate",
     "text" : "save",
     "keybind" : "h"
 }
@@ -18,19 +18,19 @@
 }
 {
     "label" : "shutdown",
-    "action" : "/usr/share/sleex/scripts/power-action.sh poweroff",
+    "action" : "qs -p /usr/share/sleex ipc call powerAction poweroff",
     "text" : "power_settings_new",
     "keybind" : "s"
 }
 {
     "label" : "suspend",
-    "action" : "/usr/share/sleex/scripts/power-action.sh suspend",
+    "action" : "qs -p /usr/share/sleex ipc call powerAction suspend",
     "text" : "bedtime",
     "keybind" : "u"
 }
 {
     "label" : "reboot",
-    "action" : "/usr/share/sleex/scripts/power-action.sh reboot",
+    "action" : "qs -p /usr/share/sleex ipc call powerAction reboot",
     "text" : "restart_alt",
     "keybind" : "r"
 }

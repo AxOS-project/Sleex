@@ -1,5 +1,6 @@
 import qs
 import qs.modules.common
+import qs.services
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
@@ -113,7 +114,7 @@ Scope {
                             id: sessionSleep
                             buttonIcon: "dark_mode"
                             buttonText: qsTr("Sleep")
-                            onClicked:  { Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "suspend"]); sessionRoot.hide() }
+                            onClicked:  { PowerActions.suspend(); sessionRoot.hide() }
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionLock
                             KeyNavigation.right: sessionLogout
@@ -148,7 +149,7 @@ Scope {
                             id: sessionHibernate
                             buttonIcon: "downloading"
                             buttonText: qsTr("Hibernate")
-                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "hibernate"]);
+                            onClicked: PowerActions.hibernate();
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.up: sessionLock
                             KeyNavigation.right: sessionShutdown
@@ -157,7 +158,7 @@ Scope {
                             id: sessionShutdown
                             buttonIcon: "power_settings_new"
                             buttonText: qsTr("Shutdown")
-                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "poweroff"])
+                            onClicked: PowerActions.poweroff()
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionHibernate
                             KeyNavigation.right: sessionReboot
@@ -167,7 +168,7 @@ Scope {
                             id: sessionReboot
                             buttonIcon: "restart_alt"
                             buttonText: qsTr("Reboot")
-                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "reboot"]);
+                            onClicked: PowerActions.reboot();
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionShutdown
                             KeyNavigation.right: root.hasSystemd ? sessionFirmwareReboot : null
@@ -224,7 +225,7 @@ Scope {
         function confirm() {
             countdownTimer.stop()
             powerConfirmLoader.active = false
-            Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", powerConfirmLoader.pendingAction])
+            PowerActions.run(powerConfirmLoader.pendingAction)
         }
 
         onActiveChanged: if (active) secondsLeft = 60
