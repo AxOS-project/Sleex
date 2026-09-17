@@ -34,11 +34,21 @@ Singleton {
             const nameMatch = textOsRelease.match(/^NAME="(.+?)"/m)
             distroName = prettyNameMatch ? prettyNameMatch[1] : (nameMatch ? nameMatch[1].replace(/Linux/i, "").trim() : "Unknown")
 
+            const idMatch = textOsRelease.match(/^ID=(.+)$/m)
+            const distroIdName = idMatch ? idMatch[1].replace(/"/g, "").trim() : ""
+
             if (distroName == "AxOS") axosVersion = axosVersionFile.text()
 
             // Extract the OS release version (VERSION field, fallback to "Unknown")
             const versionMatch = textOsRelease.match(/^VERSION="(.+?)"/m)
             osReleaseVersion = versionMatch ? versionMatch[1] : "Unknown"
+
+            // Kira keeps its version in /etc/kira-release, not os-release
+            if (distroIdName == "kira") {
+                kiraReleaseFile.reload()
+                const kiraMatch = kiraReleaseFile.text().match(/^KIRA_BASE_VERSION=(.+)$/m)
+                if (kiraMatch) osReleaseVersion = kiraMatch[1].trim()
+            }
 
             // Extract the ID (LOGO field, fallback to "unknown")
             const logoMatch = textOsRelease.match(/^LOGO=(.+)$/m)
@@ -64,7 +74,7 @@ Singleton {
 
     Process {
         id: getSleexVersion
-        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null"]
+        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null || flux list 2>/dev/null | grep -E '^sleex(-git)? '"]
         stdout: SplitParser {
             onRead: data => {
                 const versionMatch = data.match(/^sleex(?:-git)?\s+(\S+)/);
@@ -81,5 +91,10 @@ Singleton {
     FileView {
         id: axosVersionFile
         path: "/etc/axos-version"
+    }
+
+    FileView {
+        id: kiraReleaseFile
+        path: "/etc/kira-release"
     }
 }
