@@ -178,7 +178,7 @@ Singleton {
             property int animationDuration: 374
             property string ghUsername: "levraiardox"
             property string avatarPath: "file:///usr/share/pixmaps/sleex/1024px/white.png"
-            property string userDesc: "Today is a good day to have a good day!"
+            property string userDesc: "A Linux distribution you actually understand"
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
