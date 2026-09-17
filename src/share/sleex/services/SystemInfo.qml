@@ -74,10 +74,10 @@ Singleton {
 
     Process {
         id: getSleexVersion
-        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null || flux list 2>/dev/null | grep -E '^sleex(-git)? '"]
+        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null || flux list -a 2>/dev/null | grep -E '^(kira-)?sleex(-git)? '"]
         stdout: SplitParser {
             onRead: data => {
-                const versionMatch = data.match(/^sleex(?:-git)?\s+(\S+)/);
+                const versionMatch = data.match(/^(?:kira-)?sleex(?:-git)?\s+(\S+)/);
                 sleexVersion = versionMatch ? versionMatch[1].trim() : "Unknown";
             }
         }
