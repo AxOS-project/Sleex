@@ -167,7 +167,7 @@ Scope {
                             id: sessionReboot
                             buttonIcon: "restart_alt"
                             buttonText: qsTr("Reboot")
-                            onClicked: Quickshell.execDetached(["reboot"]);
+                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "reboot"]);
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionShutdown
                             KeyNavigation.right: root.hasSystemd ? sessionFirmwareReboot : null
