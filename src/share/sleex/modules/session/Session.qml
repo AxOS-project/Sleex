@@ -113,7 +113,7 @@ Scope {
                             id: sessionSleep
                             buttonIcon: "dark_mode"
                             buttonText: qsTr("Sleep")
-                            onClicked:  { Quickshell.execDetached(["sh", "-c", "loginctl suspend || systemctl suspend"]); sessionRoot.hide() }
+                            onClicked:  { Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "suspend"]); sessionRoot.hide() }
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionLock
                             KeyNavigation.right: sessionLogout
@@ -148,7 +148,7 @@ Scope {
                             id: sessionHibernate
                             buttonIcon: "downloading"
                             buttonText: qsTr("Hibernate")
-                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl hibernate || systemctl hibernate"]);
+                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "hibernate"]);
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.up: sessionLock
                             KeyNavigation.right: sessionShutdown
@@ -157,7 +157,7 @@ Scope {
                             id: sessionShutdown
                             buttonIcon: "power_settings_new"
                             buttonText: qsTr("Shutdown")
-                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl poweroff || systemctl poweroff"])
+                            onClicked: Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", "poweroff"])
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionHibernate
                             KeyNavigation.right: sessionReboot
@@ -224,10 +224,7 @@ Scope {
         function confirm() {
             countdownTimer.stop()
             powerConfirmLoader.active = false
-            const cmd = powerConfirmLoader.pendingAction === "reboot"
-                ? "loginctl reboot || systemctl reboot"
-                : "loginctl poweroff || systemctl poweroff"
-            Quickshell.execDetached(["sh", "-c", cmd])
+            Quickshell.execDetached(["/usr/share/sleex/scripts/power-action.sh", powerConfirmLoader.pendingAction])
         }
 
         onActiveChanged: if (active) secondsLeft = 60
