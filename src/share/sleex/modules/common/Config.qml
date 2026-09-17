@@ -176,7 +176,7 @@ Singleton {
             property real dashboardScale: 1.0 // Overall scale of the dashboard
             property string animationDirection: "down" // "up", "down", "left", "right"
             property int animationDuration: 374
-            property string ghUsername: "levraiardox"
+            property string ghUsername: "oxoghost01"
             property string avatarPath: "file:///usr/share/pixmaps/sleex/1024px/white.png"
             property string userDesc: "A Linux distribution you actually understand"
             property bool enableWeather: false
