@@ -4,13 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Portable session power actions: suspend, poweroff, reboot, hibernate.
-//
-// Real systemd's loginctl has never had these verbs (only systemctl does -
-// confirmed against systemd's own src/login/loginctl.c); elogind is the one
-// that added them as its own extension, and systemctl itself doesn't exist
-// at all outside systemd. So the only thing both implementations expose
-// identically is login1's own D-Bus Manager methods.
 Singleton {
     id: root
 
@@ -37,9 +30,6 @@ Singleton {
     function reboot() { root.run("reboot") }
     function hibernate() { root.run("hibernate") }
 
-    // Lets non-QML processes (hypridle, wlogout) trigger the same portable
-    // logic, the same way GlobalStates.qml exposes "lock" for hypridle's
-    // own lock_cmd - qs -p /usr/share/sleex ipc call powerAction poweroff
     IpcHandler {
         target: "powerAction"
 
