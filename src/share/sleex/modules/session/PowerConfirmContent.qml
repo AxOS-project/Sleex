@@ -13,7 +13,7 @@ Item {
     signal cancelRequested()
     signal confirmRequested()
 
-    Keys.onPressed: event => { // Esc to cancel, matches PolkitContent
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
             root.cancelRequested();
         }
@@ -70,8 +70,6 @@ Item {
                 onClicked: root.cancelRequested()
                 colBackground: cancelButton.focus ? Appearance.colors.colPrimaryContainer : "transparent"
                 KeyNavigation.right: confirmButton
-                // RippleButton (what DialogButton is built on) doesn't
-                // activate on Enter/Return by default.
                 Keys.onPressed: (event) => {
                     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                         root.cancelRequested()
@@ -81,7 +79,7 @@ Item {
             }
             DialogButton {
                 id: confirmButton
-                focus: true // matches Debian/GNOME: Enter confirms, since the power button press was already the deliberate step
+                focus: true
                 buttonText: root.pendingAction === "reboot" ? qsTr("Restart") : qsTr("Power Off")
                 onClicked: root.confirmRequested()
                 colBackground: confirmButton.focus ? Appearance.colors.colPrimaryContainer : "transparent"

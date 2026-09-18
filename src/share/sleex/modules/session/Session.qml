@@ -230,9 +230,6 @@ Scope {
 
         onActiveChanged: if (active) secondsLeft = 60
 
-        // One shared timer, not one per screen - otherwise each PanelWindow
-        // instance from the Variants below would run its own independent
-        // countdown, drifting apart and each firing confirm() on its own.
         Timer {
             id: countdownTimer
             interval: 1000
@@ -244,8 +241,6 @@ Scope {
             }
         }
 
-        // Mirrors Polkit.qml: shown on every screen via Variants, actual
-        // dialog content lives in its own file (PowerConfirmContent.qml).
         sourceComponent: Variants {
             model: Quickshell.screens
             delegate: PanelWindow {
@@ -257,10 +252,6 @@ Scope {
                 anchors { top: true; left: true; right: true; bottom: true }
                 color: "transparent"
                 WlrLayershell.namespace: "quickshell:power-confirm"
-                // Exclusive doesn't make sense once this shows on every
-                // screen at once via Variants (only one surface can truly
-                // hold an exclusive grab) - matches Polkit.qml's own choice
-                // here for the same reason.
                 WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
                 WlrLayershell.layer: WlrLayer.Overlay
                 exclusionMode: ExclusionMode.Ignore
