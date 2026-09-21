@@ -87,12 +87,15 @@ update_wallpaper_config() {
 
     if [[ -f "$DB_CONFIG" ]]; then
         sqlite3 "$DB_CONFIG" "UPDATE sleex_settings SET config_json = json_set(config_json, '$.wallpaperPath', '$wallpaper_path') WHERE module='background';"
+        touch "$XDG_CONFIG_HOME/sleex/.db_trigger" 2>/dev/null
         
-        # Try to find the running qs instance for sleex (it could be in /usr/share/sleex or local src/)
-        local qs_pid=$(pgrep -f "qs.*sleex" | head -n 1)
-        if [[ -n "$qs_pid" ]]; then
-            qs ipc --pid "$qs_pid" call background forceWallpaperReload "$wallpaper_path" 2>/dev/null
-            qs ipc --pid "$qs_pid" call settings reloadWallpaper "$wallpaper_path" 2>/dev/null
+        # Send IPC to all running quickshell instances
+        local qs_pids=$(pgrep -x qs)
+        if [[ -n "$qs_pids" ]]; then
+            for pid in $qs_pids; do
+                qs ipc --pid "$pid" call background forceWallpaperReload "$wallpaper_path" 2>/dev/null
+                qs ipc --pid "$pid" call settings reloadWallpaper "$wallpaper_path" 2>/dev/null
+            done
         else
             qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$wallpaper_path" 2>/dev/null
             qs -p /usr/share/sleex/settings.qml ipc call settings reloadWallpaper "$wallpaper_path" 2>/dev/null
