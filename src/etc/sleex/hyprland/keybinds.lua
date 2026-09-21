@@ -63,19 +63,19 @@ hl.bind("CTRL+SUPER+T", hl.dsp.exec_cmd("/usr/share/sleex/scripts/colors/switchw
 
 hl.bind(
 	"SUPER+SHIFT+T",
-	hl.dsp.exec_cmd('grim -g "$(slurp $SLURP_ARGS)" "tmp.png" && tesseract "tmp.png" - | wl-copy && rm "tmp.png"'),
+	hl.dsp.exec_cmd("qs -p /usr/share/sleex/shell.qml ipc call screenshot onOpenOcr"),
 	{ desc = "Tools: Screen snip to text >> clipboard" }
 )
 hl.bind("SUPER+SHIFT+X", hl.dsp.exec_cmd("hyprpicker -a"), { desc = "Tools: Pick color (Hex) >> clipboard" })
-hl.bind("Print", hl.dsp.exec_cmd("grim - | wl-copy"), { locked = true, desc = "Tools: Screenshot >> clipboard" })
+hl.bind("Print", hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh --full"), { locked = true, desc = "Tools: Screenshot >> clipboard" })
 hl.bind(
 	"CTRL+Print",
 	hl.dsp.exec_cmd(
-		"mkdir -p ~/Pictures/Screenshots && /usr/share/sleex/scripts/grimblast.sh copysave screen ~/Pictures/Screenshots/Screenshot_\"$(date '+%Y-%m-%d_%H.%M.%S')\".png"
+		"mkdir -p ~/Pictures/Screenshots && /usr/share/sleex/scripts/grimblast.sh --full --output ~/Pictures/Screenshots/Screenshot_\"$(date '+%Y-%m-%d_%H.%M.%S')\".png"
 	),
 	{ locked = true, desc = "Tools: Screenshot >> clipboard & file" }
 )
-hl.bind("SUPER+SHIFT+ALT+S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'), { desc = "Tools: Screen snip >> edit" })
+hl.bind("SUPER+SHIFT+ALT+S", hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh --freeze --edit copy area"), { desc = "Tools: Screen snip >> edit" })
 hl.bind(
 	"SUPER+SHIFT+S",
 	hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh --freeze copy area"),
@@ -85,17 +85,17 @@ hl.bind(
 -- Recording scripts
 hl.bind(
 	"SUPER+ALT+R",
-	hl.dsp.exec_cmd("/usr/share/sleex/scripts/record-script.sh"),
+	hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh"),
 	{ desc = "Tools: Record region (no sound)" }
 )
 hl.bind(
 	"CTRL+ALT+R",
-	hl.dsp.exec_cmd("/usr/share/sleex/scripts/record-script.sh --fullscreen"),
+	hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh --record"),
 	{ desc = "Tools: Record screen (no sound)" }
 )
 hl.bind(
 	"SUPER+SHIFT+ALT+R",
-	hl.dsp.exec_cmd("/usr/share/sleex/scripts/record-script.sh --fullscreen-sound"),
+	hl.dsp.exec_cmd("/usr/share/sleex/scripts/grimblast.sh --record"),
 	{ desc = "Tools: Record screen (with sound)" }
 )
 
