@@ -8,6 +8,7 @@ require("hyprland.execs")
 require("hyprland.general")
 require("hyprland.rules")
 require("hyprland.keybinds")
+require("hyprland.env")
 
 -- Custom configurations --
 safe_load("~/.config/sleex/custom/env")
