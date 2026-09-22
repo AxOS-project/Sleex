@@ -53,6 +53,10 @@ public:
 
     void setX(int x) { if (m_x != x) { m_x = x; emit changed(); } }
     void setY(int y) { if (m_y != y) { m_y = y; emit changed(); } }
+    void setWidth(int w) { if (m_width != w) { m_width = w; emit changed(); } }
+    void setHeight(int h) { if (m_height != h) { m_height = h; emit changed(); } }
+    void setScale(double scale) { if (m_scale != scale) { m_scale = scale; emit changed(); } }
+    void setMirrorOf(const QString &mirror) { if (m_mirrorOf != mirror) { m_mirrorOf = mirror; emit changed(); } }
 
     void setAll(const QString     &name,
                 int                x,
@@ -133,6 +137,7 @@ public:
     Q_INVOKABLE void applyScale(const QString &name, double scale);
     Q_INVOKABLE void applyMode(const QString &name, const QString &mode);
     Q_INVOKABLE void applyMirror(const QString &name, const QString &mirrorTarget);
+    Q_INVOKABLE void applyChanges(const QVariantList &changes);
     Q_INVOKABLE void resetPositions();
 
 signals:
@@ -152,6 +157,7 @@ private:
     void         setBusy(bool b);
     void         setError(const QString &e);
     MonitorInfo *findMonitor(const QString &name);
+    void         saveMonitorsConfig() const;
 
     void applyRule(const QString &name,
                    int            newW,
