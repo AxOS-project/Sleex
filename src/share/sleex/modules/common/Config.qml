@@ -170,6 +170,10 @@ Singleton {
             property bool enableQuote: true
             property int quoteSource: 0 // 0 for "local", 1 for "online"
             property bool showDesktopIcons: false
+            property bool enableWeatherWidget: true
+            property bool fixedWeatherPosition: false
+            property real weatherX: 0
+            property real weatherY: 0
         }
 
         property JsonObject dashboard: JsonObject {

@@ -18,6 +18,8 @@ Scope {
     readonly property bool fixedClockPosition: Config.options.background.fixedClockPosition
     readonly property real fixedClockX: Config.options.background.clockX
     readonly property real fixedClockY: Config.options.background.clockY
+    
+    readonly property bool fixedWeatherPosition: Config.options.background.fixedWeatherPosition ?? false
 
     Variants {
         model: Quickshell.screens
@@ -27,6 +29,10 @@ Scope {
             property string wallpaperPath: Config.options.background.wallpaperPath
             property real clockX: Config.options.background.clockX !== 0 ? Config.options.background.clockX : modelData.width / 2
             property real clockY: Config.options.background.clockY !== 0 ? Config.options.background.clockY : modelData.height / 2
+            
+            property real weatherX: (Config.options.background.weatherX && Config.options.background.weatherX !== 0) ? Config.options.background.weatherX : modelData.width / 2
+            property real weatherY: (Config.options.background.weatherY && Config.options.background.weatherY !== 0) ? Config.options.background.weatherY : modelData.height / 2 + 200
+
             property var textHorizontalAlignment: clockX < screen.width / 3 ? Text.AlignLeft : (clockX > screen.width * 2 / 3 ? Text.AlignRight : Text.AlignHCenter)
             property color dominantColor: Appearance.colors.colPrimary
             property color colText: Config.options.background.clockMode == "light" ? Appearance.colors.colPrimary : ColorUtils.colorWithLightness(Appearance.colors.colPrimary, 0.12)
@@ -183,6 +189,18 @@ Scope {
                 textHorizontalAlignment: bgRoot.textHorizontalAlignment
                 onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
                 onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
+            }
+
+            WeatherWidget {
+                id: weatherWidget
+                z: 1
+                screenWidth: bgRoot.screen.width
+                screenHeight: bgRoot.screen.height
+                widgetX: bgRoot.weatherX
+                widgetY: bgRoot.weatherY
+                fixedPosition: root.fixedWeatherPosition
+                onPositionChanged: function(x, y) { bgRoot.weatherX = x; bgRoot.weatherY = y }
+                onFixedPositionToggled: function() { Config.options.background.fixedWeatherPosition = !root.fixedWeatherPosition }
             }
 
             Watermark { visibleWatermark: Config.options.background.showWatermark }
