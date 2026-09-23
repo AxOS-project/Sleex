@@ -60,6 +60,7 @@ ShellRoot {
         Cliphist.refresh()
         Idle.init();
         NightLight.load()
+        SuspendFader.start()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }
