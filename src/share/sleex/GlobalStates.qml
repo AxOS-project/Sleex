@@ -17,6 +17,7 @@ Singleton {
     property bool superReleaseMightTrigger: true
     property bool wppselectorOpen: false
     property bool screenLocked: false
+    property bool desktopWidgetKeyboardFocus: false
     property bool tutorialMode: false
 
     property real screenZoom: 1

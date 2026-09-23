@@ -8,75 +8,30 @@ import SleexUiKit.Widgets
 import qs.services
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import "../common/widgets/widgetCanvas"
 
-Item {
+AbstractWidget {
     id: root
 
     required property real screenWidth
     required property real screenHeight
-    required property real widgetX
-    required property real widgetY
-    required property bool fixedPosition
 
     signal positionChanged(real newX, real newY)
     signal fixedPositionToggled()
 
     visible: Config.options.background.enableWeatherWidget ?? true
 
-    property real startX: 0
-    property real startY: 0
+    x: (Config.options.background.weatherX || (screenWidth / 2)) - implicitWidth / 2
+    y: (Config.options.background.weatherY || (screenHeight / 2)) - implicitHeight / 2
+    draggable: true
 
-    anchors {
-        left: parent.left
-        top: parent.top
-        leftMargin: widgetX - implicitWidth / 2
-        topMargin: widgetY - implicitHeight / 2
+    function commitPosition() {
+        Config.options.background.weatherX = root.x + root.implicitWidth / 2
+        Config.options.background.weatherY = root.y + root.implicitHeight / 2
     }
 
     implicitWidth: card.width
-    implicitHeight: card.height
-
-    DragHandler {
-        enabled: !root.fixedPosition
-        id: dragHandler
-        cursorShape: active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-
-        onActiveChanged: {
-            if (active) {
-                startX = widgetX
-                startY = widgetY
-            } else {
-                Config.options.background.weatherX = widgetX
-                Config.options.background.weatherY = widgetY
-            }
-        }
-
-        onTranslationChanged: {
-            let newX = startX + translation.x
-            let newY = startY + translation.y
-            let halfWidth = implicitWidth / 2
-            let halfHeight = implicitHeight / 2
-
-            newX = Math.max(halfWidth, Math.min(screenWidth - halfWidth, newX))
-            newY = Math.max(halfHeight, Math.min(screenHeight - halfHeight, newY))
-
-            positionChanged(newX, newY)
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.RightButton
-        propagateComposedEvents: true
-        cursorShape: Qt.ArrowCursor
-
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.RightButton) {
-                fixedPositionToggled()
-            }
-        }
-    }
-    
+    implicitHeight: card.height    
     function materialSymbolForCode(code) {
         const c = parseInt(code);
         if (isNaN(c)) return "cloud";
@@ -99,8 +54,6 @@ Item {
         height: 140
         radius: Appearance.rounding.large
         color: Appearance.colors.colLayer0
-        border.color: !root.fixedPosition ? "red" : "transparent"
-        border.width: !root.fixedPosition ? 3 : 0
 
         StyledRectangularShadow {
             target: card

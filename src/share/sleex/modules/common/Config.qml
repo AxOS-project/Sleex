@@ -159,7 +159,6 @@ Singleton {
             property string clockMode: "light" // "dark" or "light"
             property real clockX: 1395
             property real clockY: 355
-            property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
             property bool showWatermark: true // Whether to show the watermark
             property string wallpaperPath: "/usr/share/backgrounds/sleex/twentySix.jpg"
             property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
@@ -171,9 +170,10 @@ Singleton {
             property int quoteSource: 0 // 0 for "local", 1 for "online"
             property bool showDesktopIcons: false
             property bool enableWeatherWidget: true
-            property bool fixedWeatherPosition: false
             property real weatherX: 0
             property real weatherY: 0
+            property bool widgetsLocked: false
+            property bool showGrid: true
         }
 
         property JsonObject dashboard: JsonObject {

@@ -399,28 +399,10 @@ ContentPage {
                 }
 
                 ConfigSwitch {
-                    text: "Fixed clock position"
-                    checked: Config.options.background.fixedClockPosition
-                    onClicked: checked = !checked;
-                    onCheckedChanged: Config.options.background.fixedClockPosition = checked;
-                }
-            }
-
-            ConfigRow {
-                uniform: true
-
-                ConfigSwitch {
                     text: "Show weather"
                     checked: Config.options.background.enableWeatherWidget
                     onClicked: checked = !checked;
                     onCheckedChanged: Config.options.background.enableWeatherWidget = checked;
-                }
-
-                ConfigSwitch {
-                    text: "Fixed weather position"
-                    checked: Config.options.background.fixedWeatherPosition
-                    onClicked: checked = !checked;
-                    onCheckedChanged: Config.options.background.fixedWeatherPosition = checked;
                 }
             }
 

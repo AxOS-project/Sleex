@@ -12,14 +12,12 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Sleex.Utils
+import "../common/widgets/widgetCanvas"
 
 Scope {
     id: root
-    readonly property bool fixedClockPosition: Config.options.background.fixedClockPosition
     readonly property real fixedClockX: Config.options.background.clockX
     readonly property real fixedClockY: Config.options.background.clockY
-    
-    readonly property bool fixedWeatherPosition: Config.options.background.fixedWeatherPosition ?? false
 
     Variants {
         model: Quickshell.screens
@@ -176,48 +174,45 @@ Scope {
                 z: 1
             }
 
-            Loader {
-                active: Config.options.background.enableClock
+            WidgetCanvas {
+                id: widgetCanvas
+                anchors.fill: parent
                 z: 1
-                sourceComponent: Clock {
-                    screenWidth: bgRoot.screen.width
-                    screenHeight: bgRoot.screen.height
-                    clockX: bgRoot.clockX
-                    clockY: bgRoot.clockY
-                    clockSizeMultiplier: Config.options.background.clockSizeMultiplier
-                    fixedClockPosition: root.fixedClockPosition
-                    textColor: bgRoot.colText
-                    textHorizontalAlignment: bgRoot.textHorizontalAlignment
-                    onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
-                    onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
+
+                Loader {
+                    active: Config.options.background.enableClock
+                    z: 1
+                    sourceComponent: Clock {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                        textColor: bgRoot.colText
+                        textHorizontalAlignment: bgRoot.textHorizontalAlignment
+                    }
                 }
-            }
 
-            Loader {
-                active: Config.options.background.enableWeatherWidget
-                z: 1
-                sourceComponent: WeatherWidget {
-                    screenWidth: bgRoot.screen.width
-                    screenHeight: bgRoot.screen.height
-                    widgetX: bgRoot.weatherX
-                    widgetY: bgRoot.weatherY
-                    fixedPosition: root.fixedWeatherPosition
-                    onPositionChanged: function(x, y) { bgRoot.weatherX = x; bgRoot.weatherY = y }
-                    onFixedPositionToggled: function() { Config.options.background.fixedWeatherPosition = !root.fixedWeatherPosition }
+                Loader {
+                    active: Config.options.background.enableWeatherWidget
+                    z: 1
+                    sourceComponent: WeatherWidget {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                    }
                 }
-            }
 
-            Loader {
-                active: Config.options.background.showWatermark
-                sourceComponent: Watermark { visibleWatermark: true }
-            }
-            
-            Loader {
-                active: Config.options.background.enableQuote
-                sourceComponent: Quote { visibleQuote: true }
-            }
+                Loader {
+                    anchors.fill: parent
+                    active: Config.options.background.showWatermark
+                    sourceComponent: Watermark { visibleWatermark: true }
+                }
+                
+                Loader {
+                    anchors.fill: parent
+                    active: Config.options.background.enableQuote
+                    sourceComponent: Quote { visibleQuote: true }
+                }
 
-            PostIt { id: postItManager; z: 50 }
+                PostIt { id: postItManager; z: 50 }
+            }
 
         }
     }

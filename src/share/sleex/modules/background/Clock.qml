@@ -8,16 +8,14 @@ import SleexUiKit.Widgets
 import qs.services
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import "../common/widgets/widgetCanvas"
 
-Item {
+AbstractWidget {
     id: clockWidget
 
     required property real screenWidth
     required property real screenHeight
-    required property real clockX
-    required property real clockY
-    required property real clockSizeMultiplier
-    required property bool fixedClockPosition
+    property real clockSizeMultiplier: Config.options.background.clockSizeMultiplier
     required property color textColor
     required property int textHorizontalAlignment
 
@@ -26,71 +24,17 @@ Item {
 
     visible: Config.options.background.enableClock ?? true
 
-    property real startClockX: 0
-    property real startClockY: 0
+    x: (Config.options.background.clockX || (screenWidth / 2)) - implicitWidth / 2
+    y: (Config.options.background.clockY || (screenHeight / 2)) - implicitHeight / 2
+    draggable: true
 
-    anchors {
-        left: parent.left
-        top: parent.top
-        leftMargin: clockX - implicitWidth / 2
-        topMargin: clockY - implicitHeight / 2
+    function commitPosition() {
+        Config.options.background.clockX = clockWidget.x + clockWidget.implicitWidth / 2
+        Config.options.background.clockY = clockWidget.y + clockWidget.implicitHeight / 2
     }
 
     implicitWidth: clockColumn.implicitWidth
     implicitHeight: clockColumn.implicitHeight
-
-    DragHandler {
-        enabled: !clockWidget.fixedClockPosition
-        id: dragHandler
-        cursorShape: active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-
-        onActiveChanged: {
-            if (active) {
-                startClockX = clockX
-                startClockY = clockY
-            } else {
-                Config.options.background.clockX = clockX
-                Config.options.background.clockY = clockY
-            }
-        }
-
-        onTranslationChanged: {
-            let newX = startClockX + translation.x
-            let newY = startClockY + translation.y
-            let halfWidth = implicitWidth / 2
-            let halfHeight = implicitHeight / 2
-
-            newX = Math.max(halfWidth, Math.min(screenWidth - halfWidth, newX))
-            newY = Math.max(halfHeight, Math.min(screenHeight - halfHeight, newY))
-
-            clockPositionChanged(newX, newY)
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.RightButton
-        propagateComposedEvents: true
-        cursorShape: Qt.ArrowCursor
-
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.RightButton) {
-                fixedPositionToggled()
-            }
-        }
-    }
-
-    Rectangle {
-        visible: !clockWidget.fixedClockPosition
-        anchors.centerIn: parent
-        width: clockColumn.width
-        height: clockColumn.height
-        color: "transparent"
-        border.color: "red"
-        border.width: 3
-        radius: Appearance.rounding.normal
-        z: -1  // Put it behind the text
-    }
     
     ColumnLayout {
         id: clockColumn
@@ -121,7 +65,6 @@ Item {
     }
 
     WheelHandler {
-        enabled: !clockWidget.fixedClockPosition
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         onWheel: (event) => {
             if (event.angleDelta.y < 0) 
