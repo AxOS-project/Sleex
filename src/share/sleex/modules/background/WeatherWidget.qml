@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell.Widgets
 import qs.modules.common
 import SleexUiKit.Widgets
 import qs.services
@@ -48,10 +49,10 @@ AbstractWidget {
         return "cloud";
     }
 
-    Rectangle {
+    ClippingRectangle {
         id: card
-        width: 320
-        height: 140
+        width: 270
+        height: 120
         radius: Appearance.rounding.large
         color: Appearance.colors.colLayer0
 
@@ -63,59 +64,102 @@ AbstractWidget {
         
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 16
-            
-            ColumnLayout {
-                spacing: 4
-                Layout.fillWidth: true
+
+            Rectangle {
+                width: card.height
+                height: width
+                color: Appearance.colors.colPrimary
                 Layout.alignment: Qt.AlignVCenter
+                clip: true
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 5
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 
-                StyledText {
-                    text: Weather.temperature || "--°"
-                    font.pixelSize: 42
-                    font.weight: Font.Bold
-                    color: Appearance.colors.colPrimary
-                }
-                
-                StyledText {
-                    text: Weather.condition || "--"
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colOnLayer0
-                    elide: Text.ElideRight
-                }
-                
-                RowLayout {
-                    spacing: 4
                     MaterialSymbol {
-                        iconSize: 14
-                        text: "location_on"
-                        color: Appearance.colors.colPrimary
-                        opacity: 0.7
+                        Layout.alignment: Qt.AlignHCenter
+                        text: root.materialSymbolForCode(Weather.weatherCode)
+                        iconSize: 42
+                        color: Appearance.colors.colOnPrimary
                     }
+
                     StyledText {
-                        text: Weather.locationName || "--"
-                        font.pixelSize: 14
-                        color: Appearance.colors.colOnLayer0
-                        opacity: 0.7
-                        elide: Text.ElideRight
+                        text: Weather.temperature || "--°"
+                        font.pixelSize: 24
+                        font.weight: Font.Bold
+                        color: Appearance.colors.colOnPrimary
                     }
                 }
             }
-            
+
             Rectangle {
-                width: 64
-                height: 64
-                radius: 32
-                color: Appearance.colors.colPrimary
-                Layout.alignment: Qt.AlignVCenter
-                
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: root.materialSymbolForCode(Weather.weatherCode)
-                    iconSize: 32
-                    color: Appearance.colors.colOnPrimary
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.margins: 8
+                color: "transparent"
+            
+                ColumnLayout {
+                    spacing: 8
+                    anchors.margins: 12
+                    Layout.fillWidth: true
+
+                    StyledText {
+                        text: Weather.locationName || "--"
+                        font.pixelSize: 20
+                        font.weight: Font.Medium
+                        color: Appearance.colors.colOnLayer0
+                    }   
+                    
+                    StyledText {
+                        text: Weather.condition || "--"
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colOnLayer0
+                        opacity: 0.7
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                        height: 20
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                        spacing: 16
+                        opacity: 0.4
+
+                        RowLayout {
+                            spacing: 2
+                            MaterialSymbol {
+                                text: "water_drop"
+                                font.pixelSize: 12
+                                color: Appearance.colors.colOnLayer0
+                            }
+                            StyledText {
+                                text: Weather.humidity ? `${Weather.humidity}%` : "--%"
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: Appearance.colors.colOnLayer0
+                            }
+                        }
+
+                        RowLayout {
+                            spacing: 2
+                            MaterialSymbol {
+                                text: "air"
+                                font.pixelSize: 12
+                                color: Appearance.colors.colOnLayer0
+                            }
+                            StyledText {
+                                text: Weather.windSpeed ? `${Weather.windSpeed} km/h` : "-- km/h"
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: Appearance.colors.colOnLayer0
+                            }
+                        }
+                    }
                 }
             }
         }
