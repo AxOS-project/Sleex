@@ -176,35 +176,47 @@ Scope {
                 z: 1
             }
 
-            Clock {
-                id: clock
+            Loader {
+                active: Config.options.background.enableClock
                 z: 1
-                screenWidth: bgRoot.screen.width
-                screenHeight: bgRoot.screen.height
-                clockX: bgRoot.clockX
-                clockY: bgRoot.clockY
-                clockSizeMultiplier: Config.options.background.clockSizeMultiplier
-                fixedClockPosition: root.fixedClockPosition
-                textColor: bgRoot.colText
-                textHorizontalAlignment: bgRoot.textHorizontalAlignment
-                onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
-                onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
+                sourceComponent: Clock {
+                    screenWidth: bgRoot.screen.width
+                    screenHeight: bgRoot.screen.height
+                    clockX: bgRoot.clockX
+                    clockY: bgRoot.clockY
+                    clockSizeMultiplier: Config.options.background.clockSizeMultiplier
+                    fixedClockPosition: root.fixedClockPosition
+                    textColor: bgRoot.colText
+                    textHorizontalAlignment: bgRoot.textHorizontalAlignment
+                    onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
+                    onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
+                }
             }
 
-            WeatherWidget {
-                id: weatherWidget
+            Loader {
+                active: Config.options.background.enableWeatherWidget
                 z: 1
-                screenWidth: bgRoot.screen.width
-                screenHeight: bgRoot.screen.height
-                widgetX: bgRoot.weatherX
-                widgetY: bgRoot.weatherY
-                fixedPosition: root.fixedWeatherPosition
-                onPositionChanged: function(x, y) { bgRoot.weatherX = x; bgRoot.weatherY = y }
-                onFixedPositionToggled: function() { Config.options.background.fixedWeatherPosition = !root.fixedWeatherPosition }
+                sourceComponent: WeatherWidget {
+                    screenWidth: bgRoot.screen.width
+                    screenHeight: bgRoot.screen.height
+                    widgetX: bgRoot.weatherX
+                    widgetY: bgRoot.weatherY
+                    fixedPosition: root.fixedWeatherPosition
+                    onPositionChanged: function(x, y) { bgRoot.weatherX = x; bgRoot.weatherY = y }
+                    onFixedPositionToggled: function() { Config.options.background.fixedWeatherPosition = !root.fixedWeatherPosition }
+                }
             }
 
-            Watermark { visibleWatermark: Config.options.background.showWatermark }
-            Quote { visibleQuote: Config.options.background.enableQuote }
+            Loader {
+                active: Config.options.background.showWatermark
+                sourceComponent: Watermark { visibleWatermark: true }
+            }
+            
+            Loader {
+                active: Config.options.background.enableQuote
+                sourceComponent: Quote { visibleQuote: true }
+            }
+
             PostIt { id: postItManager; z: 50 }
 
         }
