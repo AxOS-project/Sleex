@@ -169,15 +169,17 @@ Scope {
                 }
             }
 
-            DesktopIcons {
-                id: desktopIcons
-                z: 1
-            }
-
             WidgetCanvas {
                 id: widgetCanvas
                 anchors.fill: parent
                 z: 1
+
+                DesktopIcons {
+                    id: desktopIcons
+                    z: 0
+                    contextMenu: globalDesktopMenu
+                    bgContextMenu: globalBgContextMenu
+                }
 
                 Loader {
                     active: Config.options.background.enableClock
@@ -214,6 +216,17 @@ Scope {
                 PostIt { id: postItManager; z: 50 }
             }
 
+            DesktopIconContextMenu {
+                id: globalDesktopMenu
+                z: 9999
+                onOpenFileRequested: (path, isDir) => desktopIcons.exec(path, isDir)
+                onRenameRequested: (path) => { desktopIcons.editingFilePath = path }
+            }
+
+            BackgroundContextMenu {
+                id: globalBgContextMenu
+                z: 9999
+            }
         }
     }
 }
