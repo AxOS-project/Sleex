@@ -13,7 +13,7 @@ depends=(
   # Cursor
   "bibata-cursor-theme-bin"
   # Fonts & Themes
-  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'kde-material-you-colors' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
+  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
   # Hyprland dependencies
   'hyprutils' 'hyprpicker' 'hyprlang' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
   # QT/KDE dependencies

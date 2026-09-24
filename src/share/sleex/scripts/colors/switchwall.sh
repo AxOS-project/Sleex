@@ -12,19 +12,6 @@ MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$CONFIG_DIR/scripts/terminal/scheme-base.json"
 THUMBNAIL_DIR="/tmp/sleex_thumbnails"
 
-handle_kde_material_you_colors() {
-    local kde_scheme_variant=""
-    case "$type_flag" in
-        scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot)
-            kde_scheme_variant="$type_flag"
-            ;;
-        *)
-            kde_scheme_variant="scheme-tonal-spot"
-            ;;
-    esac
-    "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
-}
-
 pre_process() {
     local mode_flag="$1"
     if [[ "$mode_flag" == "dark" ]]; then

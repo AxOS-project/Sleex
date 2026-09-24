@@ -11,7 +11,7 @@ else
 fi
 
 # Check if config dirs/files exist, if not copy them from /etc/skel
-for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer kde-material-you-colors mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
+for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
     if [ ! -d ~/.config/$dir ]; then
         cp -r /etc/skel/.config/$dir ~/.config/$dir
         chown -R $USER:$USER ~/.config/$dir
