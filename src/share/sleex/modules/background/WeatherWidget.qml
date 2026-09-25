@@ -54,7 +54,7 @@ AbstractWidget {
         width: mainLayout.implicitWidth
         height: mainLayout.implicitHeight
         radius: Appearance.rounding.large
-        color: Appearance.colors.colLayer0
+        color: Appearance.m3colors.m3background
 
         StyledRectangularShadow {
             target: card
