@@ -63,7 +63,7 @@ Singleton {
                 }
             }
         }
-        xhr.open("GET", "https://api.unsplash.com/search/photos?query=" + encodeURIComponent(query) + "&per_page=32&page=" + page);
+        xhr.open("GET", "https://api.unsplash.com/search/photos?query=" + encodeURIComponent(query) + "&per_page=28&page=" + page);
         xhr.setRequestHeader("Authorization", "Client-ID " + root.apiKey);
         xhr.send();
     }
