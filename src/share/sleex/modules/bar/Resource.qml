@@ -117,7 +117,7 @@ Item {
 
                             MaterialSymbol {
                                 text: modelData.icon
-                                color: Appearance.m3colors.m3onSecondaryContainer
+                                color: Appearance.colors.colOnSecondaryContainer
                             }
                             StyledText {
                                 text: modelData.label
@@ -149,7 +149,7 @@ Item {
             value: percentage
             implicitSize: 26
             colSecondary: Appearance.colors.colSecondaryContainer
-            colPrimary: Appearance.m3colors.m3onSecondaryContainer
+            colPrimary: Appearance.colors.colOnSecondaryContainer
             enableAnimation: false
 
             MaterialSymbol {
@@ -157,7 +157,7 @@ Item {
                 fill: 1
                 text: iconName
                 iconSize: Appearance.font.pixelSize.normal
-                color: Appearance.m3colors.m3onSecondaryContainer
+                color: Appearance.colors.colOnSecondaryContainer
             }
 
         }
