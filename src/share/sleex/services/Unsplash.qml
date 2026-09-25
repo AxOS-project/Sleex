@@ -18,6 +18,8 @@ Singleton {
     property string currentQuery: "wallpapers"
     property string currentlyDownloadingId: ""
 
+    property string downloadPath: Config.options.background.wallpaperDownloadPath
+
     Component.onCompleted: loadApiKey()
 
     function loadApiKey() {
@@ -61,19 +63,17 @@ Singleton {
                 }
             }
         }
-        xhr.open("GET", "https://api.unsplash.com/search/photos?query=" + encodeURIComponent(query) + "&per_page=30&page=" + page);
+        xhr.open("GET", "https://api.unsplash.com/search/photos?query=" + encodeURIComponent(query) + "&per_page=32&page=" + page);
         xhr.setRequestHeader("Authorization", "Client-ID " + root.apiKey);
         xhr.send();
     }
 
     function applyWallpaper(id, url) {
         root.currentlyDownloadingId = id;
-        var dir = FileUtils.trimFileProtocol(Directories.pictures) + "/Sleex Wallpapers/Unsplash";
-        Quickshell.execDetached(["mkdir", "-p", dir]);
+        Quickshell.execDetached(["mkdir", "-p", root.downloadPath]);
         
-        var dest = dir + "/" + id + ".jpg";
         var p = downloadProcessComponent.createObject(root, {
-            "dest": dest,
+            "dest": root.downloadPath + "/" + id + ".jpg",
             "url": url,
             "imageId": id
         });

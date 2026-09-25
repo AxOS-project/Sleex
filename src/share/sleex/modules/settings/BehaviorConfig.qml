@@ -324,6 +324,17 @@ ContentPage {
                     }
                 }
             }
+
+            MaterialTextField {
+                id: wallpaperPathField
+                Layout.fillWidth: true
+                placeholderText: "Wallpaper download directory path"
+                text: Config.options.background.wallpaperDownloadPath
+                wrapMode: TextEdit.Wrap
+                onTextChanged: {
+                    Config.options.background.wallpaperDownloadPath = text
+                }
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Sleex.Core
 import SleexUiKit.Functions
+import qs.modules.common
 
 Singleton {
     id: root
@@ -161,6 +162,7 @@ Singleton {
             property real clockY: 355
             property bool showWatermark: true // Whether to show the watermark
             property string wallpaperPath: "/usr/share/backgrounds/sleex/twentySix.jpg"
+            property string wallpaperDownloadPath: FileUtils.trimFileProtocol(Directories.home) + "/Pictures/Sleex Wallpapers/Unsplash"
             property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
             property string wallpaperTransition: "fade"
             property real transitionDuration: 0.5
