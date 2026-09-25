@@ -51,8 +51,8 @@ AbstractWidget {
 
     ClippingRectangle {
         id: card
-        width: 270
-        height: 120
+        width: mainLayout.implicitWidth
+        height: mainLayout.implicitHeight
         radius: Appearance.rounding.large
         color: Appearance.colors.colLayer0
 
@@ -63,19 +63,20 @@ AbstractWidget {
         }
         
         RowLayout {
-            anchors.fill: parent
+            id: mainLayout
+            spacing: 0
 
             Rectangle {
-                width: card.height
-                height: width
+                Layout.preferredWidth: Math.max(120, leftColumn.implicitWidth + 32)
+                Layout.minimumHeight: 120
+                Layout.fillHeight: true
                 color: Appearance.colors.colPrimary
-                Layout.alignment: Qt.AlignVCenter
                 clip: true
 
                 ColumnLayout {
+                    id: leftColumn
                     anchors.centerIn: parent
                     spacing: 5
-                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
@@ -85,6 +86,7 @@ AbstractWidget {
                     }
 
                     StyledText {
+                        Layout.alignment: Qt.AlignHCenter
                         text: Weather.temperature || "--°"
                         font.pixelSize: 24
                         font.weight: Font.Bold
@@ -93,16 +95,16 @@ AbstractWidget {
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
+            Item {
+                Layout.preferredWidth: rightColumn.implicitWidth + 32
                 Layout.fillHeight: true
-                Layout.margins: 8
-                color: "transparent"
-            
+
                 ColumnLayout {
+                    id: rightColumn
+                    x: 16
+                    y: 16
+                    height: parent.height - 32
                     spacing: 8
-                    anchors.margins: 12
-                    Layout.fillWidth: true
 
                     StyledText {
                         text: Weather.locationName || "--"
@@ -121,12 +123,9 @@ AbstractWidget {
 
                     Item {
                         Layout.fillHeight: true
-                        height: 20
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                         spacing: 16
                         opacity: 0.4
 
