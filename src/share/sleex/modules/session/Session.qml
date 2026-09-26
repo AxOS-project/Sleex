@@ -1,5 +1,6 @@
 import qs
 import qs.modules.common
+import qs.services
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
@@ -114,7 +115,7 @@ Scope {
                             id: sessionSleep
                             buttonIcon: "dark_mode"
                             buttonText: qsTr("Sleep")
-                            onClicked:  { Quickshell.execDetached(["sh", "-c", "loginctl suspend || systemctl suspend"]); sessionRoot.hide() }
+                            onClicked:  { PowerActions.suspend(); sessionRoot.hide() }
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionLock
                             KeyNavigation.right: sessionLogout
@@ -149,7 +150,7 @@ Scope {
                             id: sessionHibernate
                             buttonIcon: "downloading"
                             buttonText: qsTr("Hibernate")
-                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl hibernate || systemctl hibernate"]);
+                            onClicked: PowerActions.hibernate();
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.up: sessionLock
                             KeyNavigation.right: sessionShutdown
@@ -158,7 +159,7 @@ Scope {
                             id: sessionShutdown
                             buttonIcon: "power_settings_new"
                             buttonText: qsTr("Shutdown")
-                            onClicked: Quickshell.execDetached(["sh", "-c", "loginctl poweroff || systemctl poweroff"])
+                            onClicked: PowerActions.poweroff()
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionHibernate
                             KeyNavigation.right: sessionReboot
@@ -168,7 +169,7 @@ Scope {
                             id: sessionReboot
                             buttonIcon: "restart_alt"
                             buttonText: qsTr("Reboot")
-                            onClicked: Quickshell.execDetached(["reboot"]);
+                            onClicked: PowerActions.reboot();
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionShutdown
                             KeyNavigation.right: root.hasSystemd ? sessionFirmwareReboot : null
@@ -215,6 +216,62 @@ Scope {
         }
     }
 
+    Loader {
+        id: powerConfirmLoader
+        active: false
+        property string pendingAction: "poweroff"
+        property int secondsLeft: 60
+
+        function cancel() {
+            countdownTimer.stop()
+            powerConfirmLoader.active = false
+        }
+
+        function confirm() {
+            countdownTimer.stop()
+            powerConfirmLoader.active = false
+            PowerActions.run(powerConfirmLoader.pendingAction)
+        }
+
+        onActiveChanged: if (active) secondsLeft = 60
+
+        Timer {
+            id: countdownTimer
+            interval: 1000
+            repeat: true
+            running: powerConfirmLoader.active
+            onTriggered: {
+                powerConfirmLoader.secondsLeft -= 1
+                if (powerConfirmLoader.secondsLeft <= 0) powerConfirmLoader.confirm()
+            }
+        }
+
+        sourceComponent: Variants {
+            model: Quickshell.screens
+            delegate: PanelWindow {
+                id: powerConfirmRoot
+                required property var modelData
+                screen: modelData
+                visible: powerConfirmLoader.active
+
+                anchors { top: true; left: true; right: true; bottom: true }
+                color: "transparent"
+                WlrLayershell.namespace: "quickshell:power-confirm"
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+                WlrLayershell.layer: WlrLayer.Overlay
+                exclusionMode: ExclusionMode.Ignore
+
+                PowerConfirmContent {
+                    anchors.fill: parent
+                    pendingAction: powerConfirmLoader.pendingAction
+                    secondsLeft: powerConfirmLoader.secondsLeft
+                    onCancelRequested: powerConfirmLoader.cancel()
+                    onConfirmRequested: powerConfirmLoader.confirm()
+                }
+            }
+        }
+    }
+
     IpcHandler {
         target: "session"
 
@@ -246,6 +303,29 @@ Scope {
 
         onPressed: {
             sessionLoader.active = true;
+        }
+    }
+
+    IpcHandler {
+        target: "powerConfirm"
+
+        function open(action: string): void {
+            powerConfirmLoader.pendingAction = action === "reboot" ? "reboot" : "poweroff";
+            powerConfirmLoader.active = true;
+        }
+
+        function close(): void {
+            powerConfirmLoader.active = false;
+        }
+    }
+
+    GlobalShortcut {
+        name: "powerButtonPressed"
+        description: qsTr("Prompts a shutdown confirmation when the power button is pressed")
+
+        onPressed: {
+            powerConfirmLoader.pendingAction = "poweroff";
+            powerConfirmLoader.active = true;
         }
     }
 
