@@ -200,6 +200,7 @@ ContentPage {
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
                 source: Config.options.background.wallpaperPath
+                targetSize: Qt.size(imageContainer.width * Screen.devicePixelRatio, imageContainer.height * Screen.devicePixelRatio)
             }
 
             StyledText {

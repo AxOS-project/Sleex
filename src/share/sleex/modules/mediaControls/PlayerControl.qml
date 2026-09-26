@@ -384,7 +384,11 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             color: blendedColors.colOnSecondaryContainer; text: btnIcon
             Behavior on color {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
             }
         }
         onClicked: {
@@ -643,7 +647,11 @@ Item {
                             ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
                             text: player?.isPlaying ? "pause" : "play_arrow"
                             Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                                animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                             }
                         }
                     }

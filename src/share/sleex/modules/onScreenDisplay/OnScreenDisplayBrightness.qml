@@ -48,6 +48,7 @@ Scope {
     }
 
     Loader {
+        asynchronous: true
         id: osdLoader
         active: showOsdValues
 

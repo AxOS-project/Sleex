@@ -1,6 +1,6 @@
 pkgname="sleex"
-pkgver="1.36"
-pkgrel="1"
+pkgver="1.39"
+pkgrel="5"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -13,7 +13,7 @@ depends=(
   # Cursor
   "bibata-cursor-theme-bin"
   # Fonts & Themes
-  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'kde-material-you-colors' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
+  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
   # Hyprland dependencies
   'hyprutils' 'hyprpicker' 'hyprlang' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
   # QT/KDE dependencies
@@ -25,15 +25,15 @@ depends=(
   # Screencast/Screenrecord
   'hyprshot' 'ksnip' 'wf-recorder' 'slurp' 'grim' 'tesseract' 'tesseract-data-eng'
   # Tools
-  'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils' 'howdy-git'
+  'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils' 'howdy-git' 'sdbus-cpp'
   # Widgets
-  'fuzzel' 'nm-connection-editor' 'quickshell-git' 'swww' 'translate-shell' 'wlogout'
+  'fuzzel' 'nm-connection-editor' 'quickshell' 'swww' 'translate-shell' 'wlogout'
   # User config
   "sleex-user-config"
   # Artworks
   "sleex-artworks"
-  # Sleex UI Kit
-  "sleex-ui-kit"
+  # Sleex packages
+  "sleex-ui-kit" "sleex-welcome-screen"
 )
 optdepends=(
   "hyprwayland-scanner: Wayland protocol scanner for Hyprland"

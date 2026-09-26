@@ -121,6 +121,7 @@ Item {
                 }
 
                 Loader {
+        asynchronous: true
                     id: renameLoader
                     anchors.centerIn: parent
                     width: 110
@@ -218,10 +219,10 @@ Item {
                         root.selectedIcons = [filePath]
                     }
                     let pos = mapToItem(root, mouse.x, mouse.y)
-                    root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
+                    if (root.contextMenu) root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
                 } else {
                     root.selectedIcons = [filePath]
-                    root.contextMenu.close()
+                    if (root.contextMenu) root.contextMenu.close()
                 }
             }
 

@@ -21,7 +21,8 @@ Item {
     property real startX: 0
     property real startY: 0
     property string editingFilePath: ""
-    property var contextMenu: desktopMenu
+    property var contextMenu: null
+    property var bgContextMenu: null
 
     DesktopModel {
         id: desktopModel
@@ -92,14 +93,18 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         
         onPressed: (mouse) => {
+            if (!Config.options.background.widgetsLocked && mouse.button === Qt.LeftButton) {
+                mouse.accepted = false
+                return
+            }
             root.editingFilePath = ""
-            desktopMenu.close()
+            if (contextMenu) contextMenu.close()
             
             if (mouse.button === Qt.RightButton) {
                 root.selectedIcons = []
-                bgContextMenu.openAt(mouse.x, mouse.y, root.width, root.height)
+                if (bgContextMenu) bgContextMenu.openAt(mouse.x, mouse.y, root.width, root.height)
             } else {
-                bgContextMenu.close()
+                if (bgContextMenu) bgContextMenu.close()
                 root.selectedIcons = []
                 root.startX = mouse.x
                 root.startY = mouse.y
@@ -158,11 +163,4 @@ Item {
         }
     }
 
-    DesktopIconContextMenu {
-        id: desktopMenu
-        onOpenFileRequested: (path, isDir) => root.exec(path, isDir)
-        onRenameRequested: (path) => { root.editingFilePath = path }
-    }
-
-    BackgroundContextMenu { id: bgContextMenu }
 }

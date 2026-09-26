@@ -26,6 +26,7 @@ Scope {
 		WlSessionLockSurface {
 			color: "transparent"
 			Loader {
+        asynchronous: true
                 active: GlobalStates.screenLocked
                 anchors.fill: parent
                 opacity: active ? 1 : 0

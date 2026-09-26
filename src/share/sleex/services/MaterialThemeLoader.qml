@@ -21,16 +21,17 @@ Singleton {
 
     function applyColors(fileContent) {
         const json = JSON.parse(fileContent)
+        const mappedColors = {}
         for (const key in json) {
             if (json.hasOwnProperty(key)) {
                 // Convert snake_case to CamelCase
                 const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
                 const m3Key = `m3${camelCaseKey}`
-                Appearance.m3colors[m3Key] = json[key]
+                mappedColors[m3Key] = json[key]
             }
         }
         
-        Appearance.m3colors.darkmode = (Appearance.m3colors.m3background.hslLightness < 0.5)
+        Appearance.m3colors.applyAll(mappedColors)
     }
 
     Timer {

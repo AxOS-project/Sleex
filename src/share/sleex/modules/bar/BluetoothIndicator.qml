@@ -101,11 +101,8 @@ Item {
             implicitHeight: btPopup.implicitHeight
 
             margins {
-                left: root.mapToGlobal(Qt.point(
-                    (root.width - btPopup.implicitWidth) / 2,
-                    0
-                )).x
-                top: root.mapToGlobal(Qt.point(0, root.height)).y - 30 
+                left: root.QsWindow?.mapFromItem(root, (root.width - btPopup.implicitWidth) / 2, 0).x ?? 0
+                top: (root.QsWindow?.mapFromItem(root, 0, root.height).y ?? 0) - 30 
             }
 
             mask: Region {

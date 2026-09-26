@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Sleex.Core
 import SleexUiKit.Functions
+import qs.modules.common
 
 Singleton {
     id: root
@@ -157,11 +158,11 @@ Singleton {
         property JsonObject background: JsonObject {
             property bool enableClock: true // Whether to show the clock
             property string clockMode: "light" // "dark" or "light"
-            property real clockX: 0
-            property real clockY: 0
-            property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
+            property real clockX: 1395
+            property real clockY: 355
             property bool showWatermark: true // Whether to show the watermark
-            property string wallpaperPath: "/usr/share/backgrounds/sleex/SleexOne.png"
+            property string wallpaperPath: "/usr/share/backgrounds/sleex/twentySix.jpg"
+            property string wallpaperDownloadPath: FileUtils.trimFileProtocol(Directories.home) + "/Pictures/Sleex Wallpapers/Unsplash"
             property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
             property string wallpaperTransition: "fade"
             property real transitionDuration: 0.5
@@ -170,6 +171,11 @@ Singleton {
             property bool enableQuote: true
             property int quoteSource: 0 // 0 for "local", 1 for "online"
             property bool showDesktopIcons: false
+            property bool enableWeatherWidget: true
+            property real weatherX: 0
+            property real weatherY: 0
+            property bool widgetsLocked: false
+            property bool showGrid: true
         }
 
         property JsonObject dashboard: JsonObject {

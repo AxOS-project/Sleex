@@ -12,19 +12,6 @@ MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$CONFIG_DIR/scripts/terminal/scheme-base.json"
 THUMBNAIL_DIR="/tmp/sleex_thumbnails"
 
-handle_kde_material_you_colors() {
-    local kde_scheme_variant=""
-    case "$type_flag" in
-        scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot)
-            kde_scheme_variant="$type_flag"
-            ;;
-        *)
-            kde_scheme_variant="scheme-tonal-spot"
-            ;;
-    esac
-    "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
-}
-
 pre_process() {
     local mode_flag="$1"
     if [[ "$mode_flag" == "dark" ]]; then
@@ -87,8 +74,19 @@ update_wallpaper_config() {
 
     if [[ -f "$DB_CONFIG" ]]; then
         sqlite3 "$DB_CONFIG" "UPDATE sleex_settings SET config_json = json_set(config_json, '$.wallpaperPath', '$wallpaper_path') WHERE module='background';"
-        qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$wallpaper_path"
-        qs -p /usr/share/sleex/settings.qml ipc call settings reloadWallpaper "$wallpaper_path"
+        touch "$XDG_CONFIG_HOME/sleex/.db_trigger" 2>/dev/null
+        
+        # Send IPC to all running quickshell instances
+        local qs_pids=$(pgrep -x qs)
+        if [[ -n "$qs_pids" ]]; then
+            for pid in $qs_pids; do
+                qs ipc --pid "$pid" call background forceWallpaperReload "$wallpaper_path" 2>/dev/null
+                qs ipc --pid "$pid" call settings reloadWallpaper "$wallpaper_path" 2>/dev/null
+            done
+        else
+            qs -p /usr/share/sleex/ ipc call background forceWallpaperReload "$wallpaper_path" 2>/dev/null
+            qs -p /usr/share/sleex/settings.qml ipc call settings reloadWallpaper "$wallpaper_path" 2>/dev/null
+        fi
     fi
 }
 

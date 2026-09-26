@@ -164,14 +164,14 @@ MouseArea {
             exclusiveZone: 0
 
             anchors.top: true
-            anchors.right: true
+            anchors.left: true
 
             implicitWidth: batteryPopup.implicitWidth
             implicitHeight: batteryPopup.implicitHeight
 
             margins {
-                left: root.mapToGlobal(Qt.point(0, root.width)).y - 30 
-                top: root.mapToGlobal(Qt.point(0, root.height)).y - 30 
+                left: root.QsWindow?.mapFromItem(root, (root.width - batteryPopup.implicitWidth) / 2, 0).x ?? 0
+                top: (root.QsWindow?.mapFromItem(root, 0, root.height).y ?? 0) - 30 
             }
 
             mask: Region {

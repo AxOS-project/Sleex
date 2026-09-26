@@ -12,10 +12,10 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Sleex.Utils
+import "../common/widgets/widgetCanvas"
 
 Scope {
     id: root
-    readonly property bool fixedClockPosition: Config.options.background.fixedClockPosition
     readonly property real fixedClockX: Config.options.background.clockX
     readonly property real fixedClockY: Config.options.background.clockY
 
@@ -27,6 +27,10 @@ Scope {
             property string wallpaperPath: Config.options.background.wallpaperPath
             property real clockX: Config.options.background.clockX !== 0 ? Config.options.background.clockX : modelData.width / 2
             property real clockY: Config.options.background.clockY !== 0 ? Config.options.background.clockY : modelData.height / 2
+            
+            property real weatherX: (Config.options.background.weatherX && Config.options.background.weatherX !== 0) ? Config.options.background.weatherX : modelData.width / 2
+            property real weatherY: (Config.options.background.weatherY && Config.options.background.weatherY !== 0) ? Config.options.background.weatherY : modelData.height / 2 + 200
+
             property var textHorizontalAlignment: clockX < screen.width / 3 ? Text.AlignLeft : (clockX > screen.width * 2 / 3 ? Text.AlignRight : Text.AlignHCenter)
             property color dominantColor: Appearance.colors.colPrimary
             property color colText: Config.options.background.clockMode == "light" ? Appearance.colors.colPrimary : ColorUtils.colorWithLightness(Appearance.colors.colPrimary, 0.12)
@@ -99,6 +103,7 @@ Scope {
                 }
 
                 transitions: Transition {
+                    onRunningChanged: if (!running) previousWallpaper.source = ""
                     to: "animating"
                     ParallelAnimation {
                         NumberAnimation {
@@ -164,30 +169,64 @@ Scope {
                 }
             }
 
-            DesktopIcons {
-                id: desktopIcons
+            WidgetCanvas {
+                id: widgetCanvas
+                anchors.fill: parent
                 z: 1
+
+                DesktopIcons {
+                    id: desktopIcons
+                    z: 0
+                    contextMenu: globalDesktopMenu
+                    bgContextMenu: globalBgContextMenu
+                }
+
+                Loader {
+                    active: Config.options.background.enableClock
+                    z: 1
+                    sourceComponent: Clock {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                        textColor: bgRoot.colText
+                        textHorizontalAlignment: bgRoot.textHorizontalAlignment
+                    }
+                }
+
+                Loader {
+                    active: Config.options.background.enableWeatherWidget
+                    z: 1
+                    sourceComponent: WeatherWidget {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                    }
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    active: Config.options.background.showWatermark
+                    sourceComponent: Watermark { visibleWatermark: true }
+                }
+                
+                Loader {
+                    anchors.fill: parent
+                    active: Config.options.background.enableQuote
+                    sourceComponent: Quote { visibleQuote: true }
+                }
+
+                PostIt { id: postItManager; z: 50 }
             }
 
-            Clock {
-                id: clock
-                z: 1
-                screenWidth: bgRoot.screen.width
-                screenHeight: bgRoot.screen.height
-                clockX: bgRoot.clockX
-                clockY: bgRoot.clockY
-                clockSizeMultiplier: Config.options.background.clockSizeMultiplier
-                fixedClockPosition: root.fixedClockPosition
-                textColor: bgRoot.colText
-                textHorizontalAlignment: bgRoot.textHorizontalAlignment
-                onClockPositionChanged: function(x, y) { bgRoot.clockX = x; bgRoot.clockY = y }
-                onFixedPositionToggled: function() { Config.options.background.fixedClockPosition = !root.fixedClockPosition }
+            DesktopIconContextMenu {
+                id: globalDesktopMenu
+                z: 9999
+                onOpenFileRequested: (path, isDir) => desktopIcons.exec(path, isDir)
+                onRenameRequested: (path) => { desktopIcons.editingFilePath = path }
             }
 
-            Watermark { visibleWatermark: Config.options.background.showWatermark }
-            Quote { visibleQuote: Config.options.background.enableQuote }
-            PostIt { id: postItManager; z: 50 }
-
+            BackgroundContextMenu {
+                id: globalBgContextMenu
+                z: 9999
+            }
         }
     }
 }

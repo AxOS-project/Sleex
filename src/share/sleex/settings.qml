@@ -28,7 +28,7 @@ ApplicationWindow {
     minimumHeight: 730
     width: 850
     height: 700
-    color: Appearance.colors.colLayer1
+    color: Appearance.colors.colLayer0
 
     // State
     property real contentPadding: 8
@@ -70,13 +70,20 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Appearance.colors.colLayer1
+            color: Appearance.colors.colLayer0
 
             // Sidebar
-            Item {
+            Rectangle {
                 id: menuContainer
-                anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
-                implicitWidth: 250
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    left: parent.left
+                    margins: root.contentPadding
+                }
+                width: 250
+                color: Appearance.colors.colLayer1
+                radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -173,19 +180,18 @@ ApplicationWindow {
             }
 
             // Content pane
-            Rectangle {
+            Item {
                 anchors {
                     top: parent.top
                     bottom: parent.bottom
                     left: menuContainer.right
                     right: parent.right
-                    leftMargin: 6
+                    leftMargin: root.contentPadding
                     margins: root.contentPadding
                 }
-                color: Appearance.colors.colLayer0
-                radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 Loader {
+        asynchronous: true
                     id: pageLoader
                     anchors.fill: parent
                     source: root.pages[0].component

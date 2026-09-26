@@ -30,7 +30,7 @@ Item {
         x: bgMenu.menuX
         y: bgMenu.menuY
         
-        color: Appearance.colors.colLayer0
+        color: Appearance.m3colors.m3background
         radius: Appearance.rounding.windowRounding
         border.width: 1
         border.color: Appearance.colors.colLayer0Border

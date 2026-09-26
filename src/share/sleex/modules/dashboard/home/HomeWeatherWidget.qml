@@ -11,6 +11,7 @@ Rectangle {
     radius: Appearance.rounding.normal
 
     Loader {
+        asynchronous: true
         active: !Config.options.dashboard.enableWeather
         anchors.fill: parent
         sourceComponent: WeatherOff {
@@ -19,6 +20,7 @@ Rectangle {
     }
 
     Loader {
+        asynchronous: true
         active: Config.options.dashboard.enableWeather && root.connected
         anchors.fill: parent
         sourceComponent: Weather {
@@ -27,6 +29,7 @@ Rectangle {
     }
 
     Loader {
+        asynchronous: true
         active: Config.options.dashboard.enableWeather && !root.connected
         anchors.fill: parent
         sourceComponent: WeatherNoNet {

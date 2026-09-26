@@ -21,12 +21,35 @@ Item {
 
     QtObject {
         id: pendingChanges
-        property var map:   ({})   // { name: {x,y} }
+        property var map:   ({})
         property int count: 0
 
-        function set(name, x, y) {
+        function setPos(name, x, y) {
             let m = Object.assign({}, map)
-            m[name] = {x: x, y: y}
+            if (!m[name]) m[name] = {}
+            m[name].x = x
+            m[name].y = y
+            map = m
+            count = Object.keys(m).length
+        }
+        function setScale(name, scale) {
+            let m = Object.assign({}, map)
+            if (!m[name]) m[name] = {}
+            m[name].scale = scale
+            map = m
+            count = Object.keys(m).length
+        }
+        function setMirror(name, mirror) {
+            let m = Object.assign({}, map)
+            if (!m[name]) m[name] = {}
+            m[name].mirror = mirror
+            map = m
+            count = Object.keys(m).length
+        }
+        function setMode(name, mode) {
+            let m = Object.assign({}, map)
+            if (!m[name]) m[name] = {}
+            m[name].mode = mode
             map = m
             count = Object.keys(m).length
         }
@@ -37,7 +60,13 @@ Item {
         function toVariantList() {
             let result = []
             for (let name in map) {
-                result.push({ name: name, x: map[name].x, y: map[name].y })
+                let obj = { name: name }
+                if (map[name].x !== undefined) obj.x = map[name].x
+                if (map[name].y !== undefined) obj.y = map[name].y
+                if (map[name].scale !== undefined) obj.scale = map[name].scale
+                if (map[name].mode !== undefined) obj.mode = map[name].mode
+                if (map[name].mirror !== undefined) obj.mirror = map[name].mirror
+                result.push(obj)
             }
             return result
         }
@@ -201,7 +230,7 @@ Item {
 
                         onDragCommitted: (name, cx, cy) => {
                             const real = tileRoot.toReal(cx, cy)
-                            pendingChanges.set(name, real.x, real.y)
+                            pendingChanges.setPos(name, real.x, real.y)
                         }
                         onSnapGuideUpdate: (visible, cx, cy, cw, ch) => {
                             snapGuide.visible = visible
@@ -238,7 +267,10 @@ Item {
                     }
                     text: "Scale"
                     onValueChanged: {
-                        Monitors.applyScale(root.selectedMonitorName, value / 100.0)
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        if (m && Math.round(m.scale * 100) !== value) {
+                            pendingChanges.setScale(root.selectedMonitorName, value / 100.0)
+                        }
                     }
                 }
 
@@ -263,17 +295,12 @@ Item {
 
                     onCurrentIndexChanged: {
                         if (currentIndex < 0) return
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        if (!m) return
                         const target = model[currentIndex]
-                        Monitors.applyMirror(
-                            root.selectedMonitorName,
-                            target === "None" ? "" : target
-                        )
-                        
-                        // If un-mirroring, give Hyprland more time to re-expose the monitor
-                        if (target === "None") {
-                            Qt.callLater(() => {
-                                Qt.createQmlObject('import QtQuick 2.0; Timer { interval: 1000; running: true; onTriggered: Monitors.refresh() }', root)
-                            })
+                        const actualMirror = target === "None" ? "" : target
+                        if (m.mirrorOf !== actualMirror) {
+                            pendingChanges.setMirror(root.selectedMonitorName, actualMirror)
                         }
                     }
                 }
@@ -294,7 +321,12 @@ Item {
                     }
                     onCurrentIndexChanged: {
                         if (currentIndex < 0) return
-                        Monitors.applyMode(root.selectedMonitorName, model[currentIndex])
+                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                        if (!m) return
+                        const modeStr = m.width + "x" + m.height
+                        if (modeStr !== model[currentIndex]) {
+                            pendingChanges.setMode(root.selectedMonitorName, model[currentIndex])
+                        }
                     }
                 }
             }
@@ -332,7 +364,7 @@ Item {
                 materialIcon: "check_circle"
                 mainText:  "Apply"
                 onClicked: {
-                    Monitors.applyAllPositions(pendingChanges.toVariantList())
+                    Monitors.applyChanges(pendingChanges.toVariantList())
                     pendingChanges.clear()
                 }
             }
@@ -353,7 +385,7 @@ Item {
             changes.push({ name: m.name, x: cursor, y: 0 })
             cursor += m.width
         }
-        Monitors.applyAllPositions(changes)
+        Monitors.applyChanges(changes)
     }
 
     function applyPresetVertical() {
@@ -365,6 +397,6 @@ Item {
             changes.push({ name: m.name, x: 0, y: cursor })
             cursor += m.height
         }
-        Monitors.applyAllPositions(changes)
+        Monitors.applyChanges(changes)
     }
 }

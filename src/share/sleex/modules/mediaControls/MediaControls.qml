@@ -106,6 +106,7 @@ Item {
         }
 
         Loader {
+        asynchronous: true
             id: playerControlLoader
             active: root.meaningfulPlayers.length > 0
             anchors.fill: parent

@@ -69,6 +69,7 @@ RippleButton {
             implicitHeight: 20
 
             Loader {
+        asynchronous: true
                 anchors.fill: parent
                 active: root.menuEntry.buttonType === QsMenuButtonType.RadioButton
 
@@ -80,6 +81,7 @@ RippleButton {
             }
 
             Loader {
+        asynchronous: true
                 anchors.fill: parent
                 active: root.menuEntry.buttonType === QsMenuButtonType.CheckBox && root.menuEntry.checkState !== Qt.Unchecked
 
@@ -116,6 +118,7 @@ RippleButton {
         }
 
         Loader {
+        asynchronous: true
             active: root.menuEntry.hasChildren
 
             sourceComponent: MaterialSymbol {

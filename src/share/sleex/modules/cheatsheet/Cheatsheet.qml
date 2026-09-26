@@ -18,6 +18,7 @@ Scope { // Scope
     id: root
 
     Loader {
+        asynchronous: true
         id: cheatsheetLoader
         active: false
         
@@ -50,9 +51,9 @@ Scope { // Scope
             HyprlandFocusGrab { // Click outside to close
                 id: grab
                 windows: [ cheatsheetRoot ]
-                active: cheatsheetRoot.visible
+                active: cheatsheetRoot.visible && !GlobalStates.tutorialMode
                 onCleared: () => {
-                    if (!active) cheatsheetRoot.hide()
+                    if (!active && !GlobalStates.tutorialMode) cheatsheetRoot.hide()
                 }
             }
 
@@ -129,9 +130,16 @@ Scope { // Scope
 
         function close(): void {
             cheatsheetLoader.active = false
+            GlobalStates.tutorialMode = false
         }
 
         function open(): void {
+            GlobalStates.tutorialMode = false
+            cheatsheetLoader.active = true
+        }
+
+        function openTutorial(): void {
+            GlobalStates.tutorialMode = true
             cheatsheetLoader.active = true
         }
     }

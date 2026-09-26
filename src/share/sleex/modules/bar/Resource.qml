@@ -88,11 +88,8 @@ Item {
             implicitHeight: resourcePopup.implicitHeight
 
             margins {
-                left: root.mapToGlobal(Qt.point(
-                    (root.width - resourcePopup.implicitWidth) / 2,
-                    0
-                )).x
-                top: root.mapToGlobal(Qt.point(0, root.height)).y - 30 
+                left: root.QsWindow?.mapFromItem(root, (root.width - resourcePopup.implicitWidth) / 2, 0).x ?? 0
+                top: (root.QsWindow?.mapFromItem(root, 0, root.height).y ?? 0) - 30 
             }
 
             
@@ -120,7 +117,7 @@ Item {
 
                             MaterialSymbol {
                                 text: modelData.icon
-                                color: Appearance.m3colors.m3onSecondaryContainer
+                                color: Appearance.colors.colOnSecondaryContainer
                             }
                             StyledText {
                                 text: modelData.label
@@ -152,7 +149,7 @@ Item {
             value: percentage
             implicitSize: 26
             colSecondary: Appearance.colors.colSecondaryContainer
-            colPrimary: Appearance.m3colors.m3onSecondaryContainer
+            colPrimary: Appearance.colors.colOnSecondaryContainer
             enableAnimation: false
 
             MaterialSymbol {
@@ -160,7 +157,7 @@ Item {
                 fill: 1
                 text: iconName
                 iconSize: Appearance.font.pixelSize.normal
-                color: Appearance.m3colors.m3onSecondaryContainer
+                color: Appearance.colors.colOnSecondaryContainer
             }
 
         }
@@ -186,7 +183,11 @@ Item {
         }
 
         Behavior on x {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+            animation: NumberAnimation {
+    duration: Appearance.animation.elementMove.duration
+    easing.type: Appearance.animation.elementMove.type
+    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+}
         }
 
     }

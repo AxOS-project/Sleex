@@ -122,6 +122,7 @@ Scope {
                 }
 
                 Loader {
+        asynchronous: true
                     id: overviewLoader
                     active: GlobalStates.overviewOpen
                     sourceComponent: OverviewWidget {

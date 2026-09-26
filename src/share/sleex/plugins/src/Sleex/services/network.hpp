@@ -191,9 +191,6 @@ public:
     Q_INVOKABLE void generateQrCode(const QString &ssid, const QString &securityStr);
     Q_INVOKABLE void clearQrCode();
 
-private slots:
-    void verifyDelayedConnection(const QString &ssid);
-
 private:
     void scheduleConnectionVerification(const QString &ssid);
     void finalizeConnectionResult(const QString &ssid);
@@ -292,6 +289,7 @@ private:
     static void onConnectionAdded(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onConnectionRemoved(NMClient *client, NMRemoteConnection *connection, gpointer user_data);
     static void onDeviceStateChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
+    static void onClientStateChanged(GObject *object, GParamSpec *pspec, gpointer user_data);
     static void onWifiEnabledSet(GObject *source, GAsyncResult *result, gpointer user_data);
     
     void updateEthernetStatus();
@@ -311,6 +309,7 @@ private:
     QString m_connectingToSsid;
     QStringList m_failedConnections; // Track SSIDs with authentication failures
     QStringList m_authErrorEmitted; // Track SSIDs that have already emitted auth errors
+    QString m_pendingVerificationSsid; // SSID waiting for signal-based connection verification
     
     gulong m_apAddedId;
     gulong m_apRemovedId;
@@ -321,6 +320,7 @@ private:
     gulong m_connectionAddedId;
     gulong m_connectionRemovedId;
     gulong m_deviceStateChangedId;
+    gulong m_clientStateChangedId;
 
     // --- Ported from Network.qml ---
     QTimer m_errorTimer;

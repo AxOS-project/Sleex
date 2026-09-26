@@ -278,6 +278,66 @@ ContentPage {
         }      
     }
 
+    ContentSection {
+        title: "API Keys"
+        icon: "vpn_key"
+
+        ContentSubsection {
+            title: "Unsplash"
+            tooltip: "API key used to search and download wallpapers from Unsplash."
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                MaterialTextField {
+                    id: unsplashKeyField
+                    Layout.fillWidth: true
+                    placeholderText: "Enter Unsplash API Key"
+                    text: Unsplash.apiKey
+                    onAccepted: {
+                        Unsplash.saveApiKey(text.trim());
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    colBackground: Appearance.colors.colPrimaryContainer
+                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                    materialIcon: "check"
+                    mainText: qsTr("Save")
+                    Layout.preferredHeight: 40
+                    onClicked: {
+                        Unsplash.saveApiKey(unsplashKeyField.text.trim());
+                    }
+                }
+
+                RippleButton {
+                    colBackground: Appearance.colors.colLayer2
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "delete"
+                        color: Appearance.colors.colError ?? "#FF5555"
+                    }
+                    onClicked: {
+                        unsplashKeyField.text = "";
+                        Unsplash.saveApiKey("");
+                    }
+                }
+            }
+
+            MaterialTextField {
+                id: wallpaperPathField
+                Layout.fillWidth: true
+                placeholderText: "Wallpaper download directory path"
+                text: Config.options.background.wallpaperDownloadPath
+                wrapMode: TextEdit.Wrap
+                onTextChanged: {
+                    Config.options.background.wallpaperDownloadPath = text
+                }
+            }
+        }
+    }
+
     Item {
         implicitHeight: 24
     }

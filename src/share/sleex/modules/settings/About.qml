@@ -6,41 +6,87 @@ import Quickshell.Io
 import Quickshell.Widgets
 import qs.services
 import qs.modules.common
+import qs.modules.common.widgets
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
+import SleexUiKit.Functions
+import Sleex.Services
 
 ContentPage {
     forceSingleColumn: true
-
+    
     ContentSection {
-        visible: SystemInfo.distroName == "AxOS"
         title: "Distro"
         icon: "info"
-        
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 20
-            Layout.topMargin: 10
-            Layout.bottomMargin: 10
 
-            IconImage {
-                implicitSize: 100
-                source: "file:///usr/share/pixmaps/axos-logo.png"
-            }
-            ColumnLayout {
+        RowLayout {
+            anchors.margins: 24
+            spacing: 24
+
+
+            Rectangle {
                 Layout.alignment: Qt.AlignVCenter
-                // spacing: 10
-                StyledText {
-                    text: SystemInfo.distroName + " " + SystemInfo.axosVersion
-                    font.pixelSize: Appearance.font.pixelSize.title
+                implicitWidth: 110
+                implicitHeight: 110
+                radius: 20
+                color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.9)
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitWidth: 72
+                    implicitHeight: 72
+                    source: Quickshell.iconPath(SystemInfo.logo)
                 }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 4
+
                 StyledText {
+                    Layout.fillWidth: true
+                    text: SystemInfo.distroName
+                    font.pixelSize: Appearance.font.pixelSize.hugeass
+                    font.weight: Font.ExtraBold
+                    color: Appearance.colors.colOnSurface
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: (SystemInfo.axosVersion !== null ? SystemInfo.axosVersion : "Kernel: " + SystemInfo.kernelVersion )
                     font.pixelSize: Appearance.font.pixelSize.normal
-                    text: "https://www.axos-project.com"
-                    onLinkActivated: (link) => {
-                        Qt.openUrlExternally(link)
+                    font.weight: Font.Medium
+                    color: Appearance.colors.colSubtext
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    id: colorRow
+                    spacing: -6
+
+                    Repeater {
+                        model: [
+                            Appearance.m3colors.m3primary,
+                            Appearance.m3colors.m3secondary,
+                            Appearance.m3colors.m3tertiary,
+                            Appearance.m3colors.m3error,
+                            Appearance.m3colors.m3primaryContainer,
+                            Appearance.m3colors.m3secondaryContainer,
+                        ]
+                        delegate: Rectangle {
+                            required property var modelData
+                            required property int index
+                            width: 28
+                            height: 28
+                            radius: width / 2
+                            color: modelData
+                            z: index
+                            border.width: 2
+                            border.color: Appearance.colors.colLayer1
+                        }
                     }
-                    PointingHandLinkHover {}
                 }
             }
         }
@@ -48,6 +94,14 @@ ContentPage {
         Flow {
             Layout.fillWidth: true
             spacing: 5
+
+            RippleButtonWithIcon {
+                materialIcon: "globe"
+                mainText: "Website"
+                onClicked: {
+                    Qt.openUrlExternally("https://www.axos-project.com")
+                }
+            }
 
             RippleButtonWithIcon {
                 materialIcon: "auto_stories"
@@ -79,36 +133,88 @@ ContentPage {
             }
 
         }
-
     }
+
+    GridLayout {
+        columns: 2
+        Layout.fillWidth: true
+        rowSpacing: 8
+        columnSpacing: 8
+
+        AboutCard {
+            icon: "settings_slow_motion"
+            label: "CPU"
+            value: SystemInfo.cpu || "Loading..."
+            Layout.fillWidth: true
+        }
+
+        AboutCard {
+            icon: "developer_board"
+            label: "GPU"
+            value: SystemInfo.gpu || "Loading..."
+            Layout.fillWidth: true
+        }
+
+        AboutCard {
+            icon: "memory"
+            label: "Memory"
+            value: ResourceMonitor.memoryTotal ? (ResourceMonitor.memoryTotal / (1024 * 1024)).toFixed(2) + " GB" : "Loading..."
+            Layout.fillWidth: true
+        }
+
+        AboutCard {
+            icon: "storage"
+            label: "Disk"
+            value: SystemInfo.disk || "Loading..."
+            Layout.fillWidth: true
+        }
+    }
+
     ContentSection {
         title: "Sleex"
         icon: "info"
 
-
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 20
-            Layout.topMargin: 10
-            Layout.bottomMargin: 10
-            IconImage {
-               implicitSize: 100
-               source: "file:///usr/share/pixmaps/sleex/svg/dark.svg"
-            }
-            ColumnLayout {
+            anchors.margins: 24
+            spacing: 24
+
+
+            Rectangle {
                 Layout.alignment: Qt.AlignVCenter
-                // spacing: 10
-                StyledText {
-                    text: "Sleex"
-                    font.pixelSize: Appearance.font.pixelSize.title
+                implicitWidth: 110
+                implicitHeight: 110
+                radius: 20
+                color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.9)
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitWidth: 72
+                    implicitHeight: 72
+                    source: "file:///usr/share/pixmaps/sleex/svg/dark.svg"
                 }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 4
+
                 StyledText {
-                    text: "https://github.com/axos-project/sleex"
+                    Layout.fillWidth: true
+                    text: "Sleex"
+                    font.pixelSize: Appearance.font.pixelSize.hugeass
+                    font.weight: Font.ExtraBold
+                    color: Appearance.colors.colOnSurface
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: SystemInfo.sleexVersion || "Loading..."
                     font.pixelSize: Appearance.font.pixelSize.normal
-                    onLinkActivated: (link) => {
-                        Qt.openUrlExternally(link)
-                    }
-                    PointingHandLinkHover {}
+                    font.weight: Font.Medium
+                    color: Appearance.colors.colSubtext
+                    elide: Text.ElideRight
                 }
             }
         }
@@ -141,9 +247,4 @@ ContentPage {
             }
         }
     }
-
-    Item {
-        implicitHeight: 24
-    }
-
 }
