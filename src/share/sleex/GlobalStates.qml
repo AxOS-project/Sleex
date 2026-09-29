@@ -20,17 +20,13 @@ Singleton {
     property bool desktopWidgetKeyboardFocus: false
     property bool tutorialMode: false
 
-    property real screenZoom: 1
-    onScreenZoomChanged: {
-        Quickshell.execDetached(["hyprctl", "keyword", "cursor:zoom_factor", `${root.screenZoom.toString()}`]);
-    }
-    Behavior on screenZoom {
-        animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
-    }
+    // property real screenZoom: 1
+    // onScreenZoomChanged: {
+    //     Quickshell.execDetached(["hyprctl", "keyword", "cursor:zoom_factor", `${root.screenZoom.toString()}`]);
+    // }
+    // Behavior on screenZoom {
+    //     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+    // }
 
     // When user is not reluctant while pressing super, they probably don't need to see workspace numbers
     onSuperReleaseMightTriggerChanged: {
@@ -60,17 +56,17 @@ Singleton {
         }
     }
 
-    IpcHandler {
-		target: "zoom"
+    // IpcHandler {
+	// 	target: "zoom"
 
-		function zoomIn() {
-            screenZoom = Math.min(screenZoom + 0.4, 3.0)
-        }
+	// 	function zoomIn() {
+    //         screenZoom = Math.min(screenZoom + 0.4, 3.0)
+    //     }
 
-        function zoomOut() {
-            screenZoom = Math.max(screenZoom - 0.4, 1)
-        }
-	}
+    //     function zoomOut() {
+    //         screenZoom = Math.max(screenZoom - 0.4, 1)
+    //     }
+	// }
 
 
     IpcHandler {

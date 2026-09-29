@@ -11,12 +11,18 @@ else
 fi
 
 # Check if config dirs/files exist, if not copy them from /etc/skel
-for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
+for dir in fish fht anyrun fuzzel Kvantum matugen vdirsyncer mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
     if [ ! -d ~/.config/$dir ]; then
         cp -r /etc/skel/.config/$dir ~/.config/$dir
         chown -R $USER:$USER ~/.config/$dir
     fi
 done
+
+# Create Sleex custom files
+if [ ! -d ~/.config/fht/custom ]; then
+    mkdir -p ~/.config/fht/custom
+    cp -r /etc/skel/.config/fht/custom/* ~/.config/fht/custom
+fi
 
 if [ ! -d ~/.local/share/khal/calendars/default ]; then
     mkdir -p ~/.local/share/khal/calendars/default
@@ -30,14 +36,31 @@ for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitt
     fi
 done
 
-if [ ! -f ~/.config/sleex/apps.lua ] || [ ! -s ~/.config/sleex/apps.lua ]; then
-    cp -r /etc/skel/.config/sleex/apps.lua ~/.config/sleex/apps.lua
-    chown $USER:$USER ~/.config/sleex/apps.lua
-fi
+# First run setup
+if [ ! -f ~/.local/state/sleex/user/first_run.txt ]; then
+    # Sets up the user's environment to use Sleex.
+    CONFIG_FILE="$HOME/.config/fht/custom/general.conf"
+    VC_KEYMAP=$(grep -i KEYMAP /etc/vconsole.conf | cut -d= -f2 | tr -d '"')
+    LAYOUT=$(echo "$VC_KEYMAP" | awk '{print tolower($0)}')
 
-if [ ! -f ~/.config/sleex/monitors.lua ] || [ ! -s ~/.config/sleex/monitors.lua ]; then
-    cp -r /etc/skel/.config/sleex/monitors.lua ~/.config/sleex/monitors.lua
-    chown $USER:$USER ~/.config/sleex/monitors.lua
+
+    echo "Setting keyboard layout to '$LAYOUT' in $CONFIG_FILE."
+
+    if grep -q "^\[input\.keyboard\]" "$CONFIG_FILE"; then
+        sed -i "/^\[input\.keyboard\]/,/^\[/ s/^layout = .*/layout = \"$LAYOUT\"/" "$CONFIG_FILE"
+    else
+        echo "" >> "$CONFIG_FILE"
+        echo "[input.keyboard]" >> "$CONFIG_FILE"
+        echo "layout = \"$LAYOUT\"" >> "$CONFIG_FILE"
+    fi
+
+    if lsmod | grep -q '^nvidia'; then
+    echo "Nvidia GPU found"
+    {
+        echo "env = LIBVA_DRIVER_NAME,nvidia"
+        echo "env = __GLX_VENDOR_LIBRARY_NAME,nvidia"
+    } >> ~/.config/fht/custom/env.conf
+    fi
 fi
 
 # Check if XDG_USER_DIRS is set up
@@ -46,5 +69,5 @@ if [ ! -f ~/.config/user-dirs.dirs ]; then
 fi
 
 
-# Start Hyprland with the Sleex config
-start-hyprland -- --config /etc/sleex/hyprland.lua > /dev/null 2>&1
+# Start with the Sleex config
+fht-compositor -c /etc/sleex/compositor.toml > /dev/null 2>&1

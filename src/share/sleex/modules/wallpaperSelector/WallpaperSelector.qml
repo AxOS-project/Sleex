@@ -31,19 +31,11 @@ Scope {
 
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:wppselector"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         color: "transparent"
 
         implicitWidth: 1000
         implicitHeight: 700
-
-        HyprlandFocusGrab {
-            id: grab
-            windows: [ wppselectorRoot ]
-            active: GlobalStates.wppselectorOpen && !GlobalStates.tutorialMode
-            onCleared: () => {
-                if (!active && !GlobalStates.tutorialMode) wppselectorRoot.hide()
-            }
-        }
 
         anchors.top: true
         margins {
@@ -409,5 +401,4 @@ Scope {
             GlobalStates.wppselectorOpen = false;
         }
     }
-
 }

@@ -11,6 +11,7 @@ import Quickshell
 
 Item {
     id: root
+    readonly property var keybinds: FhtcKeybinds.keybinds
     property real spacing: 16
     property real padding: 4
     implicitWidth: QsWindow?.window?.screen.width * 0.5 ?? 0

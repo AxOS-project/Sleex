@@ -1,17 +1,17 @@
 import Quickshell
-import Quickshell.Hyprland
 import QtQuick
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 import qs.services
+import Sleex.Fhtc
 
 Revealer {
     id: root
     reveal: showOsdValues
 
     property bool showOsdValues: false
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property var focusedScreen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName)
     property var brightnessMonitor: Brightness.getMonitorForScreen(focusedScreen)
 
     Connections {

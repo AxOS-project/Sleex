@@ -10,6 +10,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: overviewScope
@@ -21,39 +22,25 @@ Scope {
             id: root
             required property var modelData
             property string searchingText: ""
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            required property ShellScreen screen
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
             screen: modelData
             visible: GlobalStates.overviewOpen && monitorIsFocused
 
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
-            // WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             color: "transparent"
 
             mask: Region {
                 item: GlobalStates.overviewOpen ? columnLayout : null
             }
-            HyprlandWindow.visibleMask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
-            }
-
 
             anchors {
                 top: true
                 left: true
                 right: true
                 bottom: true
-            }
-
-            HyprlandFocusGrab {
-                id: grab
-                windows: [ root ]
-                property bool canBeActive: root.monitorIsFocused
-                active: false
-                onCleared: () => {
-                    if (!active) GlobalStates.overviewOpen = false
-                }
             }
 
             Connections {
@@ -66,18 +53,7 @@ Scope {
                         if (!overviewScope.dontAutoCancelSearch) {
                             searchWidget.cancelSearch()
                         }
-                        delayedGrabTimer.start()
                     }
-                }
-            }
-
-            Timer {
-                id: delayedGrabTimer
-                interval: Config.options.hacks.arbitraryRaceConditionDelay
-                repeat: false
-                onTriggered: {
-                    if (!grab.canBeActive) return
-                    grab.active = GlobalStates.overviewOpen
                 }
             }
 
@@ -102,9 +78,9 @@ Scope {
                     if (event.key === Qt.Key_Escape) {
                         GlobalStates.overviewOpen = false;
                     } else if (event.key === Qt.Key_Left) {
-                        if (!root.searchingText) Hyprland.dispatch("hl.dsp.focus({ workspace = 'e-1' })");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-previous-workspace");
                     } else if (event.key === Qt.Key_Right) {
-                        if (!root.searchingText) Hyprland.dispatch("hl.dsp.focus({ workspace = 'e+1' })");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-next-workspace");
                     }
                 }
 
@@ -205,7 +181,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.clipboard
@@ -228,7 +204,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name == FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.emojis
@@ -239,5 +215,4 @@ Scope {
             }
         }
     }
-
 }

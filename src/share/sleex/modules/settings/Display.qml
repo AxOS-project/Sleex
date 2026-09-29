@@ -5,7 +5,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Quickshell.Hyprland
+import Sleex.Fhtc
 import Sleex.Services
 import "displaySettings" as DS
 import SleexUiKit.Appearance
@@ -13,7 +13,7 @@ import SleexUiKit.Appearance
 ContentPage {
     id: root
 
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property var focusedScreen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName === screen.name)
     property var brightnessMonitor: Brightness.getMonitorForScreen(focusedScreen)
 
     property int nlStartHour:   parseInt(Config.options.display.nightLightFrom?.split(":")[0] ?? "20")

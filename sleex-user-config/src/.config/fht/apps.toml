@@ -1,0 +1,16 @@
+# Terminal
+Super-Return = { action = "run-command", arg = "foot" }
+# Code
+Super-c = { action = "run-command", arg = "code --enable-features=UseOzonePlatform --ozone-platform=wayland" }
+# Browser
+Super-w = { action = "run-command", arg = "firefox" }
+# File manager
+Super-e = { action = "run-command", arg = "pcmanfm-qt" }
+# Text editor
+Super-x = { action = "run-command", arg = "kwrite" }
+# Sleex settings
+Super-i = { action = "run-command", arg = "qs -p /usr/share/sleex/settings.qml" }
+# Volume mixer
+Ctrl-Super-v = { action = "run-command", arg = "pavucontrol" }
+# System monitor
+Ctrl-Shift-Esc = { action = "run-command", arg = "missioncenter" }

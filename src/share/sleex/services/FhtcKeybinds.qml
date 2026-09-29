@@ -6,22 +6,25 @@ import SleexUiKit.Functions
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import Quickshell.Wayland
 
+/**
+ * A service that provides access to keybinds.
+ * Uses the `get_keybinds.py` script to parse comments in config files in a certain format and convert to JSON.
+ */
 Singleton {
     id: root
-    property var keybinds: []
-    property var keybindCategories: []
-
-    Connections {
-        target: Hyprland
-
-        function onRawEvent(event) {
-            if (event.name == "configreloaded") {
-                getKeybinds.running = true
-            }
-        }
-    }
+    property string keybindParserPath: FileUtils.trimFileProtocol(`/usr/share/sleex/scripts/fht/get_keybinds.py`)
+    property string defaultKeybindConfigPath: FileUtils.trimFileProtocol(`/etc/sleex/compositor/keybinds.toml`)
+    property string userKeybindConfigPath: FileUtils.trimFileProtocol(`${Directories.config}/fht/custom/keybinds.toml`)
+    property var defaultKeybinds: {"children": []}
+    property var userKeybinds: {"children": []}
+    property var keybinds: ({
+        children: [
+            ...(defaultKeybinds.children ?? []),
+            ...(userKeybinds.children ?? []),
+        ]
+    })
 
     Process {
         id: getKeybinds

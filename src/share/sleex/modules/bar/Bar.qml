@@ -482,10 +482,10 @@ Scope {
                                         NotifIndicator {}
                                     }
 
-                                    HyprlandXkbIndicator {
-                                        Layout.alignment: Qt.AlignVCenter
-                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
-                                    }
+                                    // HyprlandXkbIndicator {
+                                    //     Layout.alignment: Qt.AlignVCenter
+                                    //     Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                    // }
 
 
                                     Revealer {

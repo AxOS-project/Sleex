@@ -5,7 +5,6 @@ import SleexUiKit.Functions
 import Qt.labs.platform
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 
 Singleton {
     // XDG Dirs, with "file://"

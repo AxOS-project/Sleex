@@ -1,6 +1,6 @@
 #include <QQmlExtensionPlugin>
 
-class SleexUtilsPlugin : public QQmlExtensionPlugin {
+class SleexWidgetsPlugin : public QQmlExtensionPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)
 

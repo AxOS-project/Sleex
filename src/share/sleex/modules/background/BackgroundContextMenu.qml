@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import Quickshell.Hyprland
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
@@ -113,7 +112,7 @@ Item {
                 }
                 
                 onClicked: {
-                    Hyprland.dispatch("hl.dsp.global('quickshell:sessionOpen')")
+                    Quickshell.execDetached(["qs", "-p", "/usr/share/sleex", "ipc", "call", "session", "toggle"])
                     bgMenu.close()
                 }
             }
@@ -140,6 +139,32 @@ Item {
 
                 onClicked: {
                     Config.options.background.showDesktopIcons = !Config.options.background.showDesktopIcons
+                    bgMenu.close()
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Appearance.m3colors.m3outlineVariant
+                Layout.topMargin: 4
+                Layout.bottomMargin: 4
+            }
+
+            RippleButton {
+                Layout.fillWidth: true
+                buttonRadius: popupBackground.radius - popupBackground.padding
+                
+                contentItem: RowLayout {
+                    spacing: 8
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    MaterialSymbol { text: "note_add"; iconSize: 20 }
+                    StyledText { text: "New Post-it"; Layout.fillWidth: true }
+                }
+                
+                onClicked: {
+                    postItManager.createNote(bgMenu.menuX, bgMenu.menuY)
                     bgMenu.close()
                 }
             }

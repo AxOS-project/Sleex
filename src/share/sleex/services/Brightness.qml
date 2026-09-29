@@ -8,6 +8,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import QtQuick
+import Sleex.Fhtc
 
 /**
  * For managing brightness of monitors. Supports both brightnessctl and ddcutil.
@@ -27,21 +28,21 @@ Singleton {
     }
 
     function increaseBrightness(): void {
-        const focusedName = Hyprland.focusedMonitor.name;
+        const focusedName = FhtcMonitors.activeMonitorName;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
             monitor.setBrightness(monitor.brightness + 0.05);
     }
 
     function decreaseBrightness(): void {
-        const focusedName = Hyprland.focusedMonitor.name;
+        const focusedName = FhtcMonitors.activeMonitorName;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
             monitor.setBrightness(monitor.brightness - 0.05);
     }
 
     function setMonitorBrightness(b): void {
-        const focusedName = Hyprland.focusedMonitor.name;
+        const focusedName = FhtcMonitors.activeMonitorName;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
             monitor.setBrightness(b);

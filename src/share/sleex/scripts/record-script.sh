@@ -7,7 +7,7 @@ getaudiooutput() {
     pactl list sources | grep 'Name' | grep 'monitor' | cut -d ' ' -f2
 }
 getactivemonitor() {
-    hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name'
+    fht-compositor ipc -j space | jq -r '.monitors[] | select(.active).output'
 }
 
 xdgvideo="$(xdg-user-dir VIDEOS)"

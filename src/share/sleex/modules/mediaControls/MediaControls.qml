@@ -12,7 +12,6 @@ import Quickshell.Io
 import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Item {
     id: root

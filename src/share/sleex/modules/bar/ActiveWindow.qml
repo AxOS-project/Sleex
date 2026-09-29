@@ -4,13 +4,11 @@ import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Item {
     id: root
     required property var bar
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
 
     implicitWidth: colLayout.implicitWidth
 
@@ -27,7 +25,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.appId : qsTr("Desktop")
+            text: FhtcWorkspaces.focusedWindow !== undefined ? FhtcWorkspaces.focusedWindow['app-id'] : qsTr("Desktop")
         }
 
         StyledText {
@@ -35,7 +33,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.title : `${qsTr("Workspace")} ${monitor.activeWorkspace?.id}`
+            text: FhtcWorkspaces.focusedWindow !== undefined ? FhtcWorkspaces.focusedWindow.title : `${qsTr("Workspace")} ${FhtcWorkspaces.activeWorkspaceId + 1}`
         }
 
     }
