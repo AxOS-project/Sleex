@@ -47,7 +47,7 @@ Item {
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
-    property var biggestWindowPerWorkspace: HyprlandData.biggestWindowPerWorkspace
+    property real widgetPadding: horizontalPadding
     
     // Function to update workspaceOccupied
     function updateWorkspaceOccupied() {
@@ -126,7 +126,7 @@ Item {
                     bottomRightRadius: radiusRight
                     
                     color: ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 0.4)
-                    opacity: (workspaceOccupied[index] && !(!activeWindow?.activated && monitor.activeWorkspace?.id === index+1)) ? 1 : 0
+                    opacity: workspaceOccupied[index] ? 1 : 0
 
                     Behavior on opacity {
                         animation: NumberAnimation {

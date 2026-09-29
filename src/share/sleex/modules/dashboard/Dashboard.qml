@@ -47,27 +47,6 @@ Scope {
 
             Region { id: emptyRegion }
 
-            Connections {
-                target: GlobalStates
-                function onDashboardOpenChanged() {
-                    if (!GlobalStates.dashboardOpen) {
-                        grab.active = false
-                    } else {
-                        delayedGrabTimer.start()
-                    }
-                }
-            }
-
-            Timer {
-                id: delayedGrabTimer
-                interval: Config.options.hacks.arbitraryRaceConditionDelay
-                repeat: false
-                onTriggered: {
-                    if (!grab.canBeActive) return
-                    if (GlobalStates.tutorialMode) return
-                    grab.active = GlobalStates.dashboardOpen
-                }
-            }
 
             Item {
                 id: scaleWrapper
