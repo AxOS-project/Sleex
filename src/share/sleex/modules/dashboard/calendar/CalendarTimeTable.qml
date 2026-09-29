@@ -1,11 +1,12 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Controls.Material
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 Item {
     id: root

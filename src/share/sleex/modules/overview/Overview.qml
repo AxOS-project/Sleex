@@ -1,7 +1,8 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -97,6 +98,7 @@ Scope {
                 }
 
                 Loader {
+        asynchronous: true
                     id: overviewLoader
                     active: GlobalStates.overviewOpen
                     sourceComponent: OverviewWidget {

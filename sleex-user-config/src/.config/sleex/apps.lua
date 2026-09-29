@@ -1,0 +1,8 @@
+hl.bind("SUPER+Return", hl.dsp.exec_cmd("foot"), { desc = "Launch foot (terminal)" })
+hl.bind("SUPER+C", hl.dsp.exec_cmd("code --password-store=\"gnome-keyring\" --enable-features=UseOzonePlatform --ozone-platform=wayland"), { desc = "Launch Visual Studio Code" })
+hl.bind("SUPER+E", hl.dsp.exec_cmd("pcmanfm-qt"), { desc = "Launch PCManFM-Qt (file manager)" })
+hl.bind("SUPER+W", hl.dsp.exec_cmd("firefox"), { desc = "Launch Firefox" })
+hl.bind("SUPER+X", hl.dsp.exec_cmd("kwrite"), { desc = "Launch kwrite" })
+hl.bind("SUPER+I", hl.dsp.exec_cmd("qs -p /usr/share/sleex/settings.qml"), { desc = "Launch Sleex Settings" })
+hl.bind("SUPER+CTRL+V", hl.dsp.exec_cmd("pavucontrol"), { desc = "Launch PulseAudio Volume Control" })
+hl.bind("CTRL+SHIFT+Escape", hl.dsp.exec_cmd("missioncenter"), { desc = "Launch Mission Center" })

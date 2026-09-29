@@ -2,7 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import qs.modules.common
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -27,30 +27,23 @@ Singleton {
     })
 
     Process {
-        id: getDefaultKeybinds
+        id: getKeybinds
         running: true
-        command: ["python", root.keybindParserPath, "--path", root.defaultKeybindConfigPath,]
+        command: ["hyprctl", "binds", "-j"]
         
-        stdout: SplitParser {
-            onRead: data => {
+        stdout: StdioCollector {
+            onStreamFinished: {
                 try {
-                    root.defaultKeybinds = JSON.parse(data)
-                } catch (e) {
-                    console.error("[CheatsheetKeybinds] Error parsing keybinds:", e)
-                }
-            }
-        }
-    }
-
-    Process {
-        id: getUserKeybinds
-        running: true
-        command: [root.keybindParserPath, "--path", root.userKeybindConfigPath]
-        
-        stdout: SplitParser {
-            onRead: data => {
-                try {
-                    root.userKeybinds = JSON.parse(data)
+                    root.keybinds = JSON.parse(text)
+                    var groups = []
+                    for (var i = 0; i < root.keybinds.length; i++) {
+                        var bind = root.keybinds[i].description
+                        var group = bind.substring(0, bind.indexOf(":"))
+                        if (!groups.includes(group) && group.length > 0) {
+                            groups.push(group)
+                        }
+                    }
+                    root.keybindCategories = groups
                 } catch (e) {
                     console.error("[CheatsheetKeybinds] Error parsing keybinds:", e)
                 }
@@ -58,4 +51,3 @@ Singleton {
         }
     }
 }
-

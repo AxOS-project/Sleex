@@ -1,6 +1,6 @@
 import qs
 import qs.modules.common
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import qs.modules.lockscreen
 import QtQuick
 import Quickshell
@@ -26,6 +26,7 @@ Scope {
 		WlSessionLockSurface {
 			color: "transparent"
 			Loader {
+        asynchronous: true
                 active: GlobalStates.screenLocked
                 anchors.fill: parent
                 opacity: active ? 1 : 0

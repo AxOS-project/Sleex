@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Sleex.Core
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import qs.modules.common
 
 Singleton {
     id: root
@@ -80,34 +81,11 @@ Singleton {
 
         onAdapterUpdated: {
             if (!root.loaded || root.isReloading) return;
-            
+
             let plainObj = ObjectUtils.toPlainObject(configOptionsObj);
             DatabaseManager.saveAll(JSON.stringify(plainObj));
         }
         
-        property JsonObject policies: JsonObject {
-            property int ai: 2 // 0: No | 1: Yes | 2: Local
-        }
-
-        property JsonObject ai: JsonObject {
-            property string systemPrompt: "## Style\n- Use casual tone, don't be formal! Make sure you answer precisely without hallucination and prefer bullet points over walls of text. You can have a friendly greeting at the beginning of the conversation, but don't repeat the user's question\n\n## Context (ignore when irrelevant)\n- You are a helpful and inspiring sidebar assistant on a AxOS Linux system\n- Desktop environment: Sleex\n- Current date & time: {DATETIME}\n- Focused app: {WINDOWCLASS}\n\n## Presentation\n- Use Markdown features in your response: \n  - **Bold** text to **highlight keywords** in your response\n  - **Split long information into small sections** with h2 headers and a relevant emoji at the start of it (for example `## 🐧 Linux`). Bullet points are preferred over long paragraphs, unless you're offering writing support or instructed otherwise by the user.\n- Asked to compare different options? You should firstly use a table to compare the main aspects, then elaborate or include relevant comments from online forums *after* the table. Make sure to provide a final recommendation for the user's use case!\n- Use LaTeX formatting for mathematical and scientific notations whenever appropriate. Enclose all LaTeX '$$' delimiters. NEVER generate LaTeX code in a latex block unless the user explicitly asks for it. DO NOT use LaTeX for regular documents (resumes, letters, essays, CVs, etc.).\n"
-            property string tool: "functions" // search, functions, or none
-            property list<var> extraModels: [
-                {
-                    "api_format": "openai", // Most of the time you want "openai". Use "gemini" for Google's models
-                    "description": "This is a custom model. Edit the config to add more! | Anyway, this is DeepSeek R1 Distill LLaMA 70B",
-                    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-                    "homepage": "https://openrouter.ai/deepseek/deepseek-r1-distill-llama-70b:free", // Not mandatory
-                    "icon": "spark-symbolic", // Not mandatory
-                    "key_get_link": "https://openrouter.ai/settings/keys", // Not mandatory
-                    "key_id": "openrouter",
-                    "model": "deepseek/deepseek-r1-distill-llama-70b:free",
-                    "name": "Custom: DS R1 Dstl. LLaMA 70B",
-                    "requires_key": true
-                }
-            ]
-        }
-
         property JsonObject appearance: JsonObject {
             property bool transparency: false
             property int opacity: 50
@@ -139,7 +117,7 @@ Singleton {
             property string videoPlayer: "mpv.desktop"
             property string archiveManager: "org.gnome.FileRoller.desktop"
             property string textEditor: "code.desktop"
-            property string audioPlayer: "axuralis.desktop"
+            property string musicPlayer: "axuralis.desktop"
             property string documentViewer: "onlyoffice-desktopeditors.desktop"
         }
 
@@ -180,11 +158,11 @@ Singleton {
         property JsonObject background: JsonObject {
             property bool enableClock: true // Whether to show the clock
             property string clockMode: "light" // "dark" or "light"
-            property real clockX: 0
-            property real clockY: 0
-            property bool fixedClockPosition: true // If true, clock position is not updated when the screen resolution changes
+            property real clockX: 1395
+            property real clockY: 355
             property bool showWatermark: true // Whether to show the watermark
-            property string wallpaperPath: "/usr/share/backgrounds/sleex/SleexOne.png"
+            property string wallpaperPath: "/usr/share/backgrounds/sleex/twentySix.jpg"
+            property string wallpaperDownloadPath: FileUtils.trimFileProtocol(Directories.home) + "/Pictures/Sleex Wallpapers/Unsplash"
             property string wallpaperSelectorPath: "/usr/share/backgrounds/sleex/"
             property string wallpaperTransition: "fade"
             property real transitionDuration: 0.5
@@ -193,6 +171,11 @@ Singleton {
             property bool enableQuote: true
             property int quoteSource: 0 // 0 for "local", 1 for "online"
             property bool showDesktopIcons: false
+            property bool enableWeatherWidget: true
+            property real weatherX: 0
+            property real weatherY: 0
+            property bool widgetsLocked: false
+            property bool showGrid: true
         }
 
         property JsonObject dashboard: JsonObject {
@@ -205,6 +188,7 @@ Singleton {
             property bool enableWeather: false
             property string weatherLocation: ""
             property bool autoWeatherLocation: true
+            property bool enableLyrics: false
             property string mediaPlayer: ""
             property JsonObject calendar: JsonObject {
                 property bool useVdirsyncer: false
@@ -238,6 +222,10 @@ Singleton {
 
         property JsonObject networking: JsonObject {
             property string userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+            property bool sensitiveNetworkInfo: false
+            property bool connectionDetails: true
+            property string dnsProvider: "cloudflare"
+            property bool dnsSwitch: false
         }
 
         property JsonObject osd: JsonObject {
@@ -246,6 +234,17 @@ Singleton {
 
         property JsonObject lockscreen: JsonObject {
             property bool enableScrim: true
+            property bool showLyricsOnLockScreen: false
+            property bool resizableLockScreenWidget: false
+            property int lockscreenMediaWidth: 500
+            property int lockscreenMediaHeight: 240
+            property int lockscreenMediaX: -1
+            property int lockscreenMediaY: -1
+            property bool enableFaceAuth: false
+            property JsonObject howdy: JsonObject {
+                property string devicePath: "/dev/video0"
+                property bool darkMode: false
+            }
         }
 
         property JsonObject notifications: JsonObject {

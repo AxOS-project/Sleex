@@ -1,8 +1,9 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -17,6 +18,7 @@ Scope { // Scope
     id: root
 
     Loader {
+        asynchronous: true
         id: cheatsheetLoader
         active: false
         
@@ -118,9 +120,16 @@ Scope { // Scope
 
         function close(): void {
             cheatsheetLoader.active = false
+            GlobalStates.tutorialMode = false
         }
 
         function open(): void {
+            GlobalStates.tutorialMode = false
+            cheatsheetLoader.active = true
+        }
+
+        function openTutorial(): void {
+            GlobalStates.tutorialMode = true
             cheatsheetLoader.active = true
         }
     }

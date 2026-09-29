@@ -1,36 +1,21 @@
-import qs
+pragma ComponentBehavior: Bound
+
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
-import Quickshell.Widgets
 
 Item {
     id: root
     readonly property var keybinds: FhtcKeybinds.keybinds
     property real spacing: 16
-    property real titleSpacing: 8
-    width: 800
-    height: 600
-
-    property var keyBlacklist: ["Super_L"]
-    property var keySubstitutions: ({
-        "Super": "󰖳",
-        // "Super": "⌘", // Just for you, Grace
-        "mouse_up": "Scroll ↓",
-        "mouse_down": "Scroll ↑",
-        "mouse:272": "LMB",
-        "mouse:273": "RMB",
-        "mouse:275": "MouseBack",
-        "Slash": "/",
-        "Hash": "#",
-        "Return": "Enter",
-    })
+    property real padding: 4
+    implicitWidth: QsWindow?.window?.screen.width * 0.5 ?? 0
+    implicitHeight: QsWindow?.window?.screen.height * 0.7 ?? 0
 
     StyledFlickable {
         id: flick
@@ -47,87 +32,10 @@ Item {
             spacing: root.spacing
 
             Repeater {
-                model: keybinds.children
-
-                delegate: ColumnLayout {
-                    spacing: root.titleSpacing
+                model: [...HyprlandKeybinds.keybindCategories, ""]
+                delegate: CheatsheetKeybindsCategory {
                     required property var modelData
-                    width: parent.width
-
-                    StyledText {
-                        text: modelData.name
-                        font.pixelSize: Appearance.font.pixelSize.huge
-                        font.family: Appearance.font.family.title
-                        color: Appearance.colors.colOnLayer0
-                        wrapMode: Text.Wrap
-                    }
-
-                    Repeater {
-                        model: modelData.children
-
-                        delegate: ColumnLayout {
-                            spacing: root.titleSpacing
-                            required property var modelData
-                            width: parent.width
-
-                            StyledText {
-                                text: modelData.name
-                                font.pixelSize: Appearance.font.pixelSize.large
-                                font.family: Appearance.font.family.title
-                                color: Appearance.colors.colOnLayer0
-                                wrapMode: Text.Wrap
-                            }
-
-                            Repeater {
-                                model: modelData.keybinds
-
-                                delegate: RowLayout {
-                                    spacing: 10
-                                    width: parent.width
-
-                                    // Key sequence column, fixed width for alignment
-                                    Item {
-                                        Layout.preferredWidth: 250
-                                        Layout.preferredHeight: 25
-                                        Layout.alignment: Qt.AlignLeft
-
-                                        RowLayout {
-                                            id: keyRow
-                                            spacing: 4
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Repeater {
-                                                model: modelData.mods
-                                                delegate: KeyboardKey {
-                                                    required property var modelData
-                                                    key: keySubstitutions[modelData] || modelData
-                                                }
-                                            }
-
-                                            StyledText {
-                                                visible: !keyBlacklist.includes(modelData.key) && modelData.mods.length > 0
-                                                text: "+"
-                                            }
-
-                                            KeyboardKey {
-                                                visible: !keyBlacklist.includes(modelData.key)
-                                                key: keySubstitutions[modelData.key] || modelData.key
-                                                color: Appearance.colors.colOnLayer0
-                                            }
-                                        }
-                                    }
-
-                                    // Description, fills remaining space
-                                    StyledText {
-                                        text: modelData.comment
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        wrapMode: Text.Wrap
-                                        Layout.fillWidth: true
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    categoryName: modelData
                 }
             }
         }

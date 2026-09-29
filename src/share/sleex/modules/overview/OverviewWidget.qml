@@ -1,8 +1,9 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -114,13 +115,13 @@ Item {
                             DropArea {
                                 anchors.fill: parent
                                 onEntered: {
-                                    root.draggingTargetWorkspace = workspaceValue
+                                    root.draggingTargetWorkspace = workspace.workspaceValue
                                     if (root.draggingFromWorkspace == root.draggingTargetWorkspace) return;
                                     hoveredWhileDragging = true
                                 }
                                 onExited: {
                                     hoveredWhileDragging = false
-                                    if (root.draggingTargetWorkspace == workspaceValue) root.draggingTargetWorkspace = -1
+                                    if (root.draggingTargetWorkspace == workspace.workspaceValue) root.draggingTargetWorkspace = -1
                                 }
                             }
 
@@ -242,10 +243,18 @@ Item {
                 border.width: 2
                 border.color: root.activeBorderColor
                 Behavior on x {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                 }
                 Behavior on y {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                 }
             }
         }

@@ -7,7 +7,8 @@ import Quickshell.Widgets
 import Quickshell.Bluetooth
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 ContentPage {
     forceSingleColumn: true

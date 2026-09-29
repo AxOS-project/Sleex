@@ -1,7 +1,8 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -62,7 +63,11 @@ Scope { // Scope
                 hoverEnabled: true
 
                 Behavior on anchors.topMargin {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                 }
 
                 Item {
@@ -127,7 +132,7 @@ Scope { // Scope
                             DockSeparator {}
                             DockButton {
                                 Layout.fillHeight: true
-                                onClicked: GlobalStates.overviewOpen = !GlobalStates.overviewOpen
+                                onClicked: GlobalStates.centerPopupToggleRequested(dockRoot.screen?.name)
                                 contentItem: MaterialSymbol {
                                     anchors.fill: parent
                                     horizontalAlignment: Text.AlignHCenter

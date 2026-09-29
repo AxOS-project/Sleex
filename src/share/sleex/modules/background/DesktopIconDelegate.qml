@@ -2,8 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import qs.services
 
 Item {
@@ -120,6 +121,7 @@ Item {
                 }
 
                 Loader {
+        asynchronous: true
                     id: renameLoader
                     anchors.centerIn: parent
                     width: 110
@@ -217,10 +219,10 @@ Item {
                         root.selectedIcons = [filePath]
                     }
                     let pos = mapToItem(root, mouse.x, mouse.y)
-                    root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
+                    if (root.contextMenu) root.contextMenu.openAt(pos.x, pos.y, filePath, fileIsDir, appEntry, root.width, root.height, root.selectedIcons)
                 } else {
                     root.selectedIcons = [filePath]
-                    root.contextMenu.close()
+                    if (root.contextMenu) root.contextMenu.close()
                 }
             }
 

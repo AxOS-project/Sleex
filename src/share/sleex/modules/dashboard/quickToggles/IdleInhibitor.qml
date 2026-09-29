@@ -1,4 +1,4 @@
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.modules.common
 import qs.services
 

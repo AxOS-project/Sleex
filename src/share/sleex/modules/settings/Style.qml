@@ -10,7 +10,9 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 ContentPage {
     forceSingleColumn: true
@@ -197,6 +199,7 @@ ContentPage {
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
                 source: Config.options.background.wallpaperPath
+                targetSize: Qt.size(imageContainer.width * Screen.devicePixelRatio, imageContainer.height * Screen.devicePixelRatio)
             }
 
             StyledText {

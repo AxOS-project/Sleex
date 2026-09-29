@@ -1,5 +1,6 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.services
 import Qt5Compat.GraphicalEffects
 import QtQuick
@@ -288,7 +289,11 @@ Item {
         anchors.fill: parent
 
         Behavior on opacity {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+            animation: NumberAnimation {
+    duration: Appearance.animation.elementMove.duration
+    easing.type: Appearance.animation.elementMove.type
+    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+}
         }
 
         ColumnLayout {

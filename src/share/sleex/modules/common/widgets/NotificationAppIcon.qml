@@ -7,6 +7,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 Rectangle { // App icon
     id: root
@@ -28,6 +30,7 @@ Rectangle { // App icon
     radius: Appearance.rounding.full
     color: Appearance.colors.colSecondaryContainer
     Loader {
+        asynchronous: true
         id: materialSymbolLoader
         active: root.appIcon == ""
         anchors.fill: parent

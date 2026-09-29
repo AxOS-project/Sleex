@@ -1,8 +1,9 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -28,6 +29,7 @@ DockButton {
     implicitWidth: isSeparator ? 1 : implicitHeight - topInset - bottomInset
 
     Loader {
+        asynchronous: true
         active: isSeparator
         anchors {
             fill: parent
@@ -38,6 +40,7 @@ DockButton {
     }
 
     Loader {
+        asynchronous: true
         anchors.fill: parent
         active: appToplevel.toplevels.length > 0
         sourceComponent: MouseArea {
@@ -80,6 +83,7 @@ DockButton {
     }
 
     contentItem: Loader {
+        asynchronous: true
         active: !isSeparator
         sourceComponent: Item {
             anchors.centerIn: parent

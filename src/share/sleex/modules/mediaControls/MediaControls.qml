@@ -1,8 +1,8 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
-import qs.modules.common.functions
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
@@ -16,6 +16,7 @@ import Quickshell.Wayland
 Item {
     id: root
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
+    readonly property bool windowShown: Window.window?.visible ?? false
     readonly property var realPlayers: Mpris.players.values.filter(player => isRealPlayer(player))
     readonly property var meaningfulPlayers: filterDuplicatePlayers(realPlayers)
     readonly property real osdWidth: Appearance.sizes.osdWidth
@@ -27,6 +28,12 @@ Item {
     property list<real> visualizerPoints: []
 
     property bool hasPlasmaIntegration: false
+    property bool isLockscreen: false
+
+    function refreshColorization() {
+        if (playerControlLoader.item && typeof playerControlLoader.item.refreshColorization === "function")
+            playerControlLoader.item.refreshColorization();
+    }
 
     function isRealPlayer(player) {
         return (
@@ -51,7 +58,7 @@ Item {
                 if (p1.trackTitle && p2.trackTitle &&
                     (p1.trackTitle.includes(p2.trackTitle) || p2.trackTitle.includes(p1.trackTitle))) {
                     group.push(j);
-                }
+                    }
             }
 
             let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
@@ -65,7 +72,7 @@ Item {
 
     Process {
         id: cavaProc
-        running: root.visible
+        running: root.windowShown
         onRunningChanged: {
             if (!cavaProc.running) {
                 root.visualizerPoints = [];
@@ -96,15 +103,17 @@ Item {
             artDominantColor: Appearance.m3colors.m3secondaryContainer
             visible: root.meaningfulPlayers.length === 0
         }
-        
 
         Loader {
+        asynchronous: true
+            id: playerControlLoader
             active: root.meaningfulPlayers.length > 0
             anchors.fill: parent
             visible: active
             sourceComponent: PlayerControl {
                 player: root.meaningfulPlayers[0]
-                visualizerPoints: root.visualizerPoints;
+                visualizerPoints: root.visualizerPoints
+                isLockscreen: root.isLockscreen
             }
         }
     }

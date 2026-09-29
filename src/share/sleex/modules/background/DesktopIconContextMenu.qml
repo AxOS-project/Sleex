@@ -3,8 +3,9 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 Item {
     id: contextMenu

@@ -1,9 +1,8 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
-import qs.modules.common.functions
-import qs.modules.common.functions
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Effects
@@ -54,7 +53,11 @@ Item {
             color: blendedColors.colOnSecondaryContainer
             text: iconName
             Behavior on color {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
             }
         }
     }
@@ -158,16 +161,16 @@ Item {
                         implicitWidth: size
                         implicitHeight: size
                         onClicked: {
-                           let player = Config.options.dashboard.mediaPlayer
+                            let player = Config.options.dashboard.mediaPlayer
 
-                           if (player.startsWith("http://") || player.startsWith("https://")) {
-                               // Open website
-                               Qt.openUrlExternally(player)
-                       } else {
-                           // Launch app
-                           Quickshell.execDetached([player])
-                       }
-                    }
+                            if (player.startsWith("http://") || player.startsWith("https://")) {
+                                // Open website
+                                Qt.openUrlExternally(player)
+                            } else {
+                                // Launch app
+                                Quickshell.execDetached([player])
+                            }
+                        }
                         buttonRadius: Appearance?.rounding.normal
                         colBackground: blendedColors.colSecondaryContainer
                         colBackgroundHover: blendedColors.colSecondaryContainerHover
@@ -180,7 +183,11 @@ Item {
                             color: blendedColors.colOnSecondaryContainer
                             text: "play_arrow"
                             Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                                animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                             }
                         }
                     }

@@ -1,7 +1,7 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-import qs.modules.common.functions
+import SleexUiKit.Functions
 import Qt.labs.platform
 import QtQuick
 import Quickshell
@@ -27,8 +27,6 @@ Singleton {
     property string cliphistDecode: FileUtils.trimFileProtocol(`/tmp/sleex/media/cliphist`)
     property string wallpaperSwitchScriptPath: FileUtils.trimFileProtocol('/usr/share/sleex/scripts/colors/switchwall.sh')
     property string wallpaperPath: FileUtils.trimFileProtocol(`/usr/share/backgrounds/sleex`)
-    property string userAiPrompts: FileUtils.trimFileProtocol(`${Directories.shellConfig}/ai/prompts`)
-    property string aiChats: FileUtils.trimFileProtocol(`${Directories.state}/user/ai/chats`)
 
 
     // Cleanup on init
@@ -38,6 +36,5 @@ Singleton {
         Quickshell.execDetached(["rm", "-rf", `${coverArt}`, ";", "mkdir", "-p", `${coverArt}`])
         Quickshell.execDetached(["rm", "-rf", `${latexOutput}`, ";", "mkdir", "-p", `${latexOutput}`])
         Quickshell.execDetached(["rm", "-rf", `${cliphistDecode}`, ";", "mkdir", "-p", `${cliphistDecode}`])
-        Quickshell.execDetached(["mkdir", "-p", `${aiChats}`])
     }
 }

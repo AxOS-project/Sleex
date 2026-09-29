@@ -1,6 +1,7 @@
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import Quickshell
 import Quickshell.Services.SystemTray
@@ -38,6 +39,7 @@ MouseArea {
     }
 
     Loader {
+        asynchronous: true
         id: menu
         function open() {
             menu.active = true;
@@ -73,6 +75,7 @@ MouseArea {
     }
 
     Loader {
+        asynchronous: true
         active: Config.options.bar.tray.monochromeIcons
         anchors.fill: trayIcon
         sourceComponent: Item {

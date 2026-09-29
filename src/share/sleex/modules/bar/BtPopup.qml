@@ -2,7 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Bluetooth
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 Rectangle {
     id: resourcePopup

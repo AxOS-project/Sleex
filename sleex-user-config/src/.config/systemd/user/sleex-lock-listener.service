@@ -1,0 +1,11 @@
+[Unit]
+Description=Listen for loginctl lock signals to trigger Sleex Lockscreen via IPC
+After=graphic-island.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'dbus-monitor --system "type=\"signal\",interface=\"org.freedesktop.login1.Session\",member=\"Lock\"" | grep --line-buffered "member=Lock" | while read -r line; do [ ! -f /tmp/sleex.locked ] && touch /tmp/sleex.locked && qs -p /usr/share/sleex ipc call lock lock; rm -f /tmp/sleex.locked; done'
+Restart=always
+
+[Install]
+WantedBy=default.target

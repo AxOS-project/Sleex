@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 Item {
     id: tile

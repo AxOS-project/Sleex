@@ -4,7 +4,8 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
 import "./volumeMixer"
@@ -132,25 +133,6 @@ ContentPage {
             onClicked: checked = !checked;
             onCheckedChanged: {
                 Config.options.battery.sound = checked;
-            }
-        }
-    }
-
-    ContentSection {
-        title: "Default Media Player"
-        icon: "play_circle"
-    
-            
-        
-        MaterialTextField {
-            
-            id: mediaPlayer
-            Layout.fillWidth: true
-            placeholderText: "Default Media Player"
-            text: Config.options.dashboard.mediaPlayer
-            wrapMode: TextEdit.Wrap
-            onEditingFinished: {
-                Config.options.dashboard.mediaPlayer = text
             }
         }
     }

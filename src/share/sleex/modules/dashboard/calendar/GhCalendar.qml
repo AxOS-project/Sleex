@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import Sleex.Widgets
+import SleexUiKit.Appearance
 import qs.modules.common
 import qs.services
 

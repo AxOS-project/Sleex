@@ -1,6 +1,7 @@
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -29,7 +30,11 @@ RippleButton {
     background.implicitWidth: size
 
     Behavior on buttonRadius {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
     }
 
     Keys.onPressed: (event) => {

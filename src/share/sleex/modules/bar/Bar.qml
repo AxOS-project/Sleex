@@ -1,11 +1,13 @@
 import qs
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
 import qs.services
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
@@ -44,6 +46,7 @@ Scope {
             screen: modelData
 
             property ShellScreen modelData
+            property bool centerPopupOpen: false
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
@@ -52,12 +55,31 @@ Scope {
                 (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened :
                     Appearance.sizes.barCenterSideModuleWidth
 
+            Connections {
+                target: GlobalStates
+                function onCenterPopupToggleRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                }
+                function onCenterPopupOpenRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = true
+                }
+                function onCenterPopupCloseRequested(screenName) {
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = false
+                }
+            }
+
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
-            implicitHeight: barHeight + Appearance.rounding.screenRounding
+            WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
             exclusiveZone: barHeight
             mask: Region {
-                item: barContent
+                Region {
+                    item: barContent
+                }
+                Region {
+                    item: (barRoot.centerPopupOpen || centerPopup.isAnimating ? centerPopup : null)
+                }
             }
             color: "transparent"
 
@@ -66,6 +88,12 @@ Scope {
                 bottom: Config.options.bar.bottom
                 left: true
                 right: true
+            }
+
+            BarCenterPopup {
+                id: centerPopup
+                targetSection: middleSection
+                barRoot: barRoot
             }
 
             Rectangle { // Bar background
@@ -153,7 +181,7 @@ Scope {
                     }
                 }
 
-                // Background Rectangle - completely outside the RowLayout
+                // Background Rectangle
                 Rectangle {
                     id: middleBg
                     anchors.centerIn: parent
@@ -161,47 +189,27 @@ Scope {
                     anchors.verticalCenter: middleSection.verticalCenter
                     width: middleSection.width
                     height: middleSection.height
-                    color: "transparent"
+                    color: Appearance.colors.colLayer0
                     antialiasing: true
                     z: -1
 
                     property int bottomRadius: Appearance.rounding.screenRounding
-                    property int topRadius: 0
+                    bottomLeftRadius: bottomRadius
+                    bottomRightRadius: bottomRadius
 
-                    Canvas {
+                    MouseArea { // Right-click to toggle center popup
                         anchors.fill: parent
-                        z: 1
+                        acceptedButtons: Qt.RightButton
 
-                        property color bgColor: Appearance.colors.colLayer0
-
-                        onBgColorChanged: requestPaint()
-
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.lineTo(width, 0);
-                            ctx.lineTo(width, height - middleBg.bottomRadius);
-                            ctx.quadraticCurveTo(width, height, width - middleBg.bottomRadius, height);
-                            ctx.lineTo(middleBg.bottomRadius, height);
-                            ctx.quadraticCurveTo(0, height, 0, height - middleBg.bottomRadius);
-                            ctx.lineTo(0, 0);
-                            ctx.closePath();
-                            
-                            // Build an explicit rgba() color string from the QML color components so alpha is preserved
-                            var cr = Math.round(bgColor.r * 255);
-                            var cg = Math.round(bgColor.g * 255);
-                            var cb = Math.round(bgColor.b * 255);
-                            var ca = bgColor.a;
-                            ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
-                            ctx.fill();
+                        onPressed: (event) => {
+                            if (event.button === Qt.RightButton) {
+                                barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                            }
                         }
                     }
-                    visible: true
                 }
 
-                RowLayout { // Middle section - NO Rectangle inside here
+                RowLayout { // Middle section
                     id: middleSection
                     anchors.centerIn: parent
                     spacing: 0
@@ -261,50 +269,13 @@ Scope {
                             bar: barRoot
                             Layout.fillHeight: true
 
-                            MouseArea { // Right-click to toggle overview
-                                anchors.fill: parent
-                                acceptedButtons: Qt.RightButton
-
-                                onPressed: (event) => {
-                                    if (event.button === Qt.RightButton) {
-                                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen
-                                    }
-                                }
-                            }
-
-                            Canvas {
-                                id: workspacesBgCanvas
+                            Rectangle {
                                 anchors.fill: parent
                                 z: -1
-
-                                property color bgColor: Appearance.colors.colLayer1
-                                
-                                onBgColorChanged: requestPaint()
-
-                                onPaint: {
-                                    var ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
-
-                                    ctx.beginPath();
-                                    ctx.moveTo(0, 0);
-                                    ctx.lineTo(width, 0);
-                                    ctx.lineTo(width, height - 20);
-                                    ctx.quadraticCurveTo(width, height, width - 20, height); // bottom-right
-                                    ctx.lineTo(20, height);
-                                    ctx.quadraticCurveTo(0, height, 0, height - 20);         // bottom-left
-                                    ctx.lineTo(0, 0);
-                                    ctx.closePath();
-
-                                    // Build an explicit rgba() color string from the QML color components so alpha is preserved
-                                    var cr = Math.round(bgColor.r * 255);
-                                    var cg = Math.round(bgColor.g * 255);
-                                    var cb = Math.round(bgColor.b * 255);
-                                    var ca = bgColor.a;
-                                    ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + ca + ")";
-
-                                    ctx.fill();
-                                }
-
+                                antialiasing: true
+                                color: Appearance.colors.colLayer1
+                                bottomLeftRadius: 20
+                                bottomRightRadius: 20
                             }
                         }
 
@@ -480,7 +451,11 @@ Scope {
                                 property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
 
                                 Behavior on colText {
-                                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                                    animation: ColorAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                                 }
 
                                 onPressed: {

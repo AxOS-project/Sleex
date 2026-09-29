@@ -54,6 +54,7 @@ qml_module(sleex-widgets
         ContributionCalendar.cpp ContributionCalendar.hpp
         ExtCaptureItem.cpp ExtCaptureItem.hpp
         GbmBuffer.cpp GbmBuffer.hpp
+        CalendarGridBackground.cpp CalendarGridBackground.hpp
         plugin.cpp
 )
 

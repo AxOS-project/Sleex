@@ -1,8 +1,9 @@
 import qs
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
@@ -11,6 +12,7 @@ Scope {
     id: root
     
     Loader {
+        asynchronous: true
         active: PolkitService.active
         sourceComponent: Variants {
             model: Quickshell.screens

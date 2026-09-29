@@ -15,7 +15,9 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import qs.modules.common.functions
+import SleexUiKit.Widgets
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 ApplicationWindow {
     id: root
@@ -25,7 +27,7 @@ ApplicationWindow {
     minimumHeight: 730
     width: 850
     height: 700
-    color: Appearance.colors.colLayer1
+    color: Appearance.colors.colLayer0
 
     // State
     property real contentPadding: 8
@@ -41,6 +43,7 @@ ApplicationWindow {
         { name: "Wifi",        icon: "wifi",             component: "modules/settings/Wifi.qml",          type: "item" },
         { name: "Applications",icon: "apps",             component: "modules/settings/Applications.qml",  type: "item" },
         { name: "Display",     icon: "display_settings", component: "modules/settings/Display.qml",       type: "item" },
+        { name: "Security",    icon: "lock",             component: "modules/settings/Security.qml",      type: "item" },
         { type: "divider" },
         { name: "Privacy",     icon: "lock",             component: "modules/settings/Privacy.qml",       type: "item" },
         { name: "About",       icon: "info",             component: "modules/settings/About.qml",         type: "item" }
@@ -50,6 +53,8 @@ ApplicationWindow {
     title: "Sleex Settings"
 
     onClosing: Qt.quit()
+
+    AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
@@ -64,13 +69,20 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Appearance.colors.colLayer1
+            color: Appearance.colors.colLayer0
 
             // Sidebar
-            Item {
+            Rectangle {
                 id: menuContainer
-                anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
-                implicitWidth: 250
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    left: parent.left
+                    margins: root.contentPadding
+                }
+                width: 250
+                color: Appearance.colors.colLayer1
+                radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -167,19 +179,18 @@ ApplicationWindow {
             }
 
             // Content pane
-            Rectangle {
+            Item {
                 anchors {
                     top: parent.top
                     bottom: parent.bottom
                     left: menuContainer.right
                     right: parent.right
-                    leftMargin: 6
+                    leftMargin: root.contentPadding
                     margins: root.contentPadding
                 }
-                color: Appearance.colors.colLayer0
-                radius: Appearance.rounding.windowRounding - root.contentPadding
 
                 Loader {
+        asynchronous: true
                     id: pageLoader
                     anchors.fill: parent
                     source: root.pages[0].component

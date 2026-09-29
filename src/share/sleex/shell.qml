@@ -22,6 +22,7 @@ import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
 import qs.modules.BatteryPopup
+import qs.modules.cornerPopup
 
 import Quickshell
 import QtQuick
@@ -48,6 +49,9 @@ ShellRoot {
     property bool enableDashboard: true
     property bool enableWallSelector: true
     property bool enableBackground: true
+    property bool enableCornerPopup: true
+
+    AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
     // Force initialization of some singletons
     Component.onCompleted: {
@@ -56,12 +60,12 @@ ShellRoot {
         Cliphist.refresh()
         Idle.init();
         NightLight.load()
+        SuspendFader.start()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }
     LazyLoader { active: enableCheatsheet; component: Cheatsheet {} }
     LazyLoader { active: enableDock && Config.options.dock.enabled; component: Dock {} }
-    LazyLoader { active: enableMediaControls; component: MediaControls {} }
     LazyLoader { active: enableNotificationPopup; component: NotificationPopup {} }
     LazyLoader { active: enableOnScreenDisplayBrightness; component: OnScreenDisplayBrightness {} }
     LazyLoader { active: enableOnScreenDisplayVolume; component: OnScreenDisplayVolume {} }
@@ -74,5 +78,6 @@ ShellRoot {
     LazyLoader { active: enableDashboard; component: Dashboard {} }
     LazyLoader { active: enableWallSelector; component: WallpaperSelector {} }
     LazyLoader { active: enableBackground; component: Background {} }
+    LazyLoader { active: enableCornerPopup; component: CornerPopup {} }
     LazyLoader { active: GlobalStates.screenLocked; component: Lock {}}
 }

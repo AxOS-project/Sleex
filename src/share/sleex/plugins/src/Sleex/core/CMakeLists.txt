@@ -1,9 +1,10 @@
-pkg_check_modules(GLIB REQUIRED glib-2.0 gobject-2.0 gio-2.0)
+pkg_check_modules(GLIB REQUIRED glib-2.0 gobject-2.0 gio-2.0 sdbus-c++)
 
 qml_module(sleex-core
     URI Sleex.Core
     SOURCES
         init.cpp init.hpp
+        dpmsFade.cpp dpmsFade.hpp
         plugin.cpp
     DEPENDENCIES
             Qt::Sql
@@ -29,4 +30,5 @@ target_link_libraries(sleex-core
         Qt6::Core
         Qt6::Qml
         Qt6::Sql
+        sdbus-c++
 )

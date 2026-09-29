@@ -3,39 +3,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 
 ContentPage {
     forceSingleColumn: true
-    
-    ContentSection {
-        title: "Policies"
-        icon: "policy"
-
-        ContentSubsectionLabel {
-            text: "AI"
-        }
-        ConfigSelectionArray {
-            currentValue: Config.options.policies.ai
-            onSelected: newValue => {
-                Config.options.policies.ai = newValue;
-            }
-            options: [
-                {
-                    displayName: "No",
-                    value: 0
-                },
-                {
-                    displayName: "Yes",
-                    value: 1
-                },
-                {
-                    displayName: "Local only",
-                    value: 2
-                }
-            ]
-        }
-    }
     
     ContentSection {
         title: "Weather"
@@ -73,6 +45,20 @@ ContentPage {
             onEditingFinished: {
                 Config.options.dashboard.weatherLocation = text;
             }
+        }
+    }
+    
+    ContentSection {
+        title: "Media Player"
+        icon: "music_note"
+
+        ConfigSwitch {
+            id: lyricsSwitch
+            text: "Lyrics"
+            checked: Config.options.dashboard.enableLyrics
+            onClicked: checked = !checked;
+            onCheckedChanged: Config.options.dashboard.enableLyrics = checked
+            StyledToolTip { text: "Fetch and display synced lyrics (LRCLIB provider)." }
         }
     }
     

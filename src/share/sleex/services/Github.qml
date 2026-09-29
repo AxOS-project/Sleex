@@ -14,14 +14,14 @@ Singleton {
 
     Timer {
         interval: 600000 // 10 minutes
-        running: true
+        running: root.author && root.author.trim() !== ""
         repeat: true
         onTriggered: getContributions.running = true
     }
 
     Process {
         id: getContributions
-        running: true
+        running: root.author && root.author.trim() !== ""
         command: ["curl", `https://github-contributions-api.jogruber.de/v4/${root.author}`]
         stdout: StdioCollector {
             onStreamFinished: {

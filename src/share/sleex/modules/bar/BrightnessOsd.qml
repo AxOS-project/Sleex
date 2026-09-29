@@ -1,7 +1,8 @@
 import Quickshell
 import QtQuick
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import qs.services
 import Sleex.Fhtc
 

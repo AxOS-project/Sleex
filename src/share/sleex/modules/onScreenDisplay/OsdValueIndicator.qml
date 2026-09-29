@@ -1,6 +1,7 @@
 import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -58,10 +59,18 @@ Item {
                     rotation: 180 * (root.rotateIcon ? value : 0)
 
                     Behavior on iconSize {
-                        animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+                        animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveEnter.duration
+    easing.type: Appearance.animation.elementMoveEnter.type
+    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+}
                     }
                     Behavior on rotation {
-                        animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+                        animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveEnter.duration
+    easing.type: Appearance.animation.elementMoveEnter.type
+    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+}
                     }
                 
                 }

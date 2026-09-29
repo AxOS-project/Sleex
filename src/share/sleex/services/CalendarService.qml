@@ -8,8 +8,8 @@ pragma ComponentBehavior: Bound
 import qs
 import qs.modules.common
 import Qt.labs.platform
-import qs.modules.common.functions
-import qs.modules.common
+import SleexUiKit.Functions
+import SleexUiKit.Appearance
 
 Singleton {
     id: root
@@ -250,7 +250,7 @@ Singleton {
 
     Process {
         id: syncProcess
-        running: Config.options.dashboard.calendar.useVdirsyncer && !getEventsProcess.running
+        running: false
         command: ["vdirsyncer", "sync"]
         onExited: (exitCode) => {
             if (exitCode === 0) {

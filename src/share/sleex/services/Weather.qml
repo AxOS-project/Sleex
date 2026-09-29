@@ -14,6 +14,8 @@ Singleton {
     property string locationName
     property string temperature
     property string condition
+    property string humidity
+    property string windSpeed
     property string raw
     property string weatherCode
     property bool useCustomLocation: false
@@ -110,7 +112,7 @@ Singleton {
         command: [
             "curl",
             `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-            `&current=temperature_2m,weather_code` +
+            `&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m` +
             `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
             `&forecast_days=6&timezone=auto`
         ]
@@ -123,6 +125,8 @@ Singleton {
                     root.weatherCode = String(current.weather_code);
                     root.temperature = Math.round(current.temperature_2m) + "°C";
                     root.condition = root.weatherCodeToDescription(current.weather_code);
+                    root.humidity = current.relative_humidity_2m;
+                    root.windSpeed = current.wind_speed_10m;
 
                     // Build 5-day forecast (skip index 0 = today)
                     const daily = data.daily;

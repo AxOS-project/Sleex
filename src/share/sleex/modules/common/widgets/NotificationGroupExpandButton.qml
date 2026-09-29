@@ -1,6 +1,8 @@
 import qs.modules.common
 import qs.services
-import qs.modules.common.functions
+import SleexUiKit.Functions
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -43,7 +45,11 @@ RippleButton { // Expand button
                 color: Appearance.colors.colOnLayer2
                 rotation: expanded ? 180 : 0
                 Behavior on rotation {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    animation: NumberAnimation {
+    duration: Appearance.animation.elementMoveFast.duration
+    easing.type: Appearance.animation.elementMoveFast.type
+    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+}
                 }
             }
         }

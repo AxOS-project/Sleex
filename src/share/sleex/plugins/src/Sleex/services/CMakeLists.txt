@@ -33,4 +33,5 @@ target_link_libraries(sleex-services
         Qt6::Core
         Qt6::Qml
         Qt6::Bluetooth
+        Qt6::DBus
 )

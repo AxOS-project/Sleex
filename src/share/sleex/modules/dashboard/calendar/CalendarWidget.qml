@@ -1,5 +1,6 @@
 import qs.modules.common
-import qs.modules.common.widgets
+import SleexUiKit.Widgets
+import SleexUiKit.Appearance
 import "./calendar_layout.js" as CalendarLayout
 import QtQuick
 import QtQuick.Controls

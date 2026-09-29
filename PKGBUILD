@@ -1,6 +1,6 @@
 pkgname="sleex"
 pkgver="2.0_beta.1"
-pkgrel="1"
+pkgrel="2"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
@@ -13,13 +13,11 @@ depends=(
   # Cursor
   "bibata-cursor-theme-bin"
   # Fonts & Themes
-  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'kde-material-you-colors' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
+  'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
   # Fhtc dependencies
   'fht-compositor-git' 'fht-share-picker-git' 'wl-clipboard'
   # QT/KDE dependencies
   'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
-  # Microtex
-  "microtex-git"
   # Portal
   'xdg-desktop-portal'
   # Python deps
@@ -27,13 +25,15 @@ depends=(
   # Screencast/Screenrecord
   'ksnip' 'wf-recorder' 'slurp' 'grim' 'tesseract' 'tesseract-data-eng'
   # Tools
-  'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils'
+  'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils' 'howdy-git' 'sdbus-cpp'
   # Widgets
-  'fuzzel' 'nm-connection-editor' 'quickshell-git' 'swww' 'translate-shell' 'wlogout'
+  'fuzzel' 'nm-connection-editor' 'quickshell' 'swww' 'translate-shell' 'wlogout'
   # User config
   "sleex-user-config"
   # Artworks
   "sleex-artworks"
+  # Sleex packages
+  "sleex-ui-kit" "sleex-welcome-screen"
 )
 optdepends=(
   "neofetch: Fancy system info in your terminal"
@@ -57,7 +57,7 @@ build() {
   cd "$srcdir/share/sleex"
   rm -rf build/
   cmake -B build -DCMAKE_BUILD_TYPE=Release
-  cmake --build build -j
+  cmake --build build -j$(nproc --ignore=2)
 }
 
 package() {

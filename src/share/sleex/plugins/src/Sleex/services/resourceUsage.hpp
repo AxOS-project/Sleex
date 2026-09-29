@@ -57,6 +57,7 @@ private slots:
 private:
     void updateMemory();
     void updateCpu();
+    void discoverTemperaturePath();
     void updateTemperature();
 
     // previous cpu totals for delta computation
@@ -69,6 +70,7 @@ private:
     double m_swapTotal = 1;
     double m_swapFree = 1;
     double m_cpuUsage = 0;
+    QString m_temperaturePath;
     int m_cpuTemperature = 0;
 
     QTimer m_timer;
