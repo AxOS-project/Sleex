@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs
 
 Singleton {
     id: root
@@ -25,10 +26,16 @@ Singleton {
         Quickshell.execDetached(["sh", "-c", cmd])
     }
 
-    function suspend() { root.run("suspend") }
+    function suspend() { 
+        GlobalStates.screenLocked = true
+        root.run("suspend") 
+    }
     function poweroff() { root.run("poweroff") }
     function reboot() { root.run("reboot") }
-    function hibernate() { root.run("hibernate") }
+    function hibernate() { 
+        GlobalStates.screenLocked = true
+        root.run("hibernate") 
+    }
 
     IpcHandler {
         target: "powerAction"
