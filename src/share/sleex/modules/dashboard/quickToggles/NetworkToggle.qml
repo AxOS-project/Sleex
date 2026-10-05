@@ -23,6 +23,6 @@ QuickToggleButton {
         GlobalStates.dashboardOpen = false
     }
     StyledToolTip {
-        text: StringUtils.format(qsTr("{0} | Right-click to configure"), Network.active?.ssid ?? qsTr("Wi-Fi Disabled"))
+        text: qsTr("%1 | Right-click to configure").arg(Network.active?.ssid ?? qsTr("Wi-Fi Disabled"))
     }
 }
