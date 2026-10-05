@@ -147,6 +147,8 @@ Singleton {
             property bool showWorkspaces: true
             property bool showClock: false
             property bool showTrayAndIcons: true
+            property bool showIsland: true
+            property bool dynamic: false
             property JsonObject tray: JsonObject {
                 property bool monochromeIcons: true
                 property bool showItemId: false
