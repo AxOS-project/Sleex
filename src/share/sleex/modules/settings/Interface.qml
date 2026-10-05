@@ -166,11 +166,26 @@ ContentPage {
             }
 
             ConfigSwitch {
-                text: "Dynamic bar"
-                checked: Config.options.bar.dynamic
+                text: "Bar auto-hide"
+                checked: Config.options.bar.autoHide
                 onClicked: checked = !checked;
                 StyledToolTip { text: "Hide the bar until hovered." }
-                onCheckedChanged: Config.options.bar.dynamic = checked;
+                onCheckedChanged: Config.options.bar.autoHide = checked;
+            }
+
+        }
+
+        RowLayout {
+            spacing: 10
+            uniformCellSizes: true
+            visible: Config.options.bar.autoHide
+
+            ConfigSwitch {
+                text: "Reserve space"
+                checked: Config.options.bar.reserveSpace
+                onClicked: checked = !checked;
+                StyledToolTip { text: "Keep the bar's screen space reserved while hidden, so windows never move." }
+                onCheckedChanged: Config.options.bar.reserveSpace = checked;
             }
 
         }
