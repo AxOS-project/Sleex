@@ -73,6 +73,7 @@ ShellRoot {
     LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
     LazyLoader { active: true; component: BatteryPopup {} }
+    LazyLoader { active: true; component: CriticalBatteryOverlay {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
     LazyLoader { active: enableDashboard; component: Dashboard {} }
