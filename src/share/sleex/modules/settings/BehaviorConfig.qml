@@ -131,6 +131,46 @@ ContentPage {
                 }
             }
         }
+        ContentSubsection {
+            title: "Critical actions"
+            tooltip: "On critical battery, run a screen-edge countdown, then the chosen action."
+            visible: UPower.displayDevice.isLaptopBattery
+
+            ConfigSwitch {
+                text: "Enable critical actions"
+                checked: Config.options.battery.criticalActionEnabled
+                onClicked: checked = !checked;
+                onCheckedChanged: {
+                    Config.options.battery.criticalActionEnabled = checked;
+                }
+            }
+            ConfigSpinBox {
+                text: "Countdown (seconds)"
+                value: Config.options.battery.criticalActionDelay
+                from: 5
+                to: 120
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.battery.criticalActionDelay = value;
+                }
+            }
+            ContentSubsectionLabel {
+                text: "Action on countdown end"
+            }
+            ConfigSelectionArray {
+                currentValue: Config.options.battery.criticalAction
+                configOptionName: "battery.criticalAction"
+                onSelected: (newValue) => {
+                    Config.options.battery.criticalAction = newValue;
+                }
+                options: [
+                    {"value": "suspend", "displayName": "Suspend"},
+                    {"value": "hibernate", "displayName": "Hibernate"},
+                    {"value": "shutdown", "displayName": "Shut down"},
+                    {"value": "lock", "displayName": "Lock screen"}
+                ]
+            }
+        }
         ContentSubsectionLabel {
             text: "Power profile"
         }
