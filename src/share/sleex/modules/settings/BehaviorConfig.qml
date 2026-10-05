@@ -166,8 +166,7 @@ ContentPage {
                 options: [
                     {"value": "suspend", "displayName": "Suspend"},
                     {"value": "hibernate", "displayName": "Hibernate"},
-                    {"value": "shutdown", "displayName": "Shut down"},
-                    {"value": "lock", "displayName": "Lock screen"}
+                    {"value": "shutdown", "displayName": "Shut down"}
                 ]
             }
         }
