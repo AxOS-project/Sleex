@@ -39,7 +39,6 @@ Singleton {
         switch (Config.options.battery.criticalAction) {
             case "hibernate": return qsTr("Hibernate")
             case "shutdown":  return qsTr("Shut down")
-            case "lock":      return qsTr("Lock screen")
             default:          return qsTr("Suspend")
         }
     }
@@ -78,9 +77,7 @@ Singleton {
         _criticalActionFired = true
         criticalActionExecuted()
         const action = Config.options.battery.criticalAction
-        if (action === "lock") {
-            GlobalStates.screenLocked = true
-        } else if (action === "shutdown") {
+        if (action === "shutdown") {
             PowerActions.poweroff()
         } else if (action === "hibernate") {
             PowerActions.hibernate()
