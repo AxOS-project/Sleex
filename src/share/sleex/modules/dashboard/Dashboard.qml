@@ -226,7 +226,7 @@ Scope {
                                     StyledText {
                                         font.pixelSize: Appearance.font.pixelSize.normal
                                         color: Appearance.colors.colOnLayer0
-                                        text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
+                                        text: qsTr("Uptime: %1").arg(DateTime.uptime)
                                     }
 
                                     Item { Layout.fillWidth: true }
