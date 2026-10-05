@@ -47,6 +47,11 @@ Scope {
 
             property ShellScreen modelData
             property bool centerPopupOpen: false
+            property bool barRevealed: !Config.options.bar.autoHide || barHoverArea.containsMouse || barRoot.centerPopupOpen || GlobalStates.dashboardOpen
+
+            readonly property bool criticalShift: Battery.criticalActionWanted && barRoot.barRevealed
+          
+            readonly property int autoHideAnimMs: 400
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
@@ -71,11 +76,14 @@ Scope {
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
-            exclusiveZone: barHeight
+            implicitHeight: (barRoot.criticalShift ? 20 : 0) + barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
+            exclusiveZone: (Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight) + (barRoot.criticalShift ? 20 : 0)
             mask: Region {
                 Region {
-                    item: barContent
+                    item: Config.options.bar.autoHide ? barHoverArea : null
+                }
+                Region {
+                    item: barContent.visible ? barContent : null
                 }
                 Region {
                     item: (barRoot.centerPopupOpen || centerPopup.isAnimating ? centerPopup : null)
@@ -96,13 +104,55 @@ Scope {
                 barRoot: barRoot
             }
 
+            MouseArea {
+                id: barHoverArea
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: !Config.options.bar.bottom ? parent.top : undefined
+                    bottom: Config.options.bar.bottom ? parent.bottom : undefined
+                }
+                height: barContent.visible ? barHeight : 5
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
+                visible: Config.options.bar.autoHide
+                z: 100
+            }
+
             Rectangle { // Bar background
                 id: barContent
+                visible: barRoot.barRevealed || opacity > 0
+                opacity: barRoot.barRevealed ? 1 : 0
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: barRoot.autoHideAnimMs
+                        easing.type: Appearance.animation.elementMove.type
+                        easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                    }
+                }
                 anchors {
                     right: parent.right
                     left: parent.left
                     top: !Config.options.bar.bottom ? parent.top : undefined
                     bottom: Config.options.bar.bottom ? parent.bottom : undefined
+                    topMargin: !Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
+                    bottomMargin: Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
+                }
+
+                Behavior on anchors.topMargin {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
+                }
+                Behavior on anchors.bottomMargin {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
                 color: barBackground ? Appearance.colors.colLayer2 : "transparent"
                 height: barHeight
@@ -111,7 +161,7 @@ Scope {
                     id: barLeftSideMouseArea
                     anchors.left: parent.left
                     implicitHeight: barHeight
-                    width: (barRoot.width - middleSection.width) / 2
+                    width: (barRoot.width - (Config.options.bar.showIsland ? middleSection.width : 0)) / 2
                     property bool hovered: false
                     property real lastScrollX: 0
                     property real lastScrollY: 0
@@ -184,6 +234,7 @@ Scope {
                 // Background Rectangle
                 Rectangle {
                     id: middleBg
+                    visible: Config.options.bar.showIsland
                     anchors.centerIn: parent
                     anchors.horizontalCenter: middleSection.horizontalCenter
                     anchors.verticalCenter: middleSection.verticalCenter
@@ -211,6 +262,7 @@ Scope {
 
                 RowLayout { // Middle section
                     id: middleSection
+                    visible: Config.options.bar.showIsland
                     anchors.centerIn: parent
                     spacing: 0
 
@@ -351,7 +403,7 @@ Scope {
                     corner: cornerEnum.topLeft
                     color: Appearance.colors.colLayer0
                     anchors.margins: -Appearance.rounding.screenRounding
-                    visible: barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false
+                    visible: Config.options.bar.showIsland && (barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false)
                 }
 
                 RoundCorner {
@@ -361,7 +413,7 @@ Scope {
                     corner: cornerEnum.topRight
                     color: Appearance.colors.colLayer0
                     anchors.margins: -Appearance.rounding.screenRounding
-                    visible: barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false
+                    visible: Config.options.bar.showIsland && (barBackground ? Config.options.appearance.transparency ? true : false : !barBackground ? true : false)
                 }
 
 
@@ -370,7 +422,7 @@ Scope {
 
                     anchors.right: parent.right
                     implicitHeight: barHeight
-                    width: (barRoot.width - middleSection.width) / 2
+                    width: (barRoot.width - (Config.options.bar.showIsland ? middleSection.width : 0)) / 2
 
                     property bool hovered: false
                     property real lastScrollX: 0

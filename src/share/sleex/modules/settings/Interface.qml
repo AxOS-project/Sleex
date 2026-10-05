@@ -139,17 +139,53 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
+                text: "Show island"
+                checked: Config.options.bar.showIsland
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.bar.showIsland = checked;
+            }
+
+            ConfigSwitch {
                 text: "Show system icons"
                 checked: Config.options.bar.showTrayAndIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showTrayAndIcons = checked;
             }
 
+        }
+
+        RowLayout {
+            spacing: 10
+            uniformCellSizes: true
+
             ConfigSwitch {
                 text: "Enable bar background"
                 checked: Config.options.bar.background
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.background = checked;
+            }
+
+            ConfigSwitch {
+                text: "Bar auto-hide"
+                checked: Config.options.bar.autoHide
+                onClicked: checked = !checked;
+                StyledToolTip { text: "Hide the bar until hovered." }
+                onCheckedChanged: Config.options.bar.autoHide = checked;
+            }
+
+        }
+
+        RowLayout {
+            spacing: 10
+            uniformCellSizes: true
+            visible: Config.options.bar.autoHide
+
+            ConfigSwitch {
+                text: "Reserve space"
+                checked: Config.options.bar.reserveSpace
+                onClicked: checked = !checked;
+                StyledToolTip { text: "Keep the bar's screen space reserved while hidden, so windows never move." }
+                onCheckedChanged: Config.options.bar.reserveSpace = checked;
             }
 
         }
