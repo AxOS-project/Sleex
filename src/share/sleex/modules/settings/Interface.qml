@@ -139,17 +139,38 @@ ContentPage {
             uniformCellSizes: true
 
             ConfigSwitch {
+                text: "Show island"
+                checked: Config.options.bar.showIsland
+                onClicked: checked = !checked;
+                onCheckedChanged: Config.options.bar.showIsland = checked;
+            }
+
+            ConfigSwitch {
                 text: "Show system icons"
                 checked: Config.options.bar.showTrayAndIcons
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.showTrayAndIcons = checked;
             }
 
+        }
+
+        RowLayout {
+            spacing: 10
+            uniformCellSizes: true
+
             ConfigSwitch {
                 text: "Enable bar background"
                 checked: Config.options.bar.background
                 onClicked: checked = !checked;
                 onCheckedChanged: Config.options.bar.background = checked;
+            }
+
+            ConfigSwitch {
+                text: "Dynamic bar"
+                checked: Config.options.bar.dynamic
+                onClicked: checked = !checked;
+                StyledToolTip { text: "Hide the bar until hovered." }
+                onCheckedChanged: Config.options.bar.dynamic = checked;
             }
 
         }
