@@ -14,6 +14,13 @@ Scope {
 
     property bool isCritical: false
 
+    Component.onCompleted: {
+        if (Config.options.battery.overlayEnabled && Battery.available && Battery.isCriticalAndNotCharging) {
+            root.isCritical = true
+            overlayLoader.loading = true
+        }
+    }
+
     component Divider: Rectangle {
         Layout.fillWidth: true
         height:  1
@@ -96,8 +103,8 @@ Scope {
         target: Battery
 
         function onIsLowAndNotChargingChanged() {
-            if (!Config.options.battery.overlayEnabled) return
             if (Battery.isLowAndNotCharging) {
+                if (!Config.options.battery.overlayEnabled) return
                 root.isCritical = Battery.isCriticalAndNotCharging
                 overlayLoader.active = false
                 overlayLoader.loading = true
@@ -112,14 +119,20 @@ Scope {
         }
 
         function onIsCriticalAndNotChargingChanged() {
-            if (!Config.options.battery.overlayEnabled) return
             if (Battery.isCriticalAndNotCharging) {
+                if (!Config.options.battery.overlayEnabled) return
                 root.isCritical = true
                 overlayLoader.active = false
                 overlayLoader.loading = true
                 if (Config.options.battery.sound)
                     Audio.playSound("assets/sounds/battery/05_critical.wav")
+            } else {
+                overlayLoader.active = false
             }
+        }
+
+        function onCriticalActionExecuted() {
+            overlayLoader.active = false
         }
     }
     
@@ -244,6 +257,19 @@ Scope {
                                     text:  qsTr("%1% battery remaining.").arg(Battery.percentageInt)
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.colors.colOnLayer1
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth:    true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    visible: Battery.criticalActionWanted
+                                    text: {
+                                        const remain = Math.max(0, Math.ceil((1 - Battery.criticalActionProgress) * Config.options.battery.criticalActionDelay))
+                                        return qsTr("%1 in %2s").arg(Battery.criticalActionLabel).arg(remain)
+                                    }
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.weight: Font.Medium
+                                    color: Appearance.colors.colError
                                 }
                             }
 
