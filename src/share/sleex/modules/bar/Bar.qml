@@ -47,8 +47,11 @@ Scope {
 
             property ShellScreen modelData
             property bool centerPopupOpen: false
-            property bool barRevealed: !Config.options.bar.dynamic || barHoverArea.containsMouse || barRoot.centerPopupOpen || GlobalStates.dashboardOpen
-            readonly property int dynamicBarAnimMs: 400
+            property bool barRevealed: !Config.options.bar.autoHide || barHoverArea.containsMouse || barRoot.centerPopupOpen || GlobalStates.dashboardOpen
+
+            readonly property bool criticalShift: Battery.criticalActionWanted && barRoot.barRevealed
+          
+            readonly property int autoHideAnimMs: 400
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
                 (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
@@ -73,11 +76,11 @@ Scope {
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
-            exclusiveZone: Config.options.bar.dynamic ? (barContent.visible ? barHeight : 0) : barHeight
+            implicitHeight: (barRoot.criticalShift ? 20 : 0) + barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
+            exclusiveZone: (Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight) + (barRoot.criticalShift ? 20 : 0)
             mask: Region {
                 Region {
-                    item: Config.options.bar.dynamic ? barHoverArea : null
+                    item: Config.options.bar.autoHide ? barHoverArea : null
                 }
                 Region {
                     item: barContent.visible ? barContent : null
@@ -112,7 +115,7 @@ Scope {
                 height: barContent.visible ? barHeight : 5
                 hoverEnabled: true
                 acceptedButtons: Qt.NoButton
-                visible: Config.options.bar.dynamic
+                visible: Config.options.bar.autoHide
                 z: 100
             }
 
@@ -123,7 +126,7 @@ Scope {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: barRoot.dynamicBarAnimMs
+                        duration: barRoot.autoHideAnimMs
                         easing.type: Appearance.animation.elementMove.type
                         easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
                     }
@@ -133,8 +136,8 @@ Scope {
                     left: parent.left
                     top: !Config.options.bar.bottom ? parent.top : undefined
                     bottom: Config.options.bar.bottom ? parent.bottom : undefined
-                    topMargin: !Config.options.bar.bottom ? (barContent.visible ? 0 : -barHeight) : 0
-                    bottomMargin: Config.options.bar.bottom ? (barContent.visible ? 0 : -barHeight) : 0
+                    topMargin: !Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
+                    bottomMargin: Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
                 }
 
                 Behavior on anchors.topMargin {
