@@ -27,15 +27,6 @@ pre_process() {
     fi
 }
 
-post_process() {
-    local screen_width="$1"
-    local screen_height="$2"
-    local wallpaper_path="$3"
-
-    handle_kde_material_you_colors &
-    sh "$SCRIPT_DIR/material-code-set-color.sh" &
-}
-
 check_and_prompt_upscale() {
     local img="$1"
     min_width_desired="$(hyprctl monitors -j | jq '([.[].width] | max)' | xargs)"
@@ -98,13 +89,6 @@ switch() {
     local color="$5"
     local actual_wallpaper_path="$imgpath"
 
-    read scale screenx screeny screensizey < <(hyprctl monitors -j | jq '.[] | select(.focused) | .scale, .x, .y, .height' | xargs)
-    cursorposx=$(hyprctl cursorpos -j | jq '.x' 2>/dev/null) || cursorposx=960
-    cursorposx=$(bc <<< "scale=0; ($cursorposx - $screenx) * $scale / 1")
-    cursorposy=$(hyprctl cursorpos -j | jq '.y' 2>/dev/null) || cursorposy=540
-    cursorposy=$(bc <<< "scale=0; ($cursorposy - $screeny) * $scale / 1")
-    cursorposy_inverted=$((screensizey - cursorposy))
-
     if [[ "$color_flag" == "1" ]]; then
         matugen_args=(color hex "$color")
         generate_colors_material_args=(--color "$color")
@@ -129,14 +113,14 @@ switch() {
                 imgpath="$thumbnail"
                 matugen_args=(image "$imgpath")
                 generate_colors_material_args=(--path "$imgpath")
-                update_wallpaper_config "$actual_wallpaper_path"
+                update_wallpaper_config "$actual_wallpaper_path" &
             else
                 exit 1
             fi
         else
             matugen_args=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
-            update_wallpaper_config "$actual_wallpaper_path"
+            update_wallpaper_config "$actual_wallpaper_path" &
         fi
     fi
 
@@ -161,14 +145,16 @@ switch() {
 
     pre_process "$mode_flag"
 
+    # matugen writes colors.json, which is what the shell watches - everything after it
+    # only feeds terminals, Qt/GTK and VS Code, so it runs in the background instead of
+    # holding up the moment the shell repaints
     matugen "${matugen_args[@]}"
-    python3 "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" \
-        > "$STATE_DIR"/user/generated/material_colors.scss
-    "$SCRIPT_DIR"/applycolor.sh
-
-    max_width_desired="$(hyprctl monitors -j | jq '([.[].width] | min)' | xargs)"
-    max_height_desired="$(hyprctl monitors -j | jq '([.[].height] | min)' | xargs)"
-    post_process "$max_width_desired" "$max_height_desired" "$actual_wallpaper_path"
+    (
+        python3 "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" \
+            > "$STATE_DIR"/user/generated/material_colors.scss
+        "$SCRIPT_DIR"/applycolor.sh
+        bash "$SCRIPT_DIR/material-code-set-color.sh"
+    ) &
 }
 
 main() {
