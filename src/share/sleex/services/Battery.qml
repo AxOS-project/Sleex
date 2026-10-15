@@ -37,9 +37,10 @@ Singleton {
 
     readonly property string criticalActionLabel: {
         switch (Config.options.battery.criticalAction) {
+            case "suspend": return qsTr("Suspend")
             case "hibernate": return qsTr("Hibernate")
             case "shutdown":  return qsTr("Shut down")
-            default:          return qsTr("Suspend")
+            default:          return qsTr("Unknown")
         }
     }
 
