@@ -1,4 +1,5 @@
 import qs
+import qs.modules.common
 import qs.services
 import SleexUiKit.Appearance
 import QtQuick
@@ -9,10 +10,9 @@ import QtQuick.Shapes
 Scope {
     id: root
 
-    readonly property int borderThick: 14
-    readonly property int pathInset: 7
-    readonly property int strutMargin: 20
-    readonly property real cornerRadius: 20
+    property int borderThick: Config.options.battery.criticalOverlayBorderThick ?? 14
+    property int pathInset: Config.options.battery.criticalOverlayPathInset ?? 0
+    property int cornerRadius: Config.options.battery.criticalOverlayCornerRadius ?? 20
 
     Variants {
         model: Quickshell.screens
@@ -28,7 +28,6 @@ Scope {
             color: "transparent"
 
             anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "quickshell:criticalaction"
@@ -38,11 +37,12 @@ Scope {
             Shape {
                 id: trackShape
                 anchors.fill: parent
+                visible: Battery.criticalActionWanted
                 antialiasing: true
 
                 layer.enabled: Battery.criticalActionWanted
                 layer.smooth: true
-                layer.samples: 4
+                layer.samples: 2
                 opacity: 0.15
                 ShapePath {
                     strokeWidth: root.borderThick
@@ -64,11 +64,12 @@ Scope {
             Shape {
                 id: snakeShape
                 anchors.fill: parent
+                visible: Battery.criticalActionWanted
                 antialiasing: true
 
                 layer.enabled: Battery.criticalActionWanted
                 layer.smooth: true
-                layer.samples: 4
+                layer.samples: 2
                 ShapePath {
                     strokeWidth: root.borderThick
                     strokeColor: Appearance.colors.colPrimary
@@ -92,71 +93,4 @@ Scope {
         }
     }
 
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            required property var modelData
-            screen: modelData
-            color: "transparent"
-            anchors { top: true; left: true; right: true }
-            implicitHeight: root.strutMargin
-            exclusiveZone: Battery.criticalActionWanted ? root.strutMargin : 0
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.namespace: "quickshell:castrut-top"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            mask: Region { }
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            required property var modelData
-            screen: modelData
-            color: "transparent"
-            anchors { bottom: true; left: true; right: true }
-            implicitHeight: root.strutMargin
-            exclusiveZone: Battery.criticalActionWanted ? root.strutMargin : 0
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.namespace: "quickshell:castrut-bottom"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            mask: Region { }
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            required property var modelData
-            screen: modelData
-            color: "transparent"
-            anchors { left: true; top: true; bottom: true }
-            implicitWidth: root.strutMargin
-            exclusiveZone: Battery.criticalActionWanted ? root.strutMargin : 0
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.namespace: "quickshell:castrut-left"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            mask: Region { }
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            required property var modelData
-            screen: modelData
-            color: "transparent"
-            anchors { right: true; top: true; bottom: true }
-            implicitWidth: root.strutMargin
-            exclusiveZone: Battery.criticalActionWanted ? root.strutMargin : 0
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.namespace: "quickshell:castrut-right"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            mask: Region { }
-        }
-    }
 }
