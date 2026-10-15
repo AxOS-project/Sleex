@@ -132,12 +132,12 @@ ContentPage {
             }
         }
         ContentSubsection {
-            title: "Critical actions"
+            title: "Critical charge behavior"
             tooltip: "On critical battery, run a screen-edge countdown, then the chosen action."
             visible: UPower.displayDevice.isLaptopBattery
 
             ConfigSwitch {
-                text: "Enable critical actions"
+                text: "Enable critical charge behavior"
                 checked: Config.options.battery.criticalActionEnabled
                 onClicked: checked = !checked;
                 onCheckedChanged: {
@@ -168,6 +168,45 @@ ContentPage {
                     {"value": "hibernate", "displayName": "Hibernate"},
                     {"value": "shutdown", "displayName": "Shut down"}
                 ]
+            }
+            ContentSubsectionLabel {
+                text: "Countdown appearance"
+            }
+            ConfigRow {
+                uniform: true
+                ConfigSpinBox {
+                    text: "Border thickness"
+                    value: Config.options.battery.criticalOverlayBorderThick
+                    from: 2
+                    to: 40
+                    stepSize: 1
+                    onValueChanged: {
+                        Config.options.battery.criticalOverlayBorderThick = value;
+                    }
+                }
+                ConfigSpinBox {
+                    text: "Path inset"
+                    value: Config.options.battery.criticalOverlayPathInset
+                    from: 0
+                    to: 40
+                    stepSize: 1
+                    onValueChanged: {
+                        Config.options.battery.criticalOverlayPathInset = value;
+                    }
+                }
+            }
+            ConfigRow {
+                uniform: true
+                ConfigSpinBox {
+                    text: "Corner radius"
+                    value: Config.options.battery.criticalOverlayCornerRadius
+                    from: 0
+                    to: 60
+                    stepSize: 1
+                    onValueChanged: {
+                        Config.options.battery.criticalOverlayCornerRadius = value;
+                    }
+                }
             }
         }
         ContentSubsectionLabel {
