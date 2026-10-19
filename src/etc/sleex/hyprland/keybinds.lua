@@ -104,6 +104,12 @@ hl.bind(
 hl.bind("SUPER+L", hl.dsp.global("quickshell:lockScreen"), { desc = "Session: Lock session" })
 hl.bind("SUPER+End", hl.dsp.exec_cmd("pkill qs && qs -p /usr/share/sleex/shell.qml"), { desc = "Session: Restart Shell" })
 hl.bind("SUPER+CTRL+End", hl.dsp.exec_cmd("qs -p /usr/share/sleex/shell.qml"), { desc = "Session: Start Shell" })
+-- on systemd, logind otherwise intercepts the physical power button natively
+-- before this keybind ever fires; etc/systemd/logind.conf.d ships HandlePowerKey=ignore
+-- to let this dialog take over instead. On a non-systemd init this keybind is still
+-- dead on a physical press unless the distro's own packaging wires the same button
+-- through to Hyprland some other way (acpid + a custom event handler, for example)
+hl.bind("XF86PowerOff", hl.dsp.global("quickshell:powerButtonPressed"), { locked = true, desc = "Session: Confirm before powering off" })
 
 ------- Window Management -------
 

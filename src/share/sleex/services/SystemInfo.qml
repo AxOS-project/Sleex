@@ -30,6 +30,7 @@ Singleton {
     property string kernelVersion: ""
     property string sleexVersion: ""
     property string axosVersion: ""
+    property string osReleaseVersion: ""
 
     function refresh() {
         getCpu.running = false;       getCpu.running = true
@@ -83,6 +84,16 @@ Singleton {
             logo = logoFieldMatch ? logoFieldMatch[1] : ""
             
             if (distroName == "AxOS") axosVersion = axosVersionFile.text()
+
+            const versionMatch = textOsRelease.match(/^VERSION="(.+?)"/m)
+            osReleaseVersion = versionMatch ? versionMatch[1] : "Unknown"
+
+            // Kira keeps its version in /etc/kira-release, not os-release
+            if (distroId == "kira") {
+                kiraReleaseFile.reload()
+                const kiraMatch = kiraReleaseFile.text().match(/^KIRA_BASE_VERSION=(.+)$/m)
+                if (kiraMatch) osReleaseVersion = kiraMatch[1].trim()
+            }
 
             switch (distroId) {
                 case "axos":       distroIcon = "axos-symbolic"; break
@@ -208,10 +219,10 @@ Singleton {
 
     Process {
         id: getSleexVersion
-        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null"]
+        command: ["sh", "-c", "pacman -Q sleex 2>/dev/null || pacman -Q sleex-git 2>/dev/null || flux list -a 2>/dev/null | grep -E '^(kira-)?sleex(-git)? '"]
         stdout: SplitParser {
             onRead: data => {
-                const versionMatch = data.match(/^sleex(?:-git)?\s+(\S+)/);
+                const versionMatch = data.match(/^(?:kira-)?sleex(?:-git)?\s+(\S+)/);
                 sleexVersion = versionMatch ? versionMatch[1].trim() : "Unknown";
             }
         }
@@ -220,5 +231,10 @@ Singleton {
     FileView {
         id: axosVersionFile
         path: "/etc/axos-version"
+    }
+
+    FileView {
+        id: kiraReleaseFile
+        path: "/etc/kira-release"
     }
 }
