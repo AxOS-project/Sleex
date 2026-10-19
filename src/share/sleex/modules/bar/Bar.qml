@@ -13,7 +13,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
-
+import Sleex.Fhtc
 import Sleex.Services
 
 Scope {
@@ -58,13 +58,13 @@ Scope {
             Connections {
                 target: GlobalStates
                 function onCenterPopupToggleRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
                 }
                 function onCenterPopupOpenRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = true
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = true
                 }
                 function onCenterPopupCloseRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = false
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = false
                 }
             }
 

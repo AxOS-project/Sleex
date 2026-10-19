@@ -2,8 +2,8 @@
 import qs.modules.common
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
+import Sleex.Fhtc
 pragma Singleton
 pragma ComponentBehavior: Bound
 
@@ -101,15 +101,15 @@ Singleton {
         target: "centerPopup"
 
         function toggle(): void {
-            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupToggleRequested(FhtcMonitors.activeMonitorName ?? "");
         }
 
         function open(): void {
-            root.centerPopupOpenRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupOpenRequested(FhtcMonitors.activeMonitorName ?? "");
         }
 
         function close(): void {
-            root.centerPopupCloseRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupCloseRequested(FhtcMonitors.activeMonitorName ?? "");
         }
     }
 
@@ -118,7 +118,7 @@ Singleton {
         description: qsTr("Toggle center bar popup on focused screen")
 
         onPressed: {
-            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupToggleRequested(FhtcMonitors.activeMonitorName ?? "");
         }
     }
 }
