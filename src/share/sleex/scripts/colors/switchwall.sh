@@ -135,11 +135,6 @@ switch() {
 
     [[ -n "$mode_flag" ]] && matugen_args+=(--mode "$mode_flag") && generate_colors_material_args+=(--mode "$mode_flag")
     [[ -n "$type_flag" ]] && matugen_args+=(--type "$type_flag") && generate_colors_material_args+=(--scheme "$type_flag")
-    # a wallpaper with more than one strong competing dominant color makes matugen refuse to
-    # guess and ask for interactive input instead - there's no terminal attached when this runs
-    # from the shell, so it just errors out and every one of its own template outputs (including
-    # the m3colors.json the dark/light toggle itself reads back) silently never gets written
-    matugen_args+=(--prefer saturation)
     generate_colors_material_args+=(--termscheme "$terminalscheme" --blend_bg_fg)
     generate_colors_material_args+=(--cache "$STATE_DIR/user/generated/color.txt")
 
@@ -148,12 +143,11 @@ switch() {
     # matugen writes colors.json, which is what the shell watches - everything after it
     # only feeds terminals, Qt/GTK and VS Code, so it runs in the background instead of
     # holding up the moment the shell repaints
-    matugen "${matugen_args[@]}"
+    matugen "${matugen_args[@]}" &
     (
-        python3 "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" \
-            > "$STATE_DIR"/user/generated/material_colors.scss
-        "$SCRIPT_DIR"/applycolor.sh
-        bash "$SCRIPT_DIR/material-code-set-color.sh"
+        python3 "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" > "$STATE_DIR"/user/generated/material_colors.scss
+        "$SCRIPT_DIR"/applycolor.sh &
+        bash "$SCRIPT_DIR/material-code-set-color.sh" &
     ) &
 }
 

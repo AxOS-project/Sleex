@@ -52,41 +52,10 @@ apply_term() {
   done
 }
 
-apply_other_term() {
-  theme_generator="/usr/share/sleex/scripts/colors/term_gen_colors.sh"
-  case "$TERMINAL" in
-      foot*)
-          ${theme_generator} foot
-          ;;
-      wezterm*)
-          ${theme_generator} wezterm
-          ;;
-      kitty*)
-          ${theme_generator} kitty
-          ;;
-      alacritty*)
-          ${theme_generator} alacritty
-          ;;
-      ghostty*)
-          ${theme_generator} ghostty
-          ;;
-      zellij*)
-          ${theme_generator} zellij
-          ;;
-      *)
-          echo "Unsupported Terminal: $TERMINAL"
-          echo "Currently supported options: foot*, wezterm*, kitty*, alacritty*, ghostty*, zellij* "
-          echo "Arguments inside of \"TERMINAL\" (e.g. \"wezterm start --always-new-process\") are allowed, because the script just matches the command names for specified terminals. This is done, so the user can still use this Variable for different purposes and does not need to worry about colorgen not working anymore."
-          return 1
-          ;;
-  esac
-}
-
 apply_qt() {
-  sh "$CONFIG_DIR/scripts/kvantum/materialQT.sh"          # generate kvantum theme
+  sh "$CONFIG_DIR/scripts/kvantum/materialQT.sh"         # generate kvantum theme
   python "$CONFIG_DIR/scripts/kvantum/changeAdwColors.py" # apply config colors
 }
 
 apply_qt &
 apply_term &
-apply_other_term &
