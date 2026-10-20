@@ -30,6 +30,7 @@ import QtQuick.Controls
 import qs.services
 
 import Sleex.Core
+import SleexUiKit.Appearance
 
 ShellRoot {
     // Enable/disable modules here. False = not loaded at all, so rest assured
@@ -55,7 +56,7 @@ ShellRoot {
 
     // Force initialization of some singletons
     Component.onCompleted: {
-        MaterialThemeLoader.reapplyTheme()
+        Appearance.themeLoader.filePath = Directories.generatedMaterialThemePath
         FirstRunExperience.load()
         Cliphist.refresh()
         Idle.init();
