@@ -4,3 +4,4 @@ Comment=AxOS's third desktop environment
 Exec=sleex
 Icon=
 Type=Application
+DesktopNames=Sleex
