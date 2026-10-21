@@ -10,6 +10,7 @@ Rectangle {
     id: root
     color: Appearance.colors.colLayer1
     radius: Appearance.rounding.normal
+    clip: true
 
     Column {
         anchors.centerIn: parent
@@ -18,15 +19,15 @@ Rectangle {
 
         Rectangle {
             id: userAvatar
-            width: 120
-            height: 120
+            width: Math.min(120, Math.max(64, root.height - 130))
+            height: width
             radius: 99
             anchors.horizontalCenter: parent.horizontalCenter
             color: Appearance.colors.colLayer2
 
             ClippingRectangle {
-                width: 120; height: 120
-                radius: 60
+                width: parent.width; height: parent.height
+                radius: width / 2
                 color: "transparent"
                 Image {
                     anchors.fill: parent
@@ -36,7 +37,7 @@ Rectangle {
             }
         }
 
-        Text {
+        StyledText {
             text: qsTr("Welcome, %1!").arg(SystemInfo.username)
             color: Appearance.colors.colOnLayer1
             font.pixelSize: 30
