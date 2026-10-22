@@ -1,22 +1,12 @@
 # Behavior, Power & Idle Rules User Experience
 
-The Behavior Settings page (`src/share/sleex/modules/settings/BehaviorConfig.qml`) configures time formatting, power thresholds, sleep profiles, idle daemon rules, and external API keys.
+The Behavior Settings page configures eveything that affects the desktop's behavior, including time/date formats, power management, and idle daemon rules.
+
+![Sleex Behavior Settings Screenshot](../assets/behavior.png)
 
 ---
 
 ## 1. Time and Date Section
-
-```
-+-----------------------------------------------------------------------------------------------+
-|  Time and date                                                                                |
-|                                                                                               |
-|  Time format:                                                                                 |
-|  [ 24h (hh:mm)                                                                            ▼ ] |
-|                                                                                               |
-|  Date format:                                                                                 |
-|  [ DDDD, DD/MM (Tuesday, 22/10)                                                           ▼ ] |
-+-----------------------------------------------------------------------------------------------+
-```
 
 ### Time Format Options
 - **24h (`hh:mm`)**: 24-hour military/European format (e.g. `14:30`).
@@ -35,20 +25,9 @@ Configurable through a combobox mapped to Qt date formatting strings:
 
 ## 2. Power & Battery Section
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  Power                                                                                        |
-|                                                                                               |
-|  Low warning: [ 20 % ]                  Critical warning: [ 5 % ]                             |
-|                                                                                               |
-|  Power profile:                                                                               |
-|  ( Balanced )            [ Performance ]            ( Power Saver )                           |
-+-----------------------------------------------------------------------------------------------+
-```
-
-- **Low Warning SpinBox (`battery.low`)**: Battery percentage triggering the first notification and yellow status bar indicator (0 to 100%).
-- **Critical Warning SpinBox (`battery.critical`)**: Battery percentage triggering sound alerts and red overlay banner (0 to 100%).
-- **Power Profile Selector (`PowerProfiles.profile`)**:
+- **Low Warning SpinBox**: Battery percentage triggering the first notification and yellow status bar indicator (0 to 100%).
+- **Critical Warning SpinBox**: Battery percentage triggering sound alerts and red status bar indicator (0 to 100%).
+- **Power Profile Selector**:
   - **Balanced**: Standard everyday efficiency and performance.
   - **Performance**: Maximum clock speeds and display refresh.
   - **Power Saver**: Throttles background tasks and dims displays to extend battery life.
@@ -57,27 +36,7 @@ Configurable through a combobox mapped to Qt date formatting strings:
 
 ## 3. Idle Daemon (Hypnos) Section
 
-Sleex includes an idle management daemon with progressive timeouts for battery preservation:
-
-```
-+-----------------------------------------------------------------------------------------------+
-|  Idle daemon                                                                                  |
-|                                                                                               |
-|  [x] Enable idle actions                                                                      |
-|                                                                                               |
-|  Dim screen                                                                                   |
-|  [x] Enable dimming                      [ ] Only on battery power                            |
-|  Timeout: [ 300 seconds ]                                                                     |
-|                                                                                               |
-|  Lock screen                                                                                  |
-|  [x] Enable locking                      [ ] Only on battery power                            |
-|  Timeout: [ 600 seconds ]                                                                     |
-|                                                                                               |
-|  Suspend system                                                                               |
-|  [x] Enable suspend                      [x] Only on battery power                            |
-|  Timeout: [ 1800 seconds ]                                                                    |
-+-----------------------------------------------------------------------------------------------+
-```
+Sleex includes an idle management daemon ([Hypnos](https://github.com/axos-project/hypnos)) with progressive timeouts for battery preservation:
 
 ### 1. Screen Dimming
 - Gradually decreases backlight brightness after inactivity.
@@ -90,7 +49,7 @@ Sleex includes an idle management daemon with progressive timeouts for battery p
 - **Only on battery power**: Prevents locking on AC power if desired.
 
 ### 3. System Suspend
-- Puts the computer into low-power sleep mode (`systemctl suspend`).
+- Puts the computer into low-power sleep mode.
 - **Timeout**: 10 to 3600 seconds.
 - **Only on battery power**: Safe option to keep desktop running on AC while sleeping on battery.
 
@@ -98,8 +57,10 @@ Sleex includes an idle management daemon with progressive timeouts for battery p
 
 ## 4. API Keys & Online Services Section
 
+The API key is used in the wallpaper selector to fetch online wallpapers from Unsplash. Users can enter their own Unsplash developer key or leave it blank to use the default shared key.
+
 ### Unsplash Wallpapers API
-- **API Key Text Field (`Unsplash.apiKey`)**: Enter an official Unsplash developer key to search and download online wallpapers.
+- **API Key Text Field**: Enter an official Unsplash key to search and download online wallpapers.
 - **Save Button**: Saves the API key securely.
 - **Delete Button**: Clears the saved key.
-- **Wallpaper Download Directory Path (`background.wallpaperDownloadPath`)**: Path where downloaded Unsplash photos are saved (default: `~/Pictures/Sleex Wallpapers/Unsplash/`).
+- **Wallpaper Download Directory Path**: Path where downloaded Unsplash photos are saved (default: `~/Pictures/Sleex Wallpapers/Unsplash/`).

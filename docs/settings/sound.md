@@ -8,22 +8,12 @@ The Sound Settings page (`src/share/sleex/modules/settings/Sound.qml`) configure
 
 A dedicated safety system to protect users from dangerous volume spikes when connecting headphones or switching streams:
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  Protection                                                                                   |
-|                                                                                               |
-|  [x] Earbang protection                                                                       |
-|      Prevents abrupt increments and restricts volume limit                                    |
-|                                                                                               |
-|  Earbang limit: [ 85 % ]                                                                      |
-|      Maximum volume level allowed by earbang protection                                       |
-+-----------------------------------------------------------------------------------------------+
-```
+![Earbang Protection](../assets/soundProtection.png)
 
-- **Earbang Protection Switch (`Config.options.audio.protection.enable`)**:
+- **Earbang Protection Switch**:
   - Restricts volume step jumps to a safe maximum increase (`maxAllowedIncrease: 10%`).
   - Caps overall master output at a strict threshold so media cannot accidentally play at 100%.
-- **Earbang Limit SpinBox (`Config.options.audio.protection.maxAllowed`)**:
+- **Earbang Limit SpinBox**:
   - Sets the maximum volume ceiling (default: 85–100%).
   - If a user attempts to increase volume beyond this limit via hotkeys, the OSD flashes an orange warning and holds the level at the cap.
 
@@ -33,14 +23,7 @@ A dedicated safety system to protect users from dangerous volume spikes when con
 
 Interactive buttons displaying active hardware sinks (speakers/headphones) and sources (microphones):
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  Devices                                                                                      |
-|                                                                                               |
-|  [ 🎧 Output: Built-in Audio Analog Stereo (Speakers)                                     > ] |
-|  [ 🎙️ Input: Built-in Microphone                                                          > ] |
-+-----------------------------------------------------------------------------------------------+
-```
+![Audio Devices](../assets/soundManager.png)
 
 ### Selecting Output & Input Devices
 - Clicking either button opens the **Audio Device Selector Dialog**:
@@ -55,20 +38,7 @@ Interactive buttons displaying active hardware sinks (speakers/headphones) and s
 
 Direct control over volume levels of running applications playing audio:
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  Volume mixer                                                                                 |
-|                                                                                               |
-|  Firefox                                                                                      |
-|  [ 🔊 ]  [=============================|==============================]  70%                   |
-|                                                                                               |
-|  Spotify                                                                                      |
-|  [ 🔊 ]  [=====================================|======================]  80%                   |
-|                                                                                               |
-|  Discord                                                                                      |
-|  [ 🔇 ]  [|===========================================================]   0% (Muted)          |
-+-----------------------------------------------------------------------------------------------+
-```
+![Volume Mixer](../assets/soundApps.png)
 
 - **Automatic Stream Detection**: Real-time binding to Pipewire audio stream nodes (`node.isSink && node.isStream`).
 - **Application Identifiers**: Displays the application name and icon for each audio stream.
@@ -79,5 +49,5 @@ Direct control over volume levels of running applications playing audio:
 
 ## 4. System Sounds Section
 
-- **Battery Notification Sounds (`Config.options.battery.sound`)**:
+- **Battery Notification Sounds**:
   - Toggles audible chimes when battery warnings (low, critical, charger connected/disconnected) fire.

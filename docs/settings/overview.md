@@ -1,12 +1,12 @@
 # Settings Center Architecture & Navigation Overview
 
-The Sleex Settings Center (`src/share/sleex/settings.qml`) is a standalone Qt 6 / QML desktop application providing centralized control over appearance, layout, system behaviors, hardware devices, and network connectivity.
+The Sleex Settings Center is a standalone desktop application providing centralized control over various system and desktop configurations. 
 
 ---
 
 ## Launching Settings
 
-- **Desktop Launcher**: Search for "Settings" or "Sleex Settings" in the Overview / Launcher.
+- **Shortcut Key**: Press `Super + I` to open the settings window.
 - **Terminal / Script**: Execute `qs -p /usr/share/sleex/settings.qml`.
 - **Dashboard Button**: Click the settings gear icon in the Fullscreen Dashboard header.
 - **Desktop Context Menu**: Right-click the desktop wallpaper and select "Settings".
@@ -17,33 +17,13 @@ The Sleex Settings Center (`src/share/sleex/settings.qml`) is a standalone Qt 6 
 
 The settings interface follows a modern two-pane master-detail layout:
 
-```
-+---------------------------------------------------------------------------------------------------+
-|  [User Avatar] ardox           |  Style Page (Active View)                                        |
-|  Logged in via Wayland         |                                                                  |
-|  ----------------------------  |  Colors                                                          |
-|  🎨 Style                      |  [ Light Mode ]   [ Dark Mode ]                                  |
-|  🖥️ Interface                  |                                                                  |
-|  ----------------------------  |  Material Palette                                                |
-|  ⚙️ Behavior                   |  [ Auto (Tonal Spot)        ▼ ]                                  |
-|  🔊 Sound                      |                                                                  |
-|  📶 Bluetooth                  |  Static Colors                                                   |
-|  🌐 Wi-Fi                      |  [x] Use static accent color                                     |
-|  📱 Applications               |  (●) (●) (●) (●) (●) (●) (●) (●) (●)                             |
-|  🖥️ Display                    |                                                                  |
-|  🔒 Security                   |  Wallpaper                                                       |
-|  ----------------------------  |  Transition Style                                                |
-|  🛡️ Privacy                    |  [ Wipe                     ▼ ]                                  |
-|  ℹ️ About                      |                                                                  |
-+---------------------------------------------------------------------------------------------------+
-      Navigation Sidebar (250px)                            Content Pane (Dynamic Loader)
-```
+![settings](../assets/settings.png)
 
-### 1. User Header (`SettingUserInfo.qml`)
+### 1. User Header
 - Located at the top of the sidebar.
-- Displays the user's profile avatar (`Config.options.dashboard.avatarPath`), system username, and host environment.
+- Displays the user's profile avatar, system username, and uptime.
 
-### 2. Sidebar Navigation (`settings.qml:37-51`)
+### 2. Sidebar Navigation
 The sidebar organizes configuration into 11 distinct sections separated by subtle category dividers:
 
 | Page Name | Icon | Category | QML Component |
@@ -70,7 +50,7 @@ When clicking a navigation item, the main view executes a crossfade transition (
 
 ---
 
-## Reactive Configuration Engine (`Config.qml`)
+## Reactive Configuration Engine
 
 Sleex utilizes a reactive JSON database architecture rather than static text files:
 
@@ -91,4 +71,4 @@ sequenceDiagram
 ```
 
 - **Instant Visual Feedback**: Modifying any toggle, slider, or combobox in Settings immediately broadcasts the change to the active desktop shell.
-- **Persistent Storage**: All settings are automatically serialized to JSON and persisted to `~/.config/sleex/` by `DatabaseManager`.
+- **Persistent Storage**: All settings are automatically serialized to JSON and persisted to `~/.config/sleex/`.

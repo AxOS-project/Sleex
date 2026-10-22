@@ -1,6 +1,6 @@
 # Default Applications Settings User Experience
 
-The Applications Settings page (`src/share/sleex/modules/settings/Applications.qml`) allows users to assign default desktop applications for standard MIME type associations and system roles.
+The Applications Settings page allows users to assign default desktop applications for standard MIME type associations and system roles.
 
 ---
 
@@ -21,45 +21,17 @@ The scanner parses `Name=`, `Icon=`, and `MimeType=` fields into categorized can
 
 Users can configure default handlers for the 6 primary content categories as well as shell developer utilities:
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  Default Applications                                                                         |
-|                                                                                               |
-|  🌐 Web Browser                                                                               |
-|  [ (Firefox Icon)  Firefox                                                                ▼ ] |
-|                                                                                               |
-|  📁 File Manager                                                                              |
-|  [ (PCManFM Icon)  PCManFM-Qt                                                             ▼ ] |
-|                                                                                               |
-|  🖼️ Image Viewer                                                                             |
-|  [ (Loupe Icon)    Loupe                                                                  ▼ ] |
-|                                                                                               |
-|  🎬 Video Player                                                                              |
-|  [ (MPV Icon)      MPV Media Player                                                       ▼ ] |
-|                                                                                               |
-|  🎵 Music Player                                                                              |
-|  [ (Music Icon)    Axuralis                                                               ▼ ] |
-|                                                                                               |
-|  📄 Document Viewer                                                                           |
-|  [ (Office Icon)   ONLYOFFICE Desktop Editors                                             ▼ ] |
-|                                                                                               |
-|  ⌨️ Terminal Emulator                                                                         |
-|  [ (Foot Icon)     Foot Terminal                                                          ▼ ] |
-|                                                                                               |
-|  📝 Text Editor                                                                               |
-|  [ (Code Icon)     Visual Studio Code                                                     ▼ ] |
-+-----------------------------------------------------------------------------------------------+
-```
+![Sleex Applications Settings Screenshot](../assets/defapps.png)
 
 ---
 
 ## 3. Application Selection Modal
 
 Clicking any category dropdown opens an interactive application chooser:
-- **Application Icon**: Resolves official high-resolution vector and PNG icons via Quickshell icon theme resolution.
-- **Display Name**: Clean human-readable desktop name.
+- **Application Icon**.
+- **Display Name**.
 - **Desktop Entry Identifier**: Displays the underlying `.desktop` filename (e.g. `org.mozilla.firefox.desktop`).
-- **One-Click Reassignment**: Selecting an alternative immediately updates the system MIME database via `xdg-mime default` and stores the preference in `Config.options.apps.*`.
+- **One-Click Reassignment**: Selecting an alternative immediately updates the system MIME database via `xdg-mime default` and stores the preference.
 
 ---
 
