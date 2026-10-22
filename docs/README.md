@@ -59,4 +59,4 @@ graph TD
 # LICENSE
 
 Sleex is licensed under the **GNU General Public License v3.0**. You are free to use, modify, and distribute this software under the terms of this license.
-For more details, please refer to the [LICENSE](LICENSE) file included in this repository.
+For more details, please refer to the [LICENSE](../LICENSE) file included in this repository.
