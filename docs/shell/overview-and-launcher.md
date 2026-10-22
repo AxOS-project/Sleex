@@ -1,49 +1,49 @@
-# Overview & Universal Launcher User Experience
+# Overview & App Launcher
 
-The Sleex Overview and Launcher (`src/share/sleex/modules/overview/Overview.qml`) combines a multi-workspace window switcher with an omnibar universal search system.
+The Sleex Overview combines a multi-workspace window switcher with an omnibar universal search system.
+The App Launcher is a modern, fuzzy-searchable application menu integrated into the Overview.
+
+![Overview & Launcher](../assets/overview.png)
+
+![Launcher](../assets/applauncher.png)
 
 ---
 
 ## Invoking & Dismissing
 
 - **Keyboard Trigger**:
-  - Tap and release `SUPER` (Windows key) on its own (`quickshell:overviewToggleRelease`).
+  - Tap and release `SUPER` (Windows key) on its own.
   - `SUPER + V`: Opens directly into **Clipboard History** mode.
   - `SUPER + ;`: Opens directly into **Emoji Picker** mode.
 - **Dismissal**:
   - Press `Escape`.
-  - Click on the dark scrim backdrop.
+  - Click anywhere outside the widget.
   - Press `Enter` to launch an item or switch window.
 
 ---
 
-## 1. Multi-Workspace Window Visualizer (`OverviewWidget.qml`)
+## 1. Multi-Workspace Window Visualizer
 
-When opened, the top half of the screen displays a scaled visual matrix of all active Hyprland workspaces:
+When opened, the overview displays a scaled visual matrix of Hyprland workspaces:
 
 - **Live Tiling Grid**:
-  - Workspaces are rendered across rows and columns according to `Config.options.overview.numOfRows` (default: 2) and `numOfCols` (default: 5).
-  - Shows thumbnail representations of open windows preserving their relative tiling positions and aspect ratios.
+  - Workspaces are rendered across rows and columns.
+  - Shows live thumbnail of open windows preserving their relative tiling positions and aspect ratios.
 - **Window Interaction**:
   - **Left Click Window**: Immediately closes the overview and focuses that window.
-  - **Middle Click / Close Button**: Terminates or closes the hovered window directly from the overview.
-  - **XWayland Badge**: Displays a subtle indicator for windows running via XWayland translation (`showXwaylandIndicator`).
+  - **Middle Click**: Terminates or closes the hovered window directly from the overview.
+  - **Drag & Drop**: Click and hold a window to drag it into another workspace. Releasing the mouse button drops the window into the new workspace.
+  - **XWayland Badge**: Displays a subtle indicator for windows running via XWayland translation.
 
 ---
 
-## 2. Universal Search Omnibar (`SearchWidget.qml`)
+## 2. Universal Search Omnibar
 
 Positioned directly below the workspace matrix is an omnibar search field. It handles multi-modal queries in real time:
 
-```
-+-----------------------------------------------------------------------------------------------+
-|  (Search Icon)  Type to search apps, math expressions, /commands, ;clipboard, or :emojis...  |
-+-----------------------------------------------------------------------------------------------+
-```
-
-### Application Fuzzy Search (Default Mode)
-- Typing any text without a prefix performs rapid fuzzy matching against installed desktop applications.
-- Results display the official app icon, application name, and brief description.
+### Application search (No Prefix)
+- Typing any text without a prefix performs rapid matching against installed desktop applications.
+- Results display the app icon and application name.
 - Pressing `Enter` launches the highlighted top result.
 - Pressing `Down Arrow` or `Up Arrow` navigates through the search results list.
 
@@ -70,30 +70,10 @@ Typing the forward slash `/` unlocks command actions built into Sleex:
 ### Emoji Picker (`:` Prefix or `SUPER + ;`)
 - Typing `:` or pressing `SUPER + ;` activates the **Emoji Search**:
   - Search by emoji keywords (e.g. `:rocket`, `:heart`, `:fire`, `:check`).
-  - Displays emoji glyph, unicode identifier, and descriptive title.
   - Selecting an emoji automatically copies it to the clipboard and pastes it into the active window.
 
 ### Real-Time Math Calculator
 - Any mathematical formula typed into the search bar (e.g. `12 * 8.5`, `sqrt(144) + 2^5`, `15% of 350`) is evaluated in real time via `qalc`:
   - The calculated result appears as the top primary search result.
   - Pressing `Enter` copies the computed answer to your clipboard.
-
-### Fallback Web Search
-- If a search query does not match any local desktop application or command:
-  - A search suggestion item offers: *"Search on Google: [query]"*.
-  - Pressing `Enter` opens the query in the user's default web browser.
-
----
-
-## Configuration Settings Reference
-
-| Option | Key | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **Overview Scale** | `Config.options.overview.scale` | `0.18` | Relative scale of workspace previews. |
-| **Grid Rows** | `Config.options.overview.numOfRows` | `2` | Number of workspace rows. |
-| **Grid Columns** | `Config.options.overview.numOfCols` | `5` | Number of workspace columns. |
-| **XWayland Badge** | `Config.options.overview.showXwaylandIndicator` | `true` | Badge distinguishing XWayland clients. |
-| **Action Prefix** | `Config.options.search.prefix.action` | `"/"` | Prefix character for system commands. |
-| **Clipboard Prefix**| `Config.options.search.prefix.clipboard` | `";"` | Prefix character for clipboard history. |
-| **Emoji Prefix** | `Config.options.search.prefix.emojis` | `":"` | Prefix character for emoji search. |
-| **Search Engine URL**| `Config.options.search.engineBaseUrl` | Google URL | Web fallback search engine query string. |
+  - The calculator also supports unit conversions (e.g., `5 miles to km`, `100 USD to EUR`, `32 F to C`).

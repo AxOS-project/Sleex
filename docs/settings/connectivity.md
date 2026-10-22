@@ -1,4 +1,4 @@
-# Connectivity Settings: Bluetooth & Wi-Fi User Experience
+# Connectivity Settings: Bluetooth & Wi-Fi
 
 Sleex provides dedicated, responsive configuration pages for wireless adapters.
 

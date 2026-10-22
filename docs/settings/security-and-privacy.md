@@ -1,10 +1,10 @@
-# Security & Privacy Settings User Experience
+# Security & Privacy Settings
 
 The Security and Privacy Settings pages manage biometric facial authentication and data privacy controls.
 
 ---
 
-## 1. Security: Howdy Facial Authentication (`Security.qml`)
+## 1. Security: Howdy Facial Authentication
 
 Sleex integrates with **Howdy** to provide Windows Hello-style facial authentication on Wayland using IR or standard webcams.
 

@@ -1,4 +1,4 @@
-# Behavior, Power & Idle Rules User Experience
+# Behavior, Power & Idle Rules
 
 The Behavior Settings page configures eveything that affects the desktop's behavior, including time/date formats, power management, and idle daemon rules.
 

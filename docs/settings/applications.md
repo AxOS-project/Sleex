@@ -1,4 +1,4 @@
-# Default Applications Settings User Experience
+# Default Applications Settings
 
 The Applications Settings page allows users to assign default desktop applications for standard MIME type associations and system roles.
 

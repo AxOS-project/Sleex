@@ -1,4 +1,4 @@
-# About Sleex & System Information User Experience
+# About Sleex & System Information 
 
 The About Settings page provides a visual summary of the operating system, Linux kernel, hardware specifications, and project community resources.
 

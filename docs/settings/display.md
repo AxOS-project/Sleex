@@ -1,4 +1,4 @@
-# Display Settings User Experience
+# Display Settings
 
 The Display Settings page provides multi-monitor arrangement, display calibration, brightness controls, and blue light filtering.
 

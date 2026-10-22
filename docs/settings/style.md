@@ -1,6 +1,6 @@
-# Style Settings User Experience
+# Style Settings
 
-The Style Settings page (`src/share/sleex/modules/settings/Style.qml`) configures theme colors, Material 3 dynamic color generation palettes, static accent colors, and wallpaper transition behavior.
+The Style Settings page configures theme colors, Material 3 dynamic color generation palettes, static accent colors, and wallpaper transition behavior.
 
 ![Style Settings](../assets/style.png)
 

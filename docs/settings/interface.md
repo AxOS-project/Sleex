@@ -1,4 +1,4 @@
-# Interface Settings User Experience
+# Interface Settings
 
 The Interface Settings page provides toggles for all visible UI components across the shell.
 

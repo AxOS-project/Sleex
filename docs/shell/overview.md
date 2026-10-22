@@ -1,6 +1,6 @@
 # Desktop Shell Architecture & Interaction Model
 
-The Sleex Desktop Shell (`src/share/sleex/shell.qml`) runs as an integrated Wayland layer-shell environment powered by **Quickshell**. It creates a cohesive, reactive desktop interface synchronized with the **Hyprland** window manager.
+The Sleex Desktop Shell runs as an integrated Wayland layer-shell environment powered by **Quickshell**. It creates a cohesive, reactive desktop interface synchronized with the **Hyprland** window manager.
 
 ---
 

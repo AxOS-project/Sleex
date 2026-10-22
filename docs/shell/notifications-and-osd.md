@@ -1,36 +1,27 @@
-# Notifications, Alerts & On-Screen Displays User Experience
+# Notifications & Alerts
 
-Sleex manages desktop alerts, multimedia adjustments, and hardware warnings through animated transient overlays (`src/share/sleex/modules/notificationPopup/` and `src/share/sleex/modules/onScreenDisplay/`).
+Sleex manages desktop alerts, multimedia adjustments, and hardware warnings through animated transient overlays.
 
 ---
 
-## 1. Notification Popups (`NotificationPopup.qml`)
+## 1. Notification Popups
 
 Sleex implements a desktop notification daemon conforming to the Desktop Notifications Specification.
+
+![Notification Popup](../assets/notifications.png)
 
 ### Visual Anatomy
 Each incoming toast notification appears as an elevated Material card:
 
-```
-+--------------------------------------------------------------------------+
-|  [App Icon]  Application Name                                   [Dismiss]|
-|  <b>Notification Title</b>                                               |
-|  Descriptive message body with full text wrapping and formatting...      |
-|  +---------------------------+  +-------------------------------------+  |
-|  |  [Action 1: Reply / Open] |  |  [Action 2: Secondary Option]       |  |
-|  +---------------------------+  +-------------------------------------+  |
-+--------------------------------------------------------------------------+
-```
-
-- **App Icon & Source Label**: Displays the sender application's icon and human-readable name.
+- **App Icon & Source Label**: Displays the sender application's icon and name.
 - **Title & Body**: Bold heading and formatted body text supporting rich text formatting.
-- **Action Buttons (`NotificationActionButton.qml`)**: Inline interactive buttons allowing users to respond directly (e.g. "Reply", "Mark as Read", "Accept").
+- **Action Buttons**: Inline interactive buttons allowing users to respond directly (e.g. "Reply", "Mark as Read", "Accept").
 - **Dismiss Interactions**:
   - Clicking the close button.
   - Middle-clicking or flicking/swiping the card away.
   - Automatic timeout based on notification urgency.
 
-### Positioning Options (`Config.options.notifications.position`)
+### Positioning Options
 Users can configure which screen corner notifications pop up in:
 - `top-right` (Default)
 - `top-center`
@@ -38,37 +29,12 @@ Users can configure which screen corner notifications pop up in:
 
 ---
 
-## 2. On-Screen Displays (OSD)
-
-When hardware volume or monitor brightness is adjusted via keyboard hotkeys or hardware buttons, Sleex displays centered floating OSD pills:
-
-### Volume OSD (`OnScreenDisplayVolume.qml`)
-- **Trigger**: `XF86AudioRaiseVolume`, `XF86AudioLowerVolume`, `XF86AudioMute`.
-- **Display**:
-  - Speaker glyph (reflecting current level or muted state with a strike-through).
-  - Smooth progress bar filling horizontally.
-  - Percentage text indicator (e.g. `45%`, `MAX (Earbang 85%)`).
-- **Hearing Protection Badge**: If the user reaches the configured earbang limit, the bar turns orange to indicate volume capping.
-
-### Brightness OSD (`OnScreenDisplayBrightness.qml`)
-- **Trigger**: `XF86MonBrightnessUp`, `XF86MonBrightnessDown`.
-- **Display**:
-  - Sun / brightness glyph with dynamic rays.
-  - Smooth progress bar reflecting display backlight percentage.
-- **Auto-Dismiss**: OSD pills fade out automatically after 1000 ms of inactivity (`Config.options.osd.timeout`).
-
----
-
-## 3. Battery Warnings & Overlays (`BatteryWarningOverlay.qml`)
+## 3. Battery Warnings & Overlays
 
 For laptop devices monitored by `UPower`, Sleex provides progressive alerts to safeguard against battery exhaustion:
 
-```
-+--------------------------------------------------------------------------+
-|  🔋 Low Battery Warning: 20% remaining                                   |
-|  Please plug in your charger soon to avoid interruption.                 |
-+--------------------------------------------------------------------------+
-```
+![BatteryPopup](../assets/batteryPopup.png)
+*note: Here it says 97% because the popup was manually triggered for demonstration purposes.*
 
 ### Warning Thresholds & Behaviors
 

@@ -1,4 +1,4 @@
-# Sound Settings User Experience
+# Sound Settings
 
 The Sound Settings page (`src/share/sleex/modules/settings/Sound.qml`) configures hearing safety, audio input/output devices, per-application volume mixing, and system chimes via **Pipewire** and **WirePlumber**.
 
@@ -34,7 +34,7 @@ Interactive buttons displaying active hardware sinks (speakers/headphones) and s
 
 ---
 
-## 3. Per-Application Volume Mixer (`VolumeMixer`)
+## 3. Per-Application Volume Mixer
 
 Direct control over volume levels of running applications playing audio:
 
