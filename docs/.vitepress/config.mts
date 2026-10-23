@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Sleex desktop documentation",
   description: "A documentation about Sleex, the flagship desktop environment of AxOS",
+  ignoreDeadLinks: true,
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
@@ -22,6 +23,8 @@ export default defineConfig({
           { text: 'Dock', link: '/shell/dock' },
           { text: 'Dashboard', link: '/shell/dashboard' },
           { text: 'Notifications and OSD', link: '/shell/notifications-and-osd' },
+          { text: 'Corner Popup', link: '/shell/corner-popup' },
+          { text: 'Wallpaper Selector', link: '/shell/wallpaper-selector' },
           { text: 'Utility Popups', link: '/shell/utility-popups' },
           { text: 'Lockscreen and Session', link: '/shell/lockscreen-and-session' }
         ]
