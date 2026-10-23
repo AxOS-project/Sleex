@@ -3,6 +3,7 @@ import type { Theme } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
 import { useData } from 'vitepress';
 import { createMermaidRenderer } from 'vitepress-mermaid-renderer';
+import './style.css';
 
 export default {
   extends: DefaultTheme,

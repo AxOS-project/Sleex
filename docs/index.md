@@ -12,6 +12,10 @@ hero:
     - theme: alt
       text: Settings documentation
       link: /settings/overview
+  image:
+    src: assets/logo.svg
+    alt: Sleex logo
+
 
 features:
   - title: Beautiful

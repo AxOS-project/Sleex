@@ -44,15 +44,34 @@
  * -------------------------------------------------------------------------- */
 
 :root {
-  --vp-c-default-1: var(--vp-c-gray-1);
-  --vp-c-default-2: var(--vp-c-gray-2);
-  --vp-c-default-3: var(--vp-c-gray-3);
-  --vp-c-default-soft: var(--vp-c-gray-soft);
+  --vp-c-accent-200: #e3b6ed;
+  --vp-c-accent-600: #a700c3;
+  --vp-c-accent-900: #4e0e5b;
+  --vp-c-accent-950: #36113e;
 
-  --vp-c-brand-1: var(--vp-c-indigo-1);
-  --vp-c-brand-2: var(--vp-c-indigo-2);
-  --vp-c-brand-3: var(--vp-c-indigo-3);
-  --vp-c-brand-soft: var(--vp-c-indigo-soft);
+  --vp-c-gray-100: #ffffff;
+  --vp-c-gray-200: #e6e6e6;
+  --vp-c-gray-300: #cccccc;
+  --vp-c-gray-400: #999999;
+  --vp-c-gray-500: #666666;
+  --vp-c-gray-700: #333333;
+  --vp-c-gray-800: #1a1a1a;
+  --vp-c-gray-900: #0C0A09;
+
+  --vp-c-bg: var(--vp-c-gray-100);
+  --vp-c-bg-alt: var(--vp-c-gray-200);
+  --vp-c-bg-elv: var(--vp-c-gray-100);
+  --vp-c-bg-soft: var(--vp-c-gray-200);
+
+  --vp-c-default-1: var(--vp-c-gray-700);
+  --vp-c-default-2: var(--vp-c-gray-500);
+  --vp-c-default-3: var(--vp-c-gray-300);
+  --vp-c-default-soft: rgba(204, 204, 204, 0.16);
+
+  --vp-c-brand-1: var(--vp-c-accent-600);
+  --vp-c-brand-2: var(--vp-c-accent-900);
+  --vp-c-brand-3: var(--vp-c-accent-950);
+  --vp-c-brand-soft: rgba(227, 182, 237, 0.16);
 
   --vp-c-tip-1: var(--vp-c-brand-1);
   --vp-c-tip-2: var(--vp-c-brand-2);
@@ -68,6 +87,23 @@
   --vp-c-danger-2: var(--vp-c-red-2);
   --vp-c-danger-3: var(--vp-c-red-3);
   --vp-c-danger-soft: var(--vp-c-red-soft);
+}
+
+.dark {
+  --vp-c-bg: var(--vp-c-gray-900);
+  --vp-c-bg-alt: var(--vp-c-gray-800);
+  --vp-c-bg-elv: var(--vp-c-gray-800);
+  --vp-c-bg-soft: var(--vp-c-gray-800);
+
+  --vp-c-default-1: var(--vp-c-gray-300);
+  --vp-c-default-2: var(--vp-c-gray-500);
+  --vp-c-default-3: var(--vp-c-gray-700);
+  --vp-c-default-soft: rgba(51, 51, 51, 0.32);
+
+  --vp-c-brand-1: var(--vp-c-accent-200);
+  --vp-c-brand-2: var(--vp-c-accent-600);
+  --vp-c-brand-3: var(--vp-c-accent-900);
+  --vp-c-brand-soft: rgba(227, 182, 237, 0.16);
 }
 
 /**
@@ -95,13 +131,13 @@
   --vp-home-hero-name-background: -webkit-linear-gradient(
     120deg,
     #bd34fe 30%,
-    #41d1ff
+    #9a41ff
   );
 
   --vp-home-hero-image-background-image: linear-gradient(
     -45deg,
     #bd34fe 50%,
-    #47caff 50%
+    #7547ff 50%
   );
   --vp-home-hero-image-filter: blur(44px);
 }
@@ -128,4 +164,3 @@
   --vp-custom-block-tip-bg: var(--vp-c-brand-soft);
   --vp-custom-block-tip-code-bg: var(--vp-c-brand-soft);
 }
-
