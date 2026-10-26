@@ -36,14 +36,16 @@ QHash<int, QByteArray> DesktopModel::roleNames() const {
 }
 
 QPoint DesktopModel::getEmptySpot(const QSet<QString> &occupied) const {
-    for (int x = 0; ; ++x) {
-        for (int y = 0; y < m_rows; ++y) {
+    const int numRows = std::max(1, m_rows);
+    for (int x = 0; x < 10000; ++x) {
+        for (int y = 0; y < numRows; ++y) {
             QString key = QString::number(x) + "," + QString::number(y);
             if (!occupied.contains(key)) {
                 return QPoint(x, y);
             }
         }
     }
+    return QPoint(0, 0);
 }
 
 void DesktopModel::loadDirectory(const QString &path) {

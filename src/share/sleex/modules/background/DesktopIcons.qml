@@ -26,7 +26,7 @@ Item {
 
     DesktopModel {
         id: desktopModel
-        rows: Math.max(1, Math.floor(gridArea.height / cellHeight))
+        rows: Math.max(1, Math.floor((gridArea.height || 0) / cellHeight) || 1)
         Component.onCompleted: loadDirectory(FileUtils.trimFileProtocol(Directories.desktop))
     }
 
