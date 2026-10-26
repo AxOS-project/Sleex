@@ -135,6 +135,9 @@ private:
     static QString formatShortcut(const QVariant &shortcutVar);
 
     QTimer *m_hyprPollTimer = nullptr;
+    QTimer *m_queryDebounceTimer = nullptr;
+    QTimer *m_reconnectTimer = nullptr;
+    bool m_queryInFlight = false;
     QLocalSocket *m_hyprEventSocket = nullptr;
     QByteArray m_hyprEventBuffer;
 
@@ -148,6 +151,7 @@ private:
 
     QHash<uint, MenuTarget> m_windowMenus;     // windowId -> MenuTarget
     QHash<uint, MenuTarget> m_pidMenus;        // pid -> MenuTarget
+    QSet<uint> m_noMenuPids;                   // pids verified to have no dbus menu
     QHash<QString, uint> m_servicePids;        // service -> pid
 
     uint m_activePid = 0;

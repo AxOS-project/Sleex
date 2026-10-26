@@ -178,6 +178,7 @@ private:
     bool            m_busy        = false;
     QString         m_lastError;
     QTimer         *m_pollTimer   = nullptr;
+    QTimer         *m_reconnectTimer = nullptr;
     QLocalSocket   *m_eventSocket = nullptr;
     QByteArray      m_eventBuffer;
 

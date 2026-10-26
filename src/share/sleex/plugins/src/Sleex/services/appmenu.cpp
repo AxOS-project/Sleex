@@ -171,6 +171,14 @@ AppMenu::AppMenu(QObject *parent)
 
     m_adaptor = new AppMenuRegistrarAdaptor(this);
 
+    m_queryDebounceTimer = new QTimer(this);
+    m_queryDebounceTimer->setSingleShot(true);
+    connect(m_queryDebounceTimer, &QTimer::timeout, this, &AppMenu::queryHyprlandActiveWindow);
+
+    m_reconnectTimer = new QTimer(this);
+    m_reconnectTimer->setSingleShot(true);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &AppMenu::connectHyprlandEvents);
+
     auto bus = QDBusConnection::sessionBus();
     if (bus.isConnected()) {
         bus.registerObject(QStringLiteral("/com/canonical/AppMenu/Registrar"), this);
@@ -217,11 +225,13 @@ void AppMenu::connectHyprlandEvents()
     });
 
     connect(m_hyprEventSocket, &QLocalSocket::disconnected, this, [this]() {
-        QTimer::singleShot(2000, this, &AppMenu::connectHyprlandEvents);
+        if (!m_reconnectTimer->isActive())
+            m_reconnectTimer->start(2000);
     });
 
     connect(m_hyprEventSocket, &QLocalSocket::errorOccurred, this, [this](QLocalSocket::LocalSocketError) {
-        QTimer::singleShot(2000, this, &AppMenu::connectHyprlandEvents);
+        if (!m_reconnectTimer->isActive())
+            m_reconnectTimer->start(2000);
     });
 
     m_hyprEventSocket->connectToServer(hyprSocketPath(2), QLocalSocket::ReadOnly);
@@ -234,12 +244,16 @@ void AppMenu::handleHyprlandEvent(const QByteArray &line)
     const QByteArray event = line.left(sep);
 
     if (event == "activewindow" || event == "activewindowv2" || event == "closewindow") {
-        queryHyprlandActiveWindow();
+        if (!m_queryDebounceTimer->isActive())
+            m_queryDebounceTimer->start(50);
     }
 }
 
 void AppMenu::queryHyprlandActiveWindow()
 {
+    if (m_queryInFlight) return;
+    m_queryInFlight = true;
+
     auto *sock = new QLocalSocket(this);
     auto buffer = std::make_shared<QByteArray>();
 
@@ -253,6 +267,7 @@ void AppMenu::queryHyprlandActiveWindow()
     });
 
     connect(sock, &QLocalSocket::disconnected, this, [this, sock, buffer]() {
+        m_queryInFlight = false;
         buffer->append(sock->readAll());
         sock->deleteLater();
 
@@ -274,7 +289,8 @@ void AppMenu::queryHyprlandActiveWindow()
         setActiveWindow(pid, cls, 0);
     });
 
-    connect(sock, &QLocalSocket::errorOccurred, this, [sock](QLocalSocket::LocalSocketError) {
+    connect(sock, &QLocalSocket::errorOccurred, this, [this, sock](QLocalSocket::LocalSocketError) {
+        m_queryInFlight = false;
         sock->deleteLater();
     });
 
@@ -298,6 +314,7 @@ void AppMenu::registerWindowInternal(uint windowId, const QString &senderService
     m_windowMenus.insert(windowId, target);
     if (pid > 0) {
         m_pidMenus.insert(pid, target);
+        m_noMenuPids.remove(pid);
     }
     m_servicePids.insert(senderService, pid);
     m_serviceWatcher.addWatchedService(senderService);
@@ -339,6 +356,7 @@ void AppMenu::onServiceUnregistered(const QString &service)
 {
     m_serviceWatcher.removeWatchedService(service);
     m_servicePids.remove(service);
+    m_noMenuPids.clear();
 
     for (auto it = m_windowMenus.begin(); it != m_windowMenus.end();) {
         if (it.value().service == service)
@@ -399,12 +417,17 @@ void AppMenu::setActiveWindow(int pid, const QString &appId, uint windowId)
     // 3. Clear old menu and actively discover D-Bus services owned by this PID
     clearCurrentTarget();
     if (uPid != 0) {
-        discoverMenuForPid(uPid, windowId);
+        if (!m_noMenuPids.contains(uPid)) {
+            discoverMenuForPid(uPid, windowId);
+        }
     }
 }
 
 void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
 {
+    if (m_noMenuPids.contains(pid))
+        return;
+
     auto bus = QDBusConnection::sessionBus();
     if (!bus.isConnected() || !bus.interface())
         return;
@@ -439,6 +462,11 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
         if (sPid > 0 && pidMatchesOrSharesTree(sPid, pid)) {
             matchingServices.append(service);
         }
+    }
+
+    if (matchingServices.isEmpty()) {
+        m_noMenuPids.insert(pid);
+        return;
     }
 
     for (const QString &service : matchingServices) {
