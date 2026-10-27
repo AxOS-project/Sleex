@@ -27,6 +27,7 @@ local center_dialogs = {
 	"^(Save As)(.*)$",
 	"^(Library)(.*)$",
 	"^(File Upload)(.*)$",
+	"^(Choose)$",
 }
 for _, pattern in ipairs(center_dialogs) do
 	hl.window_rule({
