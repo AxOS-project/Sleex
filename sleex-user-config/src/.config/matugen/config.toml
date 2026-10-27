@@ -49,3 +49,8 @@ output_path = "~/.config/zed/themes/sleex.json"
 input_path = '~/.config/matugen/templates/kitty.conf'
 output_path = '~/.config/kitty/themes/Matugen.conf'
 post_hook = "kitty +kitten themes --reload-in=all Matugen"
+
+[templates.papirus]
+input_path = "~/.config/matugen/templates/papirus-color.txt"
+output_path = "~/.cache/matugen/papirus-hex"
+post_hook = "~/.config/matugen/scripts/papirus-sync.py ~/.cache/matugen/papirus-hex &"
