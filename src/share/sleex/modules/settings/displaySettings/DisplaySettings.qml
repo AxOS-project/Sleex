@@ -19,6 +19,11 @@ Item {
 
     property string selectedMonitorName: ""
 
+    onSelectedMonitorNameChanged: {
+        const m = Monitors.monitors.find(m => m.name === selectedMonitorName)
+        if (m) scaleSpinBox.value = Math.round((pendingChanges.map[selectedMonitorName]?.scale ?? m.scale) * 100)
+    }
+
     QtObject {
         id: pendingChanges
         property var map:   ({})
@@ -261,10 +266,7 @@ Item {
                     id: scaleSpinBox
                     from: 25; to: 300; stepSize: 25
                     fillWidth: false
-                    value: {
-                        const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
-                        return m ? Math.round(m.scale * 100) : 100
-                    }
+                    value: 100
                     text: "Scale"
                     onValueChanged: {
                         const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
@@ -357,6 +359,8 @@ Item {
                 onClicked: {
                     pendingChanges.clear()
                     Monitors.resetPositions()
+                    const m = Monitors.monitors.find(m => m.name === root.selectedMonitorName)
+                    if (m) scaleSpinBox.value = Math.round(m.scale * 100)
                 }
             }
             RippleButtonWithIcon {
