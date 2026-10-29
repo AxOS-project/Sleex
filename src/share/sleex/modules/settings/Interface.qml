@@ -436,7 +436,8 @@ ContentPage {
 
                 ConfigSwitch {
                     text: "Show weather"
-                    checked: Config.options.background.enableWeatherWidget
+                    visible: Config.options.dashboard.enableWeather
+                    checked: Config.options.background.enableWeatherWidget && Config.options.dashboard.enableWeather
                     onClicked: checked = !checked;
                     onCheckedChanged: Config.options.background.enableWeatherWidget = checked;
                 }

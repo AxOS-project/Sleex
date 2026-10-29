@@ -193,7 +193,7 @@ Scope {
                 }
 
                 Loader {
-                    active: Config.options.background.enableWeatherWidget
+                    active: Config.options.background.enableWeatherWidget && Config.options.dashboard.enableWeather
                     z: 1
                     sourceComponent: WeatherWidget {
                         screenWidth: bgRoot.screen.width
