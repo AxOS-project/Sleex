@@ -1,6 +1,6 @@
 ------- Shell Dispatcher -------
 
-hl.bind("SUPER+Super_L", hl.dsp.global("quickshell:overviewToggleRelease"), { desc = "Shell: Toggle overview/launcher" })
+hl.bind("SUPER+Super_L", hl.dsp.global("quickshell:overviewToggleRelease"), { release = true, desc = "Shell: Toggle overview/launcher" })
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true, release = true })
 
@@ -58,7 +58,6 @@ hl.bind(
 
 ------- Terminal and Stuff -------
 
-hl.bind("SUPER", hl.dsp.exec_cmd("true"), { desc = "Shell: Open app launcher" })
 hl.bind("CTRL+SUPER+T", hl.dsp.exec_cmd("/usr/share/sleex/scripts/colors/switchwall.sh"), { desc = "Shell: Change wallpaper" })
 
 hl.bind(
