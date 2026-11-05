@@ -77,6 +77,9 @@ package() {
   mkdir -p "$pkgdir/usr/share/wayland-sessions"
   cp -r "$srcdir/share/wayland-sessions/"* "$pkgdir/usr/share/wayland-sessions/"
 
+  mkdir -p "$pkgdir/usr/share/xdg-desktop-portal"
+  cp -r "$srcdir/share/xdg-desktop-portal/"* "$pkgdir/usr/share/xdg-desktop-portal/"
+
   mkdir -p "$pkgdir/usr/libalpm/hooks"
   cp -r "$srcdir/share/libalpm/hooks/"* "$pkgdir/usr/libalpm/hooks/"
 }
