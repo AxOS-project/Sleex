@@ -150,9 +150,21 @@ ContentPage {
 
                 required property BluetoothDevice modelData
                 readonly property bool loading: modelData.state === BluetoothDeviceState.Connecting || modelData.state === BluetoothDeviceState.Disconnecting
+                property bool connectAfterPair: false
 
                 Layout.fillWidth: true
                 spacing: 10
+
+                Connections {
+                    target: device.modelData
+                    function onPairingChanged() {
+                        if (device.modelData.pairing || !device.connectAfterPair)
+                            return;
+                        device.connectAfterPair = false;
+                        if (device.modelData.paired)
+                            device.modelData.connect();
+                    }
+                }
 
                 RippleButton {
                     id: deviceCard
@@ -197,7 +209,21 @@ ContentPage {
                             scale: 0.80
                             Layout.fillWidth: false
                             checked: device.modelData.connected
-                            onClicked: device.modelData.connected = !device.modelData.connected
+                            onClicked: {
+                                const d = device.modelData;
+                                if (d.connected) {
+                                    d.disconnect();
+                                    return;
+                                }
+                                // trusted devices are the only ones BlueZ lets reconnect on their own
+                                d.trusted = true;
+                                if (d.paired) {
+                                    d.connect();
+                                } else {
+                                    device.connectAfterPair = true;
+                                    d.pair();
+                                }
+                            }
                         }
                     }
                 }
