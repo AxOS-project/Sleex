@@ -1,106 +1,226 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
+import Sleex.Services
 
 Item {
     id: tile
 
     required property var   monitorInfo
+    property int            monitorIndex: 0
+    property bool           isSelected: false
+    property bool           isPending: false
+    property bool           isMirroring: false
+    property string         mirrorTarget: ""
+    property bool           isFocused: false
+
+    property real realX:      monitorInfo ? monitorInfo.x : 0
+    property real realY:      monitorInfo ? monitorInfo.y : 0
+    property real realWidth:  monitorInfo ? monitorInfo.width : 1920
+    property real realHeight: monitorInfo ? monitorInfo.height : 1080
+    property real realScale:  monitorInfo ? monitorInfo.scale : 1.0
+
+    // Compatibility aliases
+    property alias origin: tile.canvasOrigin
+    required property point canvasOrigin
     required property real  canvasScaleF
-    required property point origin
-    required property bool  isPending
-    required property Item  tileParent
-    required property var   allTiles
+    property real           canvasOffsetX: 0
+    property real           canvasOffsetY: 0
 
-    property bool isSelected: false
-
-    readonly property bool isMirroring: monitorInfo.mirrorOf !== ""
+    property var            allTiles: null
+    property Item           tileParent: null
 
     signal clicked()
+    signal dragCommitted(string name, real rx, real ry)
+    signal snapGuideUpdate(bool visible, real cx, real cy, real cw, real ch, string guideType)
+    signal snapLineUpdate(bool showH, real hy, bool showV, real vx)
 
-    signal dragCommitted(string name, real cx, real cy)
-    // Tell parent to show / hide / move the snap guide
-    signal snapGuideUpdate(bool visible, real cx, real cy, real cw, real ch)
+    readonly property real targetX: (realX - canvasOrigin.x) * canvasScaleF + canvasOffsetX
+    readonly property real targetY: (realY - canvasOrigin.y) * canvasScaleF + canvasOffsetY
+    readonly property real targetWidth: Math.max(88, realWidth * canvasScaleF)
+    readonly property real targetHeight: Math.max(58, realHeight * canvasScaleF)
 
-    x:      (monitorInfo.x - origin.x) * canvasScaleF
-    y:      (monitorInfo.y - origin.y) * canvasScaleF
-    width:  monitorInfo.width  * canvasScaleF
-    height: monitorInfo.height * canvasScaleF
+    readonly property bool isLaptop: monitorInfo && monitorInfo.name ? monitorInfo.name.startsWith("eDP") : false
 
-    property real dragStartX: 0
-    property real dragStartY: 0
+    readonly property string displayName: {
+        if (!monitorInfo) return "Display"
+        if (monitorInfo.model && monitorInfo.model.length > 0) return monitorInfo.model
+        if (monitorInfo.make && monitorInfo.make.length > 0) return monitorInfo.make
+        return monitorInfo.name
+    }
 
+    x: targetX
+    y: targetY
+    width: targetWidth
+    height: targetHeight
+
+    Behavior on x {
+        enabled: !dragHandler.active
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on y {
+        enabled: !dragHandler.active
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on width {
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on height {
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+
+    z: dragHandler.active ? 50 : (isSelected ? 20 : 1)
+
+    // Stand neck
     Rectangle {
-        id: body
+        id: standNeck
+        visible: !tile.isLaptop
+        anchors.top: screenBody.bottom
+        anchors.topMargin: -2
+        anchors.horizontalCenter: screenBody.horizontalCenter
+        width: Math.max(10, Math.min(22, screenBody.width * 0.12))
+        height: 8
+        color: Appearance.colors.colOutlineVariant
+        radius: 2
+        z: -1
+    }
+
+    // Stand base
+    Rectangle {
+        id: standBase
+        visible: !tile.isLaptop
+        anchors.top: standNeck.bottom
+        anchors.topMargin: -1
+        anchors.horizontalCenter: standNeck.horizontalCenter
+        width: Math.max(34, Math.min(60, screenBody.width * 0.38))
+        height: 4
+        color: Appearance.colors.colOutline
+        radius: 2
+        z: -1
+    }
+
+    // Monitor Screen Casing
+    Rectangle {
+        id: screenBody
         anchors.fill: parent
-        radius: 6
+        radius: 8
+
         color: dragHandler.active
-                ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22) : tile.isMirroring
-                ? Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.15) : tile.isPending
-                ? Qt.rgba(Appearance.colors.colSecondary.r, Appearance.colors.colSecondary.g, Appearance.colors.colSecondary.b, 0.18) : Appearance.colors.colLayer2
+               ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.28)
+               : tile.isSelected
+                 ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.16)
+                 : tile.isMirroring
+                   ? Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.18)
+                   : tile.isPending
+                     ? Qt.rgba(Appearance.colors.colSecondary.r, Appearance.colors.colSecondary.g, Appearance.colors.colSecondary.b, 0.18)
+                     : Appearance.colors.colLayer2
 
-        border.color: dragHandler.active
-              ? Appearance.colors.colPrimary
-              : tile.isSelected
-                ? Appearance.colors.colTertiary
-                : tile.isPending
-                  ? Appearance.colors.colSecondary
-                  : Appearance.colors.colOutlineVariant
-        border.width: tile.isSelected ? 3 : 2
+        border.color: dragHandler.active || tile.isSelected
+                      ? Appearance.colors.colPrimary
+                      : tile.isPending
+                        ? Appearance.colors.colSecondary
+                        : tile.isMirroring
+                          ? Appearance.colors.colTertiary
+                          : Appearance.colors.colOutlineVariant
+        border.width: tile.isSelected || dragHandler.active ? 2.5 : 1.5
 
-        scale: dragHandler.active ? 1.08 : 1.0
-        Behavior on scale { NumberAnimation { duration: 100 } }
+        scale: dragHandler.active ? 1.05 : (hoverHandler.hovered ? 1.015 : 1.0)
+        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 2
+        // Inner screen surface
+        Rectangle {
+            id: innerDisplay
+            anchors.fill: parent
+            anchors.margins: 4
+            radius: 5
+            color: Appearance.colors.colLayer0
+            clip: true
 
-            MaterialSymbol {
-                Layout.alignment: Qt.AlignHCenter
-                text: "monitor"
-                font.pixelSize: Math.min(tile.width, tile.height) * 0.28
-                color: Appearance.colors.colOnLayer2
+            // Center content
+            ColumnLayout {
+                anchors.centerIn: parent
+                width: parent.width - 12
+                spacing: 1
+
+                MaterialSymbol {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: tile.isLaptop ? "laptop" : "desktop_windows"
+                    iconSize: Math.max(16, Math.min(26, innerDisplay.height * 0.26))
+                    color: tile.isSelected ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                }
+
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.fillWidth: true
+                    text: tile.displayName
+                    font.pixelSize: Math.max(8, Math.min(12, innerDisplay.height * 0.14))
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    color: tile.isSelected ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                }
+
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitHeight: portText.implicitHeight + 2
+                    implicitWidth: portText.implicitWidth + 8
+                    radius: 3
+                    color: Appearance.colors.colLayer1
+
+                    StyledText {
+                        id: portText
+                        anchors.centerIn: parent
+                        text: tile.monitorInfo ? tile.monitorInfo.name : ""
+                        font.pixelSize: Math.max(7, Math.min(10, innerDisplay.height * 0.11))
+                        color: Appearance.colors.colSubtext
+                    }
+                }
             }
-            StyledText {
-                Layout.alignment: Qt.AlignHCenter
-                text: tile.monitorInfo.name + (tile.isPending ? " *" : "")
-                font.pixelSize: Math.max(8, Math.min(tile.width, tile.height) * 0.13)
-                color: tile.isPending
-                       ? Appearance.colors.colSecondary
-                       : Appearance.colors.colOnLayer2
-                font.weight: Font.Medium
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
-            StyledText {
-                Layout.alignment: Qt.AlignHCenter
-                text: tile.monitorInfo.width + "×" + tile.monitorInfo.height
-                font.pixelSize: Math.max(7, Math.min(tile.width, tile.height) * 0.10)
-                color: Appearance.colors.colSubtext
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
-            StyledText {
-                Layout.alignment: Qt.AlignHCenter
+
+            // Mirror banner
+            Rectangle {
                 visible: tile.isMirroring
-                text: "↔ " + monitorInfo.mirrorOf
-                font.pixelSize: Math.max(7, Math.min(tile.width, tile.height) * 0.10)
-                color: Appearance.m3colors.m3tertiary
+                anchors.centerIn: parent
+                width: parent.width - 10
+                height: 22
+                radius: 4
+                color: Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.9)
+                z: 10
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 4
+                    MaterialSymbol {
+                        text: "screen_share"
+                        iconSize: 12
+                        color: Appearance.colors.colOnTertiary
+                    }
+                    StyledText {
+                        text: "Mirror: " + tile.mirrorTarget
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
+                        color: Appearance.colors.colOnTertiary
+                        elide: Text.ElideRight
+                    }
+                }
             }
         }
     }
 
+    // Detailed ToolTip
     StyledToolTip {
         extraVisibleCondition: hoverHandler.hovered && !dragHandler.active
         text: [
-            tile.monitorInfo.description,
-            tile.monitorInfo.width + "×" + tile.monitorInfo.height +
-                " @ " + tile.monitorInfo.refreshRate.toFixed(2) + " Hz",
-            "Scale: " + tile.monitorInfo.scale.toFixed(2) + "×",
-            "Position: " + tile.monitorInfo.x + ", " + tile.monitorInfo.y,
-            tile.monitorInfo.primary ? "Primary" : ""
+            tile.displayName + " (" + (tile.monitorInfo ? tile.monitorInfo.name : "") + ")",
+            "Resolution: " + Math.round(tile.realWidth) + "×" + Math.round(tile.realHeight) +
+                (tile.monitorInfo && tile.monitorInfo.refreshRate > 0 ? " @" + tile.monitorInfo.refreshRate.toFixed(1) + "Hz" : ""),
+            "Scale: " + Math.round(tile.realScale * 100) + "%",
+            "Position: (" + Math.round(tile.realX) + ", " + Math.round(tile.realY) + ")",
+            tile.isMirroring ? "Mirroring: " + tile.mirrorTarget : "",
         ].filter(Boolean).join("\n")
     }
 
@@ -113,6 +233,10 @@ Item {
         onTapped: tile.clicked()
     }
 
+    property real dragStartX: 0
+    property real dragStartY: 0
+    readonly property real snapThreshold: 18
+
     DragHandler {
         id: dragHandler
         enabled: !tile.isMirroring
@@ -122,28 +246,21 @@ Item {
             if (active) {
                 tile.dragStartX = tile.x
                 tile.dragStartY = tile.y
-                tile.z = 10
             } else {
-                tile.z = 0
-                tile.snapGuideUpdate(false, 0, 0, 0, 0)
+                tile.snapGuideUpdate(false, 0, 0, 0, 0, "")
+                tile.snapLineUpdate(false, 0, false, 0)
 
-                // Snap to closest snap position if within threshold
-                const snap = tile._findBestSnap()
-                let finalX = tile.x
-                let finalY = tile.y
-                if (snap !== null) {
-                    finalX = snap.x
-                    finalY = snap.y
-                    tile.x = finalX
-                    tile.y = finalY
+                // Clamp inside canvas bounds
+                const p = tile.tileParent
+                if (p) {
+                    tile.x = Math.max(0, Math.min(p.width - tile.width, tile.x))
+                    tile.y = Math.max(0, Math.min(p.height - tile.height, tile.y))
                 }
 
-                // Clamp inside canvas
-                const parent = tile.tileParent
-                tile.x = Math.max(0, Math.min(parent.width  - tile.width,  tile.x))
-                tile.y = Math.max(0, Math.min(parent.height - tile.height, tile.y))
-
-                tile.dragCommitted(tile.monitorInfo.name, tile.x, tile.y)
+                // Convert canvas coords back to real pixel coords
+                const newRx = Math.round((tile.x - tile.canvasOffsetX) / tile.canvasScaleF + tile.canvasOrigin.x)
+                const newRy = Math.round((tile.y - tile.canvasOffsetY) / tile.canvasScaleF + tile.canvasOrigin.y)
+                tile.dragCommitted(tile.monitorInfo.name, newRx, newRy)
             }
         }
 
@@ -151,59 +268,67 @@ Item {
             let nx = tile.dragStartX + translation.x
             let ny = tile.dragStartY + translation.y
 
-            // Clamp inside canvas
-            const parent = tile.tileParent
-            nx = Math.max(0, Math.min(parent.width  - tile.width,  nx))
-            ny = Math.max(0, Math.min(parent.height - tile.height, ny))
-
-            tile.x = nx
-            tile.y = ny
-
-            const snap = tile._findBestSnap()
-            if (snap !== null) {
-                tile.snapGuideUpdate(true, snap.x, snap.y, tile.width, tile.height)
-            } else {
-                tile.snapGuideUpdate(false, 0, 0, 0, 0)
+            const p = tile.tileParent
+            if (p) {
+                nx = Math.max(-tile.width * 0.4, Math.min(p.width - tile.width * 0.6, nx))
+                ny = Math.max(-tile.height * 0.4, Math.min(p.height - tile.height * 0.6, ny))
             }
+
+            let snapped = tile._performMagneticSnap(nx, ny)
+            tile.x = snapped.x
+            tile.y = snapped.y
         }
     }
 
-    readonly property int snapPx: 50
-
-    function _findBestSnap() {
+    function _performMagneticSnap(rawX, rawY) {
         const reps = tile.allTiles
-        if (!reps || reps.count < 2) return null
+        if (!reps || reps.count < 2) {
+            tile.snapGuideUpdate(false, 0, 0, 0, 0, "")
+            tile.snapLineUpdate(false, 0, false, 0)
+            return { x: rawX, y: rawY }
+        }
 
-        let best     = null
-        let bestDist = tile.snapPx + 1
+        let bestX = rawX, bestY = rawY
+        let minXDist = tile.snapThreshold + 1
+        let minYDist = tile.snapThreshold + 1
+        let snappedHLine = -1, snappedVLine = -1
 
         for (let i = 0; i < reps.count; i++) {
-            const sibling = reps.itemAt(i)
-            // itemAt may return the delegate wrapper; look for the tile inside
-            if (!sibling || sibling === tile) continue
+            const sib = reps.itemAt(i)
+            if (!sib || sib === tile) continue
 
-            const candidates = _snapCandidates(sibling)
-            for (let c of candidates) {
-                const dist = Math.sqrt((tile.x - c.x) ** 2 + (tile.y - c.y) ** 2)
-                if (dist < bestDist) {
-                    bestDist = dist
-                    best = c
-                }
+            // Horizontal snap targets (touching edges and axis alignment)
+            const xTargets = [
+                { pos: sib.x + sib.width,              line: sib.x + sib.width },
+                { pos: sib.x - tile.width,             line: sib.x },
+                { pos: sib.x,                          line: sib.x },
+                { pos: sib.x + sib.width - tile.width, line: sib.x + sib.width }
+            ]
+            for (let j = 0; j < xTargets.length; j++) {
+                const c = xTargets[j]
+                const d = Math.abs(rawX - c.pos)
+                if (d < minXDist) { minXDist = d; bestX = c.pos; snappedVLine = c.line }
+            }
+
+            // Vertical snap targets (touching edges and axis alignment)
+            const yTargets = [
+                { pos: sib.y + sib.height,                         line: sib.y + sib.height },
+                { pos: sib.y - tile.height,                        line: sib.y },
+                { pos: sib.y,                                      line: sib.y },
+                { pos: sib.y + sib.height - tile.height,           line: sib.y + sib.height },
+                { pos: sib.y + (sib.height - tile.height) / 2,     line: sib.y + sib.height / 2 }
+            ]
+            for (let k = 0; k < yTargets.length; k++) {
+                const c = yTargets[k]
+                const d = Math.abs(rawY - c.pos)
+                if (d < minYDist) { minYDist = d; bestY = c.pos; snappedHLine = c.line }
             }
         }
-        return best
-    }
 
-    function _snapCandidates(sib) {
-        return [
-            { x: sib.x + sib.width,   y: sib.y                        },
-            { x: sib.x - tile.width,  y: sib.y                        },
-            { x: sib.x,               y: sib.y - tile.height           },
-            { x: sib.x,               y: sib.y + sib.height            },
-            { x: sib.x + sib.width,   y: sib.y - tile.height           },
-            { x: sib.x + sib.width,   y: sib.y + sib.height            },
-            { x: sib.x - tile.width,  y: sib.y - tile.height           },
-            { x: sib.x - tile.width,  y: sib.y + sib.height            }, 
-        ]
+        const hasSnap = (minXDist <= tile.snapThreshold || minYDist <= tile.snapThreshold)
+        tile.snapGuideUpdate(hasSnap, bestX, bestY, tile.width, tile.height, "magnetic")
+        tile.snapLineUpdate(minYDist <= tile.snapThreshold, snappedHLine, minXDist <= tile.snapThreshold, snappedVLine)
+
+        return { x: bestX, y: bestY }
     }
 }
