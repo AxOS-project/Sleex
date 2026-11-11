@@ -22,6 +22,9 @@ public:
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
 
+    // Emitted when the system is about to sleep (true) or has just woken up (false).
+    Q_SIGNAL void prepareForSleep(bool sleeping);
+
 private:
     void acquireLock();
     void releaseLock();
