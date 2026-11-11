@@ -80,6 +80,7 @@ void SuspendFader::releaseLock() {
 }
 
 void SuspendFader::onPrepareForSleep(bool sleeping) {
+    emit prepareForSleep(sleeping);
     if (sleeping) {
         std::system("wlr-dpms off");
         std::this_thread::sleep_for(FADE_DURATION);
