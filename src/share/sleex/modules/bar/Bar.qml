@@ -73,8 +73,8 @@ Scope {
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            implicitHeight: barHeight + Appearance.rounding.screenRounding + ((barRoot.centerPopupOpen || centerPopup.isAnimating) ? centerPopup.popupHeight : 0) + Appearance.sizes.elevationMargin * 2
-            exclusiveZone: (Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight)
+            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
+            exclusiveZone: Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight
             mask: Region {
                 Region {
                     item: Config.options.bar.autoHide ? barHoverArea : null
