@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Services.UPower
 import QtQuick
 import Quickshell.Io
+import Sleex.Core
 
 Singleton {
     id: batteryService
@@ -44,10 +45,6 @@ Singleton {
         }
     }
 
-    onIsCriticalChanged: {
-        if (!isCritical) _criticalActionFired = false
-    }
-
     onCriticalActionWantedChanged: {
         if (criticalActionWanted) {
             criticalActionProgress = 0
@@ -84,6 +81,20 @@ Singleton {
             PowerActions.hibernate()
         } else {
             PowerActions.suspend()
+        }
+    }
+
+    // The critical action only fires once per critical discharge: the flag is
+    // cleared as soon as the battery is no longer critical *and* discharging,
+    // so plugging the charger in (and unplugging it again) re-arms the action.
+    Connections {
+        target: SuspendFader
+
+        function onPrepareForSleep(sleeping) {
+            // Woke up while still critical: re-arm the action so the warning
+            // and the countdown are shown again.
+            if (!sleeping && batteryService.isCriticalAndNotCharging)
+                batteryService._criticalActionFired = false
         }
     }
 
@@ -127,6 +138,7 @@ Singleton {
     }
 
     onIsCriticalAndNotChargingChanged: {
+        if (!isCriticalAndNotCharging) _criticalActionFired = false
         if (!available) return
         if (isCriticalAndNotCharging && !Config.options.battery.overlayEnabled) {
             if (Config.options.battery.sound)
