@@ -29,7 +29,7 @@ Scope {
 
             anchors { top: true; bottom: true; left: true; right: true }
             exclusiveZone: -1
-            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.namespace: "quickshell:criticalaction"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             mask: Region { }
