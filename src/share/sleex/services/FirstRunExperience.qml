@@ -39,16 +39,9 @@ Singleton {
         }
     }
 
-    Process {
+    FileView {
         id: checkIfLiveEnvironment
-        running: true
-        command: ["bash", "-c", "pacman -Q axinstall 2>/dev/null || echo 'not-installed'"]
-        stdout: SplitParser {
-            onRead: (data) => {
-                if (data.includes("axinstall")) {
-                    root.onLiveEnvironment = true
-                }
-            }
-        }
+        path: "/etc/this-is-a-live-env"
+        onLoaded: root.onLiveEnvironment = true
     }
 }
