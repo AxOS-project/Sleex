@@ -79,7 +79,7 @@ jobs:
           kit_summary = "\n\n".join(kit_context)[:25_000] if kit_context else "Unavailable."
 
           system_prompt = """You are reviewing a pull request for Sleex, a Quickshell/QML + C++ desktop environment running on Hyprland.
-          Be direct, pragmatic, and slightly sarcastic when warranted, but always constructive.
+          Be direct, pragmatic, and slightly sarcastic when warranted (not insulting or irrespectful to the author), but always constructive.
           Sleex uses `sleex-ui-kit` (`SleexUiKit.Appearance`, `SleexUiKit.Functions`, `SleexUiKit.Widgets`). Note that `Appearance` is Config-free and Sleex bridges its own `Config`/`Directories` values into it.
           Focus specifically on:
           1. Code smells and quality (including reinventing widgets/utils already in `sleex-ui-kit`, invalid `SleexUiKit.*` properties, or hardcoded colors/radii/fonts instead of `Appearance.*` tokens).
