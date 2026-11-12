@@ -1,0 +1,136 @@
+name: Gemini PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout sleex-ui-kit
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: AxOS-project/sleex-ui-kit
+          path: .sleex-ui-kit
+          fetch-depth: 1
+
+      - name: Run Gemini Code Review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - << 'EOF'
+          import os, subprocess, json, glob, urllib.request
+
+          diff = subprocess.check_output(
+              ["git", "diff", f"{os.environ['BASE_SHA']}...{os.environ['HEAD_SHA']}"],
+              text=True
+          )
+
+          if not diff.strip():
+              print("Empty diff, skipping review.")
+              exit(0)
+
+          if len(diff) > 120_000:
+              diff = diff[:120_000] + "\n\n[Diff truncated at 120k chars]"
+
+          # Scrape public QML module exports and top-level properties/signals/functions from sleex-ui-kit
+          kit_context = []
+          if os.path.isdir(".sleex-ui-kit"):
+              files = sorted(
+                  glob.glob(".sleex-ui-kit/**/qmldir", recursive=True) +
+                  glob.glob(".sleex-ui-kit/**/*.qml", recursive=True)
+              )
+              for path in files:
+                  rel = os.path.relpath(path, ".sleex-ui-kit")
+                  if rel.startswith("test.qml"):
+                      continue
+                  with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                      if path.endswith("qmldir"):
+                          lines = [l.rstrip() for l in f if l.strip()]
+                      else:
+                          lines = [
+                              l.rstrip() for l in f
+                              if l.lstrip().startswith(("property ", "readonly property ", "signal ", "function "))
+                          ]
+                  if lines:
+                      kit_context.append(f"### {rel}\n" + "\n".join(lines[:50]))
+
+          kit_summary = "\n\n".join(kit_context)[:25_000] if kit_context else "Unavailable."
+
+          system_prompt = """You are reviewing a pull request for Sleex, a Quickshell/QML + C++ desktop environment running on Hyprland.
+          Be direct, pragmatic, and slightly sarcastic when warranted, but always constructive.
+          Sleex uses `sleex-ui-kit` (`SleexUiKit.Appearance`, `SleexUiKit.Functions`, `SleexUiKit.Widgets`). Note that `Appearance` is Config-free and Sleex bridges its own `Config`/`Directories` values into it.
+          Focus specifically on:
+          1. Code smells and quality (including reinventing widgets/utils already in `sleex-ui-kit`, invalid `SleexUiKit.*` properties, or hardcoded colors/radii/fonts instead of `Appearance.*` tokens).
+          2. Performance issues (e.g., unnecessary `layer.enabled` FBOs, eager `LazyLoader`s, dynamic `exclusiveZone` reflows, blocking calls on the UI thread).
+          3. Code formatting.
+          Skip nitpicking formatting unless it causes a bug. Keep the review concise and actionable."""
+
+          user_message = f"""## sleex-ui-kit API Reference
+          {kit_summary}
+
+          ## PR Diff
+          ```diff
+          {diff}
+          ```"""
+
+          payload = {
+              "system_instruction": {"parts": [{"text": system_prompt}]},
+              "contents": [{"parts": [{"text": user_message}]}],
+              "generationConfig": {"temperature": 0.3}
+          }
+
+          req = urllib.request.Request(
+              f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={os.environ['GEMINI_API_KEY']}",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"}
+          )
+
+          with urllib.request.urlopen(req) as resp:
+              result = json.loads(resp.read().decode("utf-8"))
+              review = result["candidates"][0]["content"]["parts"][0]["text"]
+
+          MARKER = "<!-- gemini-pr-review -->"
+          body = f"{MARKER}\n{review}"
+          repo = os.environ["GITHUB_REPOSITORY"]
+          pr = os.environ["PR_NUMBER"]
+
+          existing = subprocess.check_output(
+              ["gh", "api", f"repos/{repo}/issues/{pr}/comments", "--jq",
+               f'.[] | select(.body | contains("{MARKER}")) | .id'],
+              text=True
+          ).strip().splitlines()
+
+          if existing:
+              subprocess.run(
+                  ["gh", "api", "-X", "PATCH", f"repos/{repo}/issues/comments/{existing[0]}",
+                   "-f", f"body={body}"],
+                  check=True
+              )
+          else:
+              subprocess.run(
+                  ["gh", "pr", "comment", pr, "--body", body],
+                  check=True
+              )
+          EOF
