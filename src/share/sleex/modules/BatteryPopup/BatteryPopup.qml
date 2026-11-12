@@ -119,6 +119,9 @@ Scope {
                 overlayLoader.loading = true
                 if (Config.options.battery.sound)
                     Audio.playSound("assets/sounds/battery/05_critical.wav")
+            } else {
+                root.isCritical = false
+                overlayLoader.active = false
             }
         }
 
