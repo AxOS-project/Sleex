@@ -3,6 +3,7 @@ import SleexUiKit.Widgets
 import qs.services
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import Sleex.Utils
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -120,6 +121,7 @@ Item {
             Layout.fillHeight: true
             spacing: 10
             clip: true
+            interactive: !BentoModel.isDragging
             currentIndex: currentTab
             onCurrentIndexChanged: {
             tabIndicator.enableIndicatorAnimation = true

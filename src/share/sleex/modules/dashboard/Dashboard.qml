@@ -4,6 +4,7 @@ import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import Sleex.Utils
 import qs.modules.dashboard.quickToggles
 import QtQuick
 import QtQuick.Controls
@@ -226,12 +227,19 @@ Scope {
                                     StyledText {
                                         font.pixelSize: Appearance.font.pixelSize.normal
                                         color: Appearance.colors.colOnLayer0
-                                        text: StringUtils.format(qsTr("Uptime: {0}"), DateTime.uptime)
+                                        text: qsTr("Uptime: %1").arg(DateTime.uptime)
                                     }
 
                                     Item { Layout.fillWidth: true }
 
                                     ButtonGroup {
+                                        QuickToggleButton {
+                                            visible: dashboardTabs.currentTab === 0
+                                            toggled: BentoModel.customizeOpen
+                                            buttonIcon: "dashboard_customize"
+                                            onClicked: BentoModel.customizeOpen = !BentoModel.customizeOpen
+                                            StyledToolTip { text: qsTr("Customize Home Bento Layout") }
+                                        }
                                         QuickToggleButton {
                                             toggled: false
                                             buttonIcon: "restart_alt"

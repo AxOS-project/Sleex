@@ -42,7 +42,8 @@ public:
 public:
     int rows() const { return m_rows; }
     void setRows(int r) { 
-        if (m_rows != r) { m_rows = r; emit rowsChanged(); } 
+        int clamped = std::max(1, r);
+        if (m_rows != clamped) { m_rows = clamped; emit rowsChanged(); } 
     }
 
 signals:

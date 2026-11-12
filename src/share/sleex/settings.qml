@@ -58,7 +58,7 @@ ApplicationWindow {
     AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
     Component.onCompleted: {
-        MaterialThemeLoader.reapplyTheme()
+        Appearance.themeLoader.filePath = Directories.generatedMaterialThemePath
         Idle.init()
     }
 

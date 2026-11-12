@@ -199,13 +199,12 @@ RippleButton {
             // Lazily decoded clipboard image preview; CliphistImage manages its own
             // temp file lifecycle via Component.onCompleted / Component.onDestruction.
             Loader {
-        asynchronous: true
+                asynchronous: true
                 id: imagePreviewLoader
                 active: root.cliphistRawString && Cliphist.entryIsImage(root.cliphistRawString)
                 visible: active
                 Layout.fillWidth: true
-                Layout.preferredHeight: (active && item) ? item.height : 0
-                Layout.maximumHeight: 250
+                Layout.preferredHeight: (active && item) ? item.implicitHeight : 0
                 sourceComponent: Component {
                     CliphistImage {
                         entry: root.cliphistRawString

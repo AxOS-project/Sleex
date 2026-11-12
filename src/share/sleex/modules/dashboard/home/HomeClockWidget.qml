@@ -1,17 +1,19 @@
 import qs.modules.common
 import qs.services
 import QtQuick
+import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 
 Rectangle {
     color: Appearance.colors.colLayer1
     radius: Appearance.rounding.normal
+    clip: true
 
     Column {
         anchors.centerIn: parent
         spacing: 10
 
-        Text {
+        StyledText {
             text: DateTime.time
             color: Appearance.colors.colPrimary
             font.pixelSize: 60
@@ -19,7 +21,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Text {
+        StyledText {
             text: DateTime.longDateFormat
             color: Appearance.colors.colOnLayer1
             font.pixelSize: 20

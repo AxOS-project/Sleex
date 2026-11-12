@@ -5,6 +5,7 @@ qml_module(sleex-utils
     SOURCES
         DesktopStateManager.cpp DesktopStateManager.hpp
         DesktopModel.cpp DesktopModel.hpp
+        BentoModel.cpp BentoModel.hpp
         plugin.cpp
 )
 

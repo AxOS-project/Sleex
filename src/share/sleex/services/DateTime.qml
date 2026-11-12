@@ -24,13 +24,14 @@ Singleton {
     property bool is24Hour: ((Config.options?.time?.format ?? "").toString().toUpperCase().includes("AP") === false)
 
     Timer {
-        interval: 10
+        interval: Config.options?.resources?.updateInterval ?? 3000
         running: true
         repeat: true
+        triggeredOnStart: true
         onTriggered: {
             fileUptime.reload()
             const textUptime = fileUptime.text()
-            const uptimeSeconds = Number(textUptime.split(" ")[0] ?? 0)
+            const uptimeSeconds = Number(textUptime ? textUptime.split(" ")[0] : 0)
 
             // Convert seconds to days, hours, and minutes
             const days = Math.floor(uptimeSeconds / 86400)
@@ -43,7 +44,6 @@ Singleton {
             if (hours > 0) formatted += `${formatted ? ", " : ""}${hours}h`
             if (minutes > 0 || !formatted) formatted += `${formatted ? ", " : ""}${minutes}m`
             uptime = formatted
-            interval = Config.options?.resources?.updateInterval ?? 3000
         }
     }
 

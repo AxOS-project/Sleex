@@ -40,8 +40,8 @@ PopupWindow {
 
     function close() {
         root.visible = false;
-        while (stackView.depth > 1)
-            stackView.pop();
+        if (stackView.depth > 1)
+            stackView.pop(null, StackView.Immediate);
         root.menuClosed();
     }
 

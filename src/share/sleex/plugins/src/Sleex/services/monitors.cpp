@@ -19,6 +19,10 @@ Monitors::Monitors(QObject *parent) : QObject(parent)
     connect(m_pollTimer, &QTimer::timeout, this, &Monitors::refresh);
     m_pollTimer->start();
 
+    m_reconnectTimer = new QTimer(this);
+    m_reconnectTimer->setSingleShot(true);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &Monitors::connectEventSocket);
+
     connectEventSocket();
     refresh();
 }
@@ -84,6 +88,9 @@ void Monitors::sendRequest(const QString &command,
 
 void Monitors::connectEventSocket()
 {
+    if (m_eventSocket) {
+        m_eventSocket->deleteLater();
+    }
     m_eventSocket = new QLocalSocket(this);
 
     connect(m_eventSocket, &QLocalSocket::readyRead, this, [this]() {
@@ -97,12 +104,14 @@ void Monitors::connectEventSocket()
     });
 
     connect(m_eventSocket, &QLocalSocket::disconnected, this, [this]() {
-        QTimer::singleShot(2000, this, &Monitors::connectEventSocket);
+        if (!m_reconnectTimer->isActive())
+            m_reconnectTimer->start(2000);
     });
 
     connect(m_eventSocket, &QLocalSocket::errorOccurred, this,
             [this](QLocalSocket::LocalSocketError) {
-                QTimer::singleShot(2000, this, &Monitors::connectEventSocket);
+                if (!m_reconnectTimer->isActive())
+                    m_reconnectTimer->start(2000);
             });
 
     m_eventSocket->connectToServer(socketPath(2));

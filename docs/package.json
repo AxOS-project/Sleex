@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^2.0.0-alpha.20"
+  },
+  "dependencies": {
+    "vitepress-mermaid-renderer": "^1.2.2"
+  }
+}

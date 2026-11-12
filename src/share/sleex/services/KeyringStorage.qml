@@ -27,7 +27,7 @@ Singleton {
             return arr.concat([key, root.properties[key]]);
         }, []
     )
-    property string keyringLabel: StringUtils.format(qsTr("{0} Safe Storage"), "Sleex")
+    property string keyringLabel: qsTr("%1 Safe Storage").arg("Sleex")
 
     function setNestedField(path, value) {
         if (!root.keyringData) root.keyringData = {};
