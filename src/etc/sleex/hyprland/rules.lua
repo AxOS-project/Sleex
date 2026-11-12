@@ -27,6 +27,7 @@ local center_dialogs = {
 	"^(Save As)(.*)$",
 	"^(Library)(.*)$",
 	"^(File Upload)(.*)$",
+	"^(Choose)$",
 }
 for _, pattern in ipairs(center_dialogs) do
 	hl.window_rule({
@@ -149,6 +150,13 @@ hl.layer_rule({
 hl.layer_rule({
 	match = { namespace = "quickshell:bar" },
 	animation = "slide",
+})
+-- The critical battery countdown border shares the top layer with the bar.
+-- A higher order renders lower, so this keeps the border underneath the bar
+-- and the island, which then always cover the screen edges they share.
+hl.layer_rule({
+	match = { namespace = "quickshell:criticalaction" },
+	order = 1,
 })
 hl.layer_rule({
 	match = { namespace = "quickshell:cheatsheet" },
