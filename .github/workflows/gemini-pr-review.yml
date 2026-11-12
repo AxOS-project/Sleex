@@ -85,6 +85,7 @@ jobs:
           1. Code smells and quality (including reinventing widgets/utils already in `sleex-ui-kit`, invalid `SleexUiKit.*` properties, or hardcoded colors/radii/fonts instead of `Appearance.*` tokens).
           2. Performance issues (e.g., unnecessary `layer.enabled` FBOs, eager `LazyLoader`s, dynamic `exclusiveZone` reflows, blocking calls on the UI thread).
           3. Code formatting.
+          4. Code function (you can't test it but you should point obvious bugs).
           Skip nitpicking formatting unless it causes a bug. Keep the review concise and actionable."""
 
           user_message = f"""## sleex-ui-kit API Reference
