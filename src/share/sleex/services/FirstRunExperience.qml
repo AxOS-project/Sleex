@@ -15,10 +15,20 @@ Singleton {
     property bool onLiveEnvironment: false
 
     function load() {
-        firstRunFileView.reload()
+        checkIfLiveEnvironment.reload()
+    }
+
+    function checkFirstRun() {
+        const resolvedPath = Qt.resolvedUrl(root.firstRunFilePath).toString()
+        if (firstRunFileView.path === resolvedPath) {
+            firstRunFileView.reload()
+        } else {
+            firstRunFileView.path = resolvedPath
+        }
     }
 
     function handleFirstRun() {
+        checkIfLiveEnvironment.waitForJob()
         Quickshell.execDetached(["bash", "-c", `hypnos install && hypnos enable && hypnos start`])
         Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} ${root.defaultWallpaperPath} --mode dark`])
         if (!root.onLiveEnvironment) {
@@ -30,7 +40,6 @@ Singleton {
 
     FileView {
         id: firstRunFileView
-        path: Qt.resolvedUrl(firstRunFilePath)
         onLoadFailed: (error) => {
             if (error == FileViewError.FileNotFound) {
                 root.handleFirstRun()
@@ -42,6 +51,13 @@ Singleton {
     FileView {
         id: checkIfLiveEnvironment
         path: "/etc/this-is-a-live-env"
-        onLoaded: root.onLiveEnvironment = true
+        onLoaded: {
+            root.onLiveEnvironment = true
+            root.checkFirstRun()
+        }
+        onLoadFailed: (error) => {
+            root.onLiveEnvironment = (error != FileViewError.FileNotFound)
+            root.checkFirstRun()
+        }
     }
 }
