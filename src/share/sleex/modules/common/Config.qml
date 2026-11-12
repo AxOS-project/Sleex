@@ -130,9 +130,9 @@ Singleton {
             property bool criticalActionEnabled: false
             property int criticalActionDelay: 30
             property string criticalAction: "suspend"
-            property int criticalOverlayBorderThick: 15
-            property int criticalOverlayPathInset: 5
-            property int criticalOverlayCornerRadius: 30
+            property int criticalOverlayBorderThick: 5
+            property int criticalOverlayPathInset: 0
+            property int criticalOverlayCornerRadius: 25
         }
 
         property JsonObject bar: JsonObject {
