@@ -44,7 +44,7 @@ Scope {
 
             component EdgePath: ShapePath {
                 strokeWidth: root.borderThick
-                strokeColor: Appearance.colors.colError
+                strokeColor: Appearance.colors.colPrimary
                 fillColor: "transparent"
                 capStyle: ShapePath.RoundCap
                 joinStyle: ShapePath.MiterJoin
