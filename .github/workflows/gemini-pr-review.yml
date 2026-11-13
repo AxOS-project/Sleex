@@ -1,0 +1,174 @@
+name: Gemini PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Numéro de la PR à reviewer"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+env:
+  GEMINI_MODEL: "gemini-3.8-flash"
+  GEMINI_TEMPERATURE: "0.2"
+  MAX_DIFF_CHARS: "120000"
+  MAX_KIT_CHARS: "25000"
+  UI_KIT_REPO: "AxOS-project/sleex-ui-kit"
+  SYSTEM_PROMPT: |
+    You are reviewing a pull request for Sleex, a Quickshell/QML + C++ desktop environment running on Hyprland.
+    Be direct, pragmatic, and slightly sarcastic when warranted (not insulting or irrespectful to the author), but always constructive.
+    Sleex uses `sleex-ui-kit` (`SleexUiKit.Appearance`, `SleexUiKit.Functions`, `SleexUiKit.Widgets`). Note that `Appearance` is Config-free and Sleex bridges its own `Config`/`Directories` values into it.
+    Focus specifically on:
+    1. Code smells and quality (including reinventing widgets/utils already in `sleex-ui-kit`, invalid `SleexUiKit.*` properties, or hardcoded colors/radii/fonts instead of `Appearance.*` tokens).
+    2. Performance issues (e.g., unnecessary `layer.enabled` FBOs, eager `LazyLoader`s, dynamic `exclusiveZone` reflows, blocking calls on the UI thread).
+    3. Code formatting.
+    4. Code function (you can't test it but you should point obvious bugs).
+    Skip nitpicking formatting unless it causes a bug. Keep the review concise and actionable.
+
+    Decide a verdict:
+    - "REQUEST_CHANGES": ONLY if there is an actual bug, broken binding, memory/thread safety issue, performance regression, or repo pollution (like stray test files).
+    - "APPROVE": If the code is clean, safe, and ready to merge (even if you leave minor non-blocking suggestions).
+    - "COMMENT": If the diff is ambiguous or needs clarification without clear bugs.
+
+jobs:
+  review:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Checkout sleex-ui-kit
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: ${{ env.UI_KIT_REPO }}
+          path: .sleex-ui-kit
+          fetch-depth: 1
+
+      - name: Run Gemini Code Review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          python3 - << 'EOF'
+          import os, subprocess, json, glob, urllib.request, urllib.error
+
+          pr = os.environ["PR_NUMBER"].strip()
+          model = os.environ["GEMINI_MODEL"].strip()
+          temperature = float(os.environ["GEMINI_TEMPERATURE"])
+          max_diff = int(os.environ["MAX_DIFF_CHARS"])
+          max_kit = int(os.environ["MAX_KIT_CHARS"])
+          system_prompt = os.environ["SYSTEM_PROMPT"].strip()
+
+          diff = subprocess.check_output(["gh", "pr", "diff", pr], text=True)
+          if not diff.strip():
+              print("Empty diff, skipping review.")
+              exit(0)
+
+          if len(diff) > max_diff:
+              diff = diff[:max_diff] + f"\n\n[Diff truncated at {max_diff} chars]"
+
+          kit_context = []
+          if os.path.isdir(".sleex-ui-kit"):
+              files = sorted(
+                  glob.glob(".sleex-ui-kit/**/qmldir", recursive=True) +
+                  glob.glob(".sleex-ui-kit/**/*.qml", recursive=True)
+              )
+              for path in files:
+                  rel = os.path.relpath(path, ".sleex-ui-kit")
+                  if rel.startswith("test.qml"):
+                      continue
+                  with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                      if path.endswith("qmldir"):
+                          lines = [l.rstrip() for l in f if l.strip()]
+                      else:
+                          lines = [
+                              l.rstrip() for l in f
+                              if l.lstrip().startswith(("property ", "readonly property ", "signal ", "function "))
+                          ]
+                  if lines:
+                      kit_context.append(f"### {rel}\n" + "\n".join(lines[:50]))
+
+          kit_summary = "\n\n".join(kit_context)[:max_kit] if kit_context else "Unavailable."
+
+          user_message = f"""## sleex-ui-kit API Reference
+          {kit_summary}
+
+          ## PR Diff
+          ```diff
+          {diff}
+          ```"""
+
+          payload = {
+              "system_instruction": {"parts": [{"text": system_prompt}]},
+              "contents": [{"parts": [{"text": user_message}]}],
+              "generationConfig": {
+                  "temperature": temperature,
+                  "response_mime_type": "application/json",
+                  "response_schema": {
+                      "type": "OBJECT",
+                      "properties": {
+                          "verdict": {
+                              "type": "STRING",
+                              "enum": ["APPROVE", "REQUEST_CHANGES", "COMMENT"]
+                          },
+                          "review": {
+                              "type": "STRING",
+                              "description": "Markdown review body."
+                          }
+                      },
+                      "required": ["verdict", "review"]
+                  }
+              }
+          }
+
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={os.environ['GEMINI_API_KEY'].strip()}"
+          req = urllib.request.Request(
+              url,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"}
+          )
+
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  result = json.loads(resp.read().decode("utf-8"))
+                  parsed = json.loads(result["candidates"][0]["content"]["parts"][0]["text"])
+          except urllib.error.HTTPError as e:
+              print(f"Gemini API error {e.code}: {e.read().decode('utf-8', errors='replace')}")
+              raise
+
+          verdict = parsed["verdict"]
+          review = parsed["review"]
+
+          pr_state = subprocess.check_output(
+              ["gh", "pr", "view", pr, "--json", "state", "--jq", ".state"],
+              text=True
+          ).strip()
+
+          if pr_state != "OPEN":
+              print(f"PR #{pr} is {pr_state}; forcing COMMENT instead of {verdict}.")
+              review = f"**[Verdict: `{verdict}`]**\n\n{review}"
+              flag = "--comment"
+          else:
+              flag = {
+                  "APPROVE": "--approve",
+                  "REQUEST_CHANGES": "--request-changes",
+                  "COMMENT": "--comment"
+              }.get(verdict, "--comment")
+
+          print(f"Submitting PR review with flag: {flag}")
+          subprocess.run(["gh", "pr", "review", pr, flag, "--body", review], check=True)
+          EOF
