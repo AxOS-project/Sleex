@@ -151,6 +151,13 @@ hl.layer_rule({
 	match = { namespace = "quickshell:bar" },
 	animation = "slide",
 })
+-- The critical battery countdown border shares the top layer with the bar.
+-- A higher order renders lower, so this keeps the border underneath the bar
+-- and the island, which then always cover the screen edges they share.
+hl.layer_rule({
+	match = { namespace = "quickshell:criticalaction" },
+	order = 1,
+})
 hl.layer_rule({
 	match = { namespace = "quickshell:cheatsheet" },
 	animation = "slide bottom",

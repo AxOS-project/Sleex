@@ -119,7 +119,14 @@ Scope {
                 overlayLoader.loading = true
                 if (Config.options.battery.sound)
                     Audio.playSound("assets/sounds/battery/05_critical.wav")
+            } else {
+                root.isCritical = false
+                overlayLoader.active = false
             }
+        }
+
+        function onCriticalActionExecuted() {
+            overlayLoader.active = false
         }
     }
     
@@ -244,6 +251,16 @@ Scope {
                                     text:  qsTr("%1% battery remaining.").arg(Battery.percentageInt)
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.colors.colOnLayer1
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth:    true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    visible: Battery.criticalActionWanted
+                                    text: qsTr("%1 in %2s").arg(Battery.criticalActionLabel).arg(Battery.criticalActionRemaining)
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.weight: Font.Medium
+                                    color: Appearance.colors.colError
                                 }
                             }
 

@@ -45,6 +45,8 @@ ShellRoot {
     property bool enableOverview: true
     property bool enablePolkit: true
     property bool enableReloadPopup: true
+    property bool enableBatteryPopup: true
+    property bool enableCriticalBatteryOverlay: true
     property bool enableScreenCorners: false
     property bool enableSession: true
     property bool enableDashboard: true
@@ -73,7 +75,10 @@ ShellRoot {
     LazyLoader { active: enableOverview; component: Overview {} }
     LazyLoader { active: enablePolkit; component: Polkit {} }
     LazyLoader { active: enableReloadPopup; component: ReloadPopup {} }
-    LazyLoader { active: true; component: BatteryPopup {} }
+    LazyLoader { active: enableBatteryPopup; component: BatteryPopup {} }
+    // The countdown border is only of any use while the countdown runs, so it
+    // is not loaded - and its layer surfaces are not created - before that.
+    LazyLoader { active: enableCriticalBatteryOverlay && Battery.criticalActionWanted; component: CriticalBatteryOverlay {} }
     LazyLoader { active: enableScreenCorners; component: ScreenCorners {} }
     LazyLoader { active: enableSession; component: Session {} }
     LazyLoader { active: enableDashboard; component: Dashboard {} }

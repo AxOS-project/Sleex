@@ -48,9 +48,6 @@ Scope {
             property ShellScreen modelData
             property bool centerPopupOpen: false
             property bool barRevealed: !Config.options.bar.autoHide || barHoverArea.containsMouse || barRoot.centerPopupOpen || GlobalStates.dashboardOpen
-
-            readonly property bool criticalShift: Battery.criticalActionWanted && barRoot.barRevealed
-          
             readonly property int autoHideAnimMs: 400
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
             property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
@@ -76,8 +73,8 @@ Scope {
             WlrLayershell.namespace: "quickshell:bar"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: barRoot.centerPopupOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            implicitHeight: (barRoot.criticalShift ? 20 : 0) + barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
-            exclusiveZone: (Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight) + (barRoot.criticalShift ? 20 : 0)
+            implicitHeight: barHeight + Appearance.rounding.screenRounding + centerPopup.popupHeight + Appearance.sizes.elevationMargin * 2
+            exclusiveZone: Config.options.bar.autoHide && !Config.options.bar.reserveSpace ? (barContent.visible ? barHeight : 0) : barHeight
             mask: Region {
                 Region {
                     item: Config.options.bar.autoHide ? barHoverArea : null
@@ -136,8 +133,8 @@ Scope {
                     left: parent.left
                     top: !Config.options.bar.bottom ? parent.top : undefined
                     bottom: Config.options.bar.bottom ? parent.bottom : undefined
-                    topMargin: !Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
-                    bottomMargin: Config.options.bar.bottom ? ((barContent.visible ? 0 : -barHeight) + (barRoot.criticalShift ? 20 : 0)) : 0
+                    topMargin: !Config.options.bar.bottom ? (barContent.visible ? 0 : -barHeight) : 0
+                    bottomMargin: Config.options.bar.bottom ? (barContent.visible ? 0 : -barHeight) : 0
                 }
 
                 Behavior on anchors.topMargin {
