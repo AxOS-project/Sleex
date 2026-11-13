@@ -257,10 +257,7 @@ Scope {
                                     Layout.fillWidth:    true
                                     horizontalAlignment: Text.AlignHCenter
                                     visible: Battery.criticalActionWanted
-                                    text: {
-                                        const remain = Math.max(0, Math.ceil((1 - Battery.criticalActionProgress) * Config.options.battery.criticalActionDelay))
-                                        return qsTr("%1 in %2s").arg(Battery.criticalActionLabel).arg(remain)
-                                    }
+                                    text: qsTr("%1 in %2s").arg(Battery.criticalActionLabel).arg(Battery.criticalActionRemaining)
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     font.weight: Font.Medium
                                     color: Appearance.colors.colError

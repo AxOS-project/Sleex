@@ -36,6 +36,12 @@ Singleton {
     property real criticalActionProgress: 0
     property bool _criticalActionFired: false
 
+    // The remaining seconds of the countdown. The progress is animated every
+    // frame, so this rounds it down to whole seconds: the value only changes
+    // once a second, which keeps anything bound to it from being rebuilt on
+    // every frame of the animation.
+    readonly property int criticalActionRemaining: Math.max(0, Math.ceil((1 - criticalActionProgress) * Config.options.battery.criticalActionDelay))
+
     readonly property string criticalActionLabel: {
         switch (Config.options.battery.criticalAction) {
             case "suspend": return qsTr("Suspend")

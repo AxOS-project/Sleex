@@ -111,9 +111,9 @@ Scope {
 
                 preferredRendererType: Shape.CurveRenderer
                 EdgePath {
-                    // ShapePath.trim is a property group (QQuickShapeTrim, added
-                    // in Qt 6.10) holding fractions of the path length, so the
-                    // snake stroke grows along the border as the countdown runs.
+                    // ShapePath.trim is a property group (QQuickShapeTrim) that
+                    // holds fractions of the path length, so the snake stroke
+                    // grows along the border as the countdown runs.
                     trim.start: 0
                     trim.end: Math.max(win.prog, 0.002)
                 }
