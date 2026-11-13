@@ -94,9 +94,11 @@ Scope {
                 visible: Battery.criticalActionWanted
                 antialiasing: true
 
-                layer.enabled: Battery.criticalActionWanted
-                layer.smooth: true
-                layer.samples: 2
+                // The curve renderer antialiases the strokes on the GPU, so the
+                // shapes need no offscreen buffer of their own. layer.enabled
+                // would allocate a full screen sized (and, with layer.samples,
+                // multisampled) texture for each of them.
+                preferredRendererType: Shape.CurveRenderer
                 opacity: 0.15
                 EdgePath { }
             }
@@ -106,9 +108,7 @@ Scope {
                 visible: Battery.criticalActionWanted
                 antialiasing: true
 
-                layer.enabled: Battery.criticalActionWanted
-                layer.smooth: true
-                layer.samples: 2
+                preferredRendererType: Shape.CurveRenderer
                 EdgePath {
                     trim.start: 0
                     trim.end: Math.max(win.prog, 0.002)
