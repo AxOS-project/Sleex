@@ -3,7 +3,7 @@ find_package(PkgConfig REQUIRED)
 find_package(sdbus-c++ REQUIRED)
 
 set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml")
-qt_standard_project_setup(REQUIRES 6.10)
+qt_standard_project_setup(REQUIRES 6.9)
 
 function(qml_module arg_TARGET)
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "URI" "SOURCES;LIBRARIES")
