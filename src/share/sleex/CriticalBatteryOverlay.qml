@@ -10,9 +10,10 @@ import QtQuick.Shapes
 Scope {
     id: root
 
-    property int borderThick: Config.options.battery.criticalOverlayBorderThick ?? 14
+    // Fallbacks mirror the defaults in modules/common/Config.qml.
+    property int borderThick: Config.options.battery.criticalOverlayBorderThick ?? 5
     property int pathInset: Config.options.battery.criticalOverlayPathInset ?? 0
-    property int cornerRadius: Config.options.battery.criticalOverlayCornerRadius ?? 20
+    property int cornerRadius: Config.options.battery.criticalOverlayCornerRadius ?? 25
 
     Variants {
         model: Quickshell.screens
@@ -110,6 +111,9 @@ Scope {
 
                 preferredRendererType: Shape.CurveRenderer
                 EdgePath {
+                    // ShapePath.trim is a property group (QQuickShapeTrim, added
+                    // in Qt 6.10) holding fractions of the path length, so the
+                    // snake stroke grows along the border as the countdown runs.
                     trim.start: 0
                     trim.end: Math.max(win.prog, 0.002)
                 }
