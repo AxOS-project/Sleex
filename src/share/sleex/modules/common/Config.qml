@@ -221,6 +221,7 @@ Singleton {
             ]
         }
         property JsonObject interactions: JsonObject {
+            property bool focusOnOpen: true // Focus a window as soon as it opens
             property JsonObject scrolling: JsonObject {
                 property bool fasterTouchpadScroll: true // Enable faster scrolling with touchpad
                 property int mouseScrollDeltaThreshold: 120 // delta >= this then it gets detected as mouse scroll rather than touchpad
