@@ -62,6 +62,7 @@ ShellRoot {
         FirstRunExperience.load()
         Cliphist.refresh()
         Idle.init();
+        FocusOnOpen.init()
         NightLight.load()
         SuspendFader.start()
     }
