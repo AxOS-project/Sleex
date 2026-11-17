@@ -39,3 +39,13 @@ Sleex is licensed under the GNU General Public License v3.0
 ## Special thanks
 - [@end-4](https://github.com/end-4/): Great inspiration | Sleex is based on his work
 - [@xHyperVoid](https://github.com/xHyperVoid): Designer | Made the logo and the wallpapers
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=axos-project%2Fsleex&type=date&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=axos-project/sleex&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=axos-project/sleex&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=axos-project/sleex&type=date&legend=bottom-right" />
+ </picture>
+</a>
