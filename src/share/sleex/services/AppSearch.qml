@@ -55,7 +55,7 @@ Singleton {
             "music_note":  ["spotify", "spotifyd", "clementine", "audacious", "rhythmbox", "deadbeef", "tidal-hifi"],
             "email":       ["thunderbird", "evolution", "geary", "mailspring", "mailbird"],
             "book_4":      ["obsidian", "notion", "evernote", "joplin", "simplenote", "zotero"],
-            "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm"],
+            "folder":      ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo", "caja", "pcmanfm-qt", "pcmanfm", "voxel"],
             "video_library": ["vlc", "mpv", "smplayer", "kodi", "plex", "plexamp"],
             "edit_document": ["libreoffice", "onlyoffice", "wps-office", "calligra", "evince", "okular", "org.kde.kwrite", "gedit", "mousepad"],
             "gamepad":      ["steam", "lutris", "heroic", "itch", "playnite", "gamelauncher"],

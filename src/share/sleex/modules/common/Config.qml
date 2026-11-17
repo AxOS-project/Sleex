@@ -113,7 +113,7 @@ Singleton {
             property string taskManager: "io.missioncenter.MissionCenter.desktop"
             property string terminal: "foot.desktop"
             property string webBrowser: "firefox.desktop"
-            property string fileManager: "pcmanfm-qt.desktop"
+            property string fileManager: "voxel.desktop"
             property string videoPlayer: "mpv.desktop"
             property string archiveManager: "org.gnome.FileRoller.desktop"
             property string textEditor: "code.desktop"

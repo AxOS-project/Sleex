@@ -17,7 +17,7 @@ depends=(
   # Hyprland dependencies
   'hyprutils' 'hyprpicker' 'hyprlang' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
   # QT/KDE dependencies
-  'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'pcmanfm-qt' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
+  'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'voxel' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
   # Portal
   'xdg-desktop-portal'
   # Python deps
