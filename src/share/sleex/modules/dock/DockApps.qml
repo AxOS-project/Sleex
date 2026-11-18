@@ -96,10 +96,32 @@ Item {
         }
     }
 
+    // Ensure WlBufferManager initializes against the visible dock window at startup (no capture active).
+    ScreencopyView {
+        visible: false
+        width: 0
+        height: 0
+        captureSource: null
+        live: false
+    }
+
     PopupWindow {
         id: previewPopup
         property var appTopLevel: root.lastHoveredButton?.appToplevel
         property bool allPreviewsReady: false
+        readonly property bool hoverConditions: popupMouseArea.containsMouse || root.buttonHovered
+        // Keep preview delegates and capture active while hovered or visible (including fade-out) so initial frames arrive before showing.
+        readonly property bool previewActive: visible || hoverConditions
+        onPreviewActiveChanged: {
+            if (!previewActive) {
+                updateTimer.stop();
+                show = false;
+                allPreviewsReady = false;
+                if (root.lastHoveredButton) {
+                    root.lastHoveredButton = null;
+                }
+            }
+        }
         Connections {
             target: root
             function onLastHoveredButtonChanged() {
@@ -107,6 +129,10 @@ Item {
             } 
         }
         function updatePreviewReadiness() {
+            if (!previewActive || (appTopLevel?.toplevels?.length ?? 0) === 0) {
+                allPreviewsReady = false;
+                return;
+            }
             for(var i = 0; i < previewRowLayout.children.length; i++) {
                 const view = previewRowLayout.children[i];
                 if (view.hasContent === false) {
@@ -116,10 +142,7 @@ Item {
             }
             allPreviewsReady = true;
         }
-        property bool shouldShow: {
-            const hoverConditions = (popupMouseArea.containsMouse || root.buttonHovered)
-            return hoverConditions && allPreviewsReady;
-        }
+        property bool shouldShow: hoverConditions && allPreviewsReady && (appTopLevel?.toplevels?.length ?? 0) > 0
         property bool show: false
 
         onShouldShowChanged: {
@@ -144,7 +167,7 @@ Item {
             edges: Edges.Top | Edges.Left
 
         }
-        visible: popupBackground.visible
+        visible: previewPopup.show || popupBackground.opacity > 0
         color: "transparent"
         implicitWidth: root.QsWindow.window?.width ?? 1
         implicitHeight: popupMouseArea.implicitHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
@@ -156,8 +179,9 @@ Item {
             implicitHeight: root.maxWindowPreviewHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
             hoverEnabled: true
             x: {
-                const itemCenter = root.QsWindow?.mapFromItem(root.lastHoveredButton, root.lastHoveredButton?.width / 2, 0);
-                return itemCenter.x - width / 2
+                if (!root.lastHoveredButton || !root.QsWindow?.window) return 0;
+                const itemCenter = root.QsWindow.mapFromItem(root.lastHoveredButton, root.lastHoveredButton.width / 2, 0);
+                return itemCenter ? itemCenter.x - width / 2 : 0;
             }
             StyledRectangularShadow {
                 target: popupBackground
@@ -192,6 +216,7 @@ Item {
                 implicitHeight: previewRowLayout.implicitHeight + padding * 2
                 implicitWidth: previewRowLayout.implicitWidth + padding * 2
                 Behavior on implicitWidth {
+                    enabled: previewPopup.visible
                     animation: NumberAnimation {
     duration: Appearance.animation.elementMoveFast.duration
     easing.type: Appearance.animation.elementMoveFast.type
@@ -199,6 +224,7 @@ Item {
 }
                 }
                 Behavior on implicitHeight {
+                    enabled: previewPopup.visible
                     animation: NumberAnimation {
     duration: Appearance.animation.elementMoveFast.duration
     easing.type: Appearance.animation.elementMoveFast.type
@@ -211,7 +237,7 @@ Item {
                     anchors.centerIn: parent
                     Repeater {
                         model: ScriptModel {
-                            values: previewPopup.appTopLevel?.toplevels ?? []
+                            values: previewPopup.previewActive ? (previewPopup.appTopLevel?.toplevels ?? []) : []
                         }
                         RippleButton {
                             id: windowButton
@@ -262,14 +288,15 @@ Item {
                                 }
                                 ScreencopyView {
                                     id: screencopyView
-                                    captureSource: previewPopup ? windowButton.modelData : null
-                                    live: true
+                                    captureSource: previewPopup.previewActive ? windowButton.modelData : null
+                                    live: previewPopup.previewActive
                                     paintCursor: true
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
                                     onHasContentChanged: {
-                                        previewPopup.updatePreviewReadiness();
+                                        if (hasContent)
+                                            previewPopup.updatePreviewReadiness();
                                     }
-                                    layer.enabled: true
+                                    layer.enabled: screencopyView.hasContent && screencopyView.width > 0 && screencopyView.height > 0
                                     layer.effect: OpacityMask {
                                         maskSource: Rectangle {
                                             width: screencopyView.width

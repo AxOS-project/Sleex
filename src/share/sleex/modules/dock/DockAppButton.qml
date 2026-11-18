@@ -58,6 +58,11 @@ DockButton {
                     appListRoot.buttonHovered = false
                 }
             }
+            Component.onDestruction: {
+                if (appListRoot && appListRoot.lastHoveredButton === root) {
+                    appListRoot.buttonHovered = false
+                }
+            }
         }
     }
 
