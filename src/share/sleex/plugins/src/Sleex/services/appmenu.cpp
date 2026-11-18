@@ -88,48 +88,93 @@ QDBusArgument &operator<<(QDBusArgument &argument, const SleexDBusMenuItemProper
 
 namespace sleex::services {
 
-static uint getParentPid(uint pid)
+static uint getParentPid(uint pid, QHash<uint, uint> &ppidCache)
 {
-    if (pid == 0) return 0;
+    if (pid == 0)
+        return 0;
+
+    auto it = ppidCache.constFind(pid);
+    if (it != ppidCache.constEnd())
+        return it.value();
+
+    uint ppid = 0;
     QFile statFile(QStringLiteral("/proc/%1/stat").arg(pid));
-    if (!statFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        return 0;
-    const QByteArray data = statFile.readAll();
-    const int rparen = data.lastIndexOf(')');
-    if (rparen < 0 || rparen + 2 >= data.size())
-        return 0;
-    const QList<QByteArray> fields = data.mid(rparen + 2).trimmed().split(' ');
-    // fields[0] is state, fields[1] is ppid
-    if (fields.size() >= 2)
-        return fields[1].toUInt();
-    return 0;
+    if (statFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QByteArray data = statFile.readAll();
+        const int rparen = data.lastIndexOf(')');
+        if (rparen >= 0 && rparen + 2 < data.size()) {
+            const QList<QByteArray> fields = data.mid(rparen + 2).trimmed().split(' ');
+            // fields[0] is state, fields[1] is ppid
+            if (fields.size() >= 2)
+                ppid = fields[1].toUInt();
+        }
+    }
+
+    ppidCache.insert(pid, ppid);
+    return ppid;
 }
 
-static bool pidMatchesOrSharesTree(uint servicePid, uint windowPid)
+struct WindowPidTree {
+    uint windowPid = 0;
+    uint windowParent = 0;
+    QSet<uint> ancestors;
+};
+
+static WindowPidTree buildWindowPidTree(uint windowPid, QHash<uint, uint> &ppidCache)
 {
-    if (servicePid == 0 || windowPid == 0) return false;
-    if (servicePid == windowPid) return true;
+    WindowPidTree tree;
+    tree.windowPid = windowPid;
+    if (windowPid == 0)
+        return tree;
+
+    // Precompute the 6-level ancestor set of windowPid once
+    uint cur = windowPid;
+    for (int i = 0; i < 6 && cur > 1; ++i) {
+        cur = getParentPid(cur, ppidCache);
+        if (cur > 0)
+            tree.ancestors.insert(cur);
+    }
+    tree.windowParent = getParentPid(windowPid, ppidCache);
+    return tree;
+}
+
+static bool pidMatchesOrSharesTree(uint servicePid, const WindowPidTree &windowTree, QHash<uint, uint> &ppidCache)
+{
+    if (servicePid == 0 || windowTree.windowPid == 0)
+        return false;
+    if (servicePid == windowTree.windowPid)
+        return true;
 
     // Walk up from servicePid to see if windowPid is an ancestor
     uint cur = servicePid;
     for (int i = 0; i < 6 && cur > 1; ++i) {
-        cur = getParentPid(cur);
-        if (cur == windowPid) return true;
+        cur = getParentPid(cur, ppidCache);
+        if (cur == windowTree.windowPid)
+            return true;
     }
 
-    // Walk up from windowPid to see if servicePid is an ancestor
-    cur = windowPid;
-    for (int i = 0; i < 6 && cur > 1; ++i) {
-        cur = getParentPid(cur);
-        if (cur == servicePid) return true;
-    }
+    // Check if servicePid is an ancestor of windowPid
+    if (windowTree.ancestors.contains(servicePid))
+        return true;
 
     // Check if both share the same immediate parent (e.g. Electron helper + main)
-    const uint p1 = getParentPid(servicePid);
-    const uint p2 = getParentPid(windowPid);
-    if (p1 > 1 && p1 == p2) return true;
+    const uint p1 = getParentPid(servicePid, ppidCache);
+    if (p1 > 1 && p1 == windowTree.windowParent)
+        return true;
 
     return false;
+}
+
+static bool pidMatchesOrSharesTree(uint servicePid, uint windowPid)
+{
+    if (servicePid == 0 || windowPid == 0)
+        return false;
+    if (servicePid == windowPid)
+        return true;
+
+    QHash<uint, uint> ppidCache;
+    const WindowPidTree windowTree = buildWindowPidTree(windowPid, ppidCache);
+    return pidMatchesOrSharesTree(servicePid, windowTree, ppidCache);
 }
 
 AppMenuRegistrarAdaptor::AppMenuRegistrarAdaptor(AppMenu *parent)
@@ -406,10 +451,14 @@ void AppMenu::setActiveWindow(int pid, const QString &appId, uint windowId)
             setCurrentTarget(t.service, t.path);
             return;
         }
-        for (auto it = m_pidMenus.constBegin(); it != m_pidMenus.constEnd(); ++it) {
-            if (pidMatchesOrSharesTree(it.key(), uPid)) {
-                setCurrentTarget(it.value().service, it.value().path);
-                return;
+        if (!m_pidMenus.isEmpty()) {
+            QHash<uint, uint> ppidCache;
+            const WindowPidTree windowTree = buildWindowPidTree(uPid, ppidCache);
+            for (auto it = m_pidMenus.constBegin(); it != m_pidMenus.constEnd(); ++it) {
+                if (pidMatchesOrSharesTree(it.key(), windowTree, ppidCache)) {
+                    setCurrentTarget(it.value().service, it.value().path);
+                    return;
+                }
             }
         }
     }
@@ -425,7 +474,7 @@ void AppMenu::setActiveWindow(int pid, const QString &appId, uint windowId)
 
 void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
 {
-    if (m_noMenuPids.contains(pid))
+    if (pid == 0 || m_noMenuPids.contains(pid))
         return;
 
     auto bus = QDBusConnection::sessionBus();
@@ -436,8 +485,14 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
     if (!namesReply.isValid())
         return;
 
+    // Insert immediately before probing so focus churn does not re-scan while async
+    // probes are in flight or after they fail; async probe or RegisterWindow clears it.
+    m_noMenuPids.insert(pid);
+
     const QStringList services = namesReply.value();
     QStringList matchingServices;
+    QHash<uint, uint> ppidCache;
+    const WindowPidTree windowTree = buildWindowPidTree(pid, ppidCache);
 
     for (const QString &service : services) {
         // Skip well-known system/desktop services to keep discovery fast
@@ -453,20 +508,15 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
             QDBusReply<uint> pidReply = bus.interface()->servicePid(service);
             if (pidReply.isValid()) {
                 sPid = pidReply.value();
-                if (service.startsWith(QLatin1Char(':'))) {
+                if (sPid > 0) {
                     m_servicePids.insert(service, sPid);
                 }
             }
         }
 
-        if (sPid > 0 && pidMatchesOrSharesTree(sPid, pid)) {
+        if (sPid > 0 && pidMatchesOrSharesTree(sPid, windowTree, ppidCache)) {
             matchingServices.append(service);
         }
-    }
-
-    if (matchingServices.isEmpty()) {
-        m_noMenuPids.insert(pid);
-        return;
     }
 
     for (const QString &service : matchingServices) {
@@ -503,6 +553,7 @@ void AppMenu::probeServiceMenuPaths(const QString &service, uint pid)
 
             MenuTarget target{service, path, pid};
             m_pidMenus.insert(pid, target);
+            m_noMenuPids.remove(pid);
             m_serviceWatcher.addWatchedService(service);
 
             if (m_activePid == pid && m_currentService.isEmpty()) {
@@ -556,6 +607,7 @@ void AppMenu::introspectForDbusMenu(const QString &service, const QString &path,
 
         if (hasDbusMenu && path != QLatin1String("/")) {
             MenuTarget target{service, path, pid};
+            m_noMenuPids.remove(pid);
             // Prefer /MenuBar over tray menus
             if (!m_pidMenus.contains(pid) || path.contains(QLatin1String("MenuBar"), Qt::CaseInsensitive)) {
                 m_pidMenus.insert(pid, target);

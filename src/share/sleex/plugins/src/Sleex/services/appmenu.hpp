@@ -10,6 +10,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QHash>
+#include <QSet>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -151,7 +152,7 @@ private:
 
     QHash<uint, MenuTarget> m_windowMenus;     // windowId -> MenuTarget
     QHash<uint, MenuTarget> m_pidMenus;        // pid -> MenuTarget
-    QSet<uint> m_noMenuPids;                   // pids verified to have no dbus menu
+    QSet<uint> m_noMenuPids;                   // pids probed or verified to have no dbus menu
     QHash<QString, uint> m_servicePids;        // service -> pid
 
     uint m_activePid = 0;
