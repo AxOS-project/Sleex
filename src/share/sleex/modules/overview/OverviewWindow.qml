@@ -87,8 +87,8 @@ Item { // Window
     ScreencopyView {
         id: windowPreview
         anchors.fill: parent
-        captureSource: GlobalStates.overviewOpen ? root.toplevel : null
-        live: true
+        captureSource: (GlobalStates.overviewOpen && root.visible) ? root.toplevel : null
+        live: GlobalStates.overviewOpen && root.visible
 
         Rectangle {
             anchors.fill: parent

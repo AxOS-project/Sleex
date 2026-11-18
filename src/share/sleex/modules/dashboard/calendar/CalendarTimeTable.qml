@@ -13,8 +13,8 @@ Item {
     property real spacing: 8
     property color backgroundColor: "transparent"
 
-    property alias addMode: calendarAddComponent.editMode
-    property alias editMode: calendarEditComponent.editMode
+    property bool addMode: false
+    property bool editMode: false
     
 
     property var tempCalendarEvent: null // used to pass event to CalendarEdit
@@ -49,7 +49,21 @@ Item {
     readonly property real totalContentWidth: timeColumnWidth + spacing + 
         (root.days ? (root.days.length * dayColumnWidth + (root.days.length - 1) * spacing) : 0)
 
-    readonly property int currentDayIndex: (DateTime.clock.date.getDay() - Config.options.time.firstDayOfWeek+ 6)%7
+    readonly property int todayDayKey: {
+        const d = DateTime.clock.date;
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    }
+
+    readonly property var weekDates: {
+        const dayKey = root.todayDayKey;
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            dates.push(root.dateForColumn(i, dayKey));
+        }
+        return dates;
+    }
+
+    readonly property int currentDayIndex: (dateFromDayKey(todayDayKey).getDay() - Config.options.time.firstDayOfWeek + 6) % 7
 
     implicitWidth: Math.min(maxContentWidth, timeColumnWidth + (dayColumnWidth * days.length) + ((days.length + 1) * spacing))
     implicitHeight: Math.min(headerHeight + contentHeight, maxHeight)
@@ -92,8 +106,15 @@ Item {
         currentTimeY = diffMinutes * root.pixelsPerMinute;
     }
     
-    function dateForColumn(index) {
-        const today = new Date(DateTime.clock.date);
+    function dateFromDayKey(dayKey) {
+        const year = Math.floor(dayKey / 10000);
+        const month = Math.floor((dayKey % 10000) / 100) - 1;
+        const day = dayKey % 100;
+        return new Date(year, month, day);
+    }
+
+    function dateForColumn(index, dayKey) {
+        const today = dateFromDayKey(dayKey !== undefined ? dayKey : root.todayDayKey);
         const firstDayOfWeek = Config.options.time.firstDayOfWeek + 1;
         const offset = CalendarService.currentWeekOffset || 0;
         
@@ -242,9 +263,14 @@ Item {
 
     Connections {
         target: DateTime.clock
+        enabled: root.visible
         function onDateChanged() {
             root.updateCurrentTimeLine();
         }
+    }
+
+    onVisibleChanged: {
+        if (visible) root.updateCurrentTimeLine();
     }
 
     Connections {
@@ -330,13 +356,11 @@ Item {
 
                     property var allDayEvents: root.getAllDayEvents(modelData.events)
                     // highlight if this column's date equals today's date (respects week offset)
-                    property bool isToday: (function() {
-                        const col = root.dateForColumn(index);
-                        const now = new Date(DateTime.clock.date);
-                        return col.getFullYear() === now.getFullYear()
-                            && col.getMonth() === now.getMonth()
-                            && col.getDate() === now.getDate();
-                    })()
+                    property bool isToday: {
+                        const col = root.weekDates[index];
+                        if (!col) return false;
+                        return (col.getFullYear() * 10000 + (col.getMonth() + 1) * 100 + col.getDate()) === root.todayDayKey;
+                    }
 
                     Rectangle {
                         anchors.centerIn: parent
@@ -363,8 +387,8 @@ Item {
                                 font.weight: Font.Normal
                                 color: Appearance.colors.colOnSurfaceVariant
                                 text: {
-                                    let dateObj = root.dateForColumn(index);
-                                    Qt.formatDate(dateObj, "dd MMM")
+                                    const dateObj = root.weekDates[index];
+                                    return dateObj ? Qt.formatDate(dateObj, "dd MMM") : "";
                                 }
                                 font.pixelSize: dayTitle.font.pixelSize * 0.85
                                 horizontalAlignment: Text.AlignHCenter
@@ -529,13 +553,11 @@ Item {
                             height: parent.height
                             clip: true
                             // highlight if this column's date equals today's date (respects week offset)
-                            property bool isToday: (function() {
-                                const col = root.dateForColumn(index);
-                                const now = new Date(DateTime.clock.date);
-                                return col.getFullYear() === now.getFullYear()
-                                    && col.getMonth() === now.getMonth()
-                                    && col.getDate() === now.getDate();
-                            })()
+                            property bool isToday: {
+                                const col = root.weekDates[index];
+                                if (!col) return false;
+                                return (col.getFullYear() * 10000 + (col.getMonth() + 1) * 100 + col.getDate()) === root.todayDayKey;
+                            }
                             property var timedEvents: root.getTimedEvents(modelData.events)
 
                             Rectangle {
@@ -820,18 +842,26 @@ Item {
         MouseArea { anchors.fill: parent }
     }
 
-    CalendarAdd {
-        id: calendarAddComponent
+    Loader {
+        id: calendarAddLoader
         anchors.fill: parent
-        editMode: root.addMode
         z: 100
+        active: root.addMode
+        sourceComponent: CalendarAdd {
+            editMode: root.addMode
+            onAddingFinished: root.addMode = false
+        }
     }
 
-    CalendarEdit {
-        id: calendarEditComponent
+    Loader {
+        id: calendarEditLoader
         anchors.fill: parent
-        editMode: root.editMode
-        event: root.tempCalendarEvent
         z: 100
+        active: root.editMode
+        sourceComponent: CalendarEdit {
+            editMode: root.editMode
+            event: root.tempCalendarEvent
+            onEditingFinished: root.editMode = false
+        }
     }
 }

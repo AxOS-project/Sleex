@@ -14,9 +14,10 @@ import Quickshell
 Item {
     id: root
     required property var bar
+    property bool active: true
     readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
     readonly property string currentAppId: activeWindow?.activated ? (activeWindow?.appId ?? "") : ""
-    readonly property DesktopEntry desktopEntry: currentAppId !== "" ? DesktopEntries.heuristicLookup(currentAppId) : null
+    readonly property DesktopEntry desktopEntry: (root.active && currentAppId !== "") ? DesktopEntries.heuristicLookup(currentAppId) : null
 
     property int openMenuIndex: -1
 
@@ -30,7 +31,7 @@ Item {
      * Only includes real, existing actions connected to DesktopEntry, Wayland Toplevel, or Hyprland.
      */
     readonly property var fallbackMenus: {
-        if (!root.activeWindow?.activated) {
+        if (!root.active || !root.activeWindow?.activated) {
             return [];
         }
 
@@ -81,7 +82,7 @@ Item {
         ];
     }
 
-    readonly property var menus: AppMenu.hasNativeMenu ? AppMenu.menus : root.fallbackMenus
+    readonly property var menus: root.active ? (AppMenu.hasNativeMenu ? AppMenu.menus : root.fallbackMenus) : []
 
     function executeMenuItem(item) {
         if (item.enabled === false) return;
@@ -427,7 +428,7 @@ Item {
 
         Repeater {
             id: menuRepeater
-            model: root.menus
+            model: root.visible ? root.menus : []
 
             Item {
                 id: menuButton

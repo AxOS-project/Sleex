@@ -21,6 +21,7 @@ Scope {
             id: root
             required property var modelData
             property string searchingText: ""
+            property string pendingSearchingText: ""
             readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
             property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
             screen: modelData
@@ -60,11 +61,15 @@ Scope {
                 target: GlobalStates
                 function onOverviewOpenChanged() {
                     if (!GlobalStates.overviewOpen) {
-                        searchWidget.disableExpandAnimation()
+                        if (searchWidgetLoader.item) {
+                            searchWidgetLoader.item.disableExpandAnimation()
+                        }
+                        root.pendingSearchingText = ""
+                        root.searchingText = ""
                         overviewScope.dontAutoCancelSearch = false;
                     } else {
-                        if (!overviewScope.dontAutoCancelSearch) {
-                            searchWidget.cancelSearch()
+                        if (!overviewScope.dontAutoCancelSearch && searchWidgetLoader.item) {
+                            searchWidgetLoader.item.cancelSearch()
                         }
                         delayedGrabTimer.start()
                     }
@@ -85,8 +90,13 @@ Scope {
             implicitHeight: columnLayout.implicitHeight
 
             function setSearchingText(text) {
-                searchWidget.setSearchingText(text);
-                searchWidget.focusFirstItem();
+                if (searchWidgetLoader.item) {
+                    searchWidgetLoader.item.setSearchingText(text);
+                    searchWidgetLoader.item.focusFirstItem();
+                } else {
+                    root.pendingSearchingText = text;
+                    root.searchingText = text;
+                }
             }
 
             ColumnLayout {
@@ -113,21 +123,44 @@ Scope {
                     width: 1 // Prevent Wayland protocol error
                 }
 
-                SearchWidget {
-                    id: searchWidget
+                Loader {
+                    id: searchWidgetLoader
                     Layout.alignment: Qt.AlignHCenter
-                    onSearchingTextChanged: (text) => {
-                        root.searchingText = searchingText
+                    active: GlobalStates.overviewOpen && root.monitorIsFocused
+                    visible: active
+                    focus: active
+
+                    onLoaded: {
+                        if (root.pendingSearchingText !== "") {
+                            item.setSearchingText(root.pendingSearchingText)
+                            item.focusFirstItem()
+                            root.pendingSearchingText = ""
+                        } else if (!overviewScope.dontAutoCancelSearch) {
+                            item.cancelSearch()
+                        }
+                    }
+
+                    onActiveChanged: {
+                        if (!active) {
+                            root.searchingText = ""
+                            root.pendingSearchingText = ""
+                        }
+                    }
+
+                    sourceComponent: SearchWidget {
+                        onSearchingTextChanged: {
+                            root.searchingText = searchingText
+                        }
                     }
                 }
 
                 Loader {
-        asynchronous: true
+                    asynchronous: true
                     id: overviewLoader
-                    active: GlobalStates.overviewOpen
+                    active: GlobalStates.overviewOpen && root.monitorIsFocused && (root.searchingText == "")
+                    visible: active
                     sourceComponent: OverviewWidget {
                         panelWindow: root
-                        visible: (root.searchingText == "")
                     }
                 }
             }

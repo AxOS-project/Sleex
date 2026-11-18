@@ -174,11 +174,33 @@ Scope {
                 anchors.fill: parent
                 z: 1
 
-                DesktopIcons {
-                    id: desktopIcons
+                MouseArea {
+                    anchors.fill: parent
                     z: 0
-                    contextMenu: globalDesktopMenu
-                    bgContextMenu: globalBgContextMenu
+                    enabled: !desktopIconsLoader.active
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onPressed: (mouse) => {
+                        if (!Config.options.background.widgetsLocked && mouse.button === Qt.LeftButton) {
+                            mouse.accepted = false
+                            return
+                        }
+                        if (mouse.button === Qt.RightButton) {
+                            globalBgContextMenu.openAt(mouse.x, mouse.y, width, height)
+                        } else {
+                            globalBgContextMenu.close()
+                        }
+                    }
+                }
+
+                Loader {
+                    id: desktopIconsLoader
+                    anchors.fill: parent
+                    z: 0
+                    active: Config.options.background.showDesktopIcons
+                    sourceComponent: DesktopIcons {
+                        contextMenu: globalDesktopMenu
+                        bgContextMenu: globalBgContextMenu
+                    }
                 }
 
                 Loader {
@@ -219,8 +241,10 @@ Scope {
             DesktopIconContextMenu {
                 id: globalDesktopMenu
                 z: 9999
-                onOpenFileRequested: (path, isDir) => desktopIcons.exec(path, isDir)
-                onRenameRequested: (path) => { desktopIcons.editingFilePath = path }
+                onOpenFileRequested: (path, isDir) => desktopIconsLoader.item?.exec(path, isDir)
+                onRenameRequested: (path) => {
+                    if (desktopIconsLoader.item) desktopIconsLoader.item.editingFilePath = path
+                }
             }
 
             BackgroundContextMenu {

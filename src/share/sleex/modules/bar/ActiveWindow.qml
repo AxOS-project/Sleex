@@ -67,6 +67,7 @@ Item {
         anchors.right: parent.right
         height: parent.height
         bar: root.bar
+        active: hoverHandler.hovered || menuBar.openMenuIndex !== -1 || menuBar.visible
 
         opacity: root.hovered ? 1 : 0
         visible: opacity > 0

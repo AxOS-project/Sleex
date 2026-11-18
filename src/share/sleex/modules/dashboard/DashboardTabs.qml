@@ -135,22 +135,41 @@ Item {
 
             // Create one page per entry in root.tabButtonList so disabled features are not present as empty pages
             Repeater {
-            model: root.tabButtonList
-            delegate: Item {
-                width: swipeView.width
-                height: swipeView.height
+                model: root.tabButtonList
+                delegate: Item {
+                    id: pageContainer
+                    required property var modelData
+                    required property int index
 
-                Loader {
-        asynchronous: true
-                anchors.fill: parent
-                sourceComponent: (
-                    modelData.icon === "rocket_launch" ? homeComp :
-                    modelData.icon === "checklist_rtl" ? todoComp :
-                    modelData.icon === "calendar_today" ? calendarComp :
-                    null
-                )
+                    property bool activated: false
+                    readonly property bool isDragging: swipeView.contentItem ? Boolean(swipeView.contentItem.dragging) : false
+                    readonly property bool isMoving: swipeView.contentItem ? Boolean(swipeView.contentItem.moving) : false
+                    readonly property bool isTargetPage: (swipeView.currentIndex === index)
+                        || (isDragging && (SwipeView.isNextItem || SwipeView.isPreviousItem))
+
+                    onIsTargetPageChanged: {
+                        if (isTargetPage) activated = true
+                    }
+                    Component.onCompleted: {
+                        if (isTargetPage) activated = true
+                    }
+
+                    width: swipeView.width
+                    height: swipeView.height
+
+                    Loader {
+                        asynchronous: pageContainer.index !== 0
+                        active: pageContainer.activated
+                        visible: pageContainer.SwipeView.isCurrentItem || pageContainer.isMoving
+                        anchors.fill: parent
+                        sourceComponent: (
+                            pageContainer.modelData.icon === "rocket_launch" ? homeComp :
+                            pageContainer.modelData.icon === "checklist_rtl" ? todoComp :
+                            pageContainer.modelData.icon === "calendar_today" ? calendarComp :
+                            null
+                        )
+                    }
                 }
-            }
             }
         }
     }

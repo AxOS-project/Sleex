@@ -56,6 +56,22 @@ ShellRoot {
 
     AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
+    function syncHyprlandBlurRule(): void {
+        const enabled = Config.options.appearance.transparency ? "true" : "false"
+        Quickshell.execDetached([
+            "hyprctl",
+            "eval",
+            `if sleex_set_quickshell_blur then sleex_set_quickshell_blur(${enabled}) end`
+        ])
+    }
+
+    Connections {
+        target: Config.options.appearance
+        function onTransparencyChanged() {
+            if (Config.loaded) syncHyprlandBlurRule()
+        }
+    }
+
     // Force initialization of some singletons
     Component.onCompleted: {
         Appearance.themeLoader.filePath = Directories.generatedMaterialThemePath
@@ -65,6 +81,7 @@ ShellRoot {
         FocusOnOpen.init()
         NightLight.load()
         SuspendFader.start()
+        syncHyprlandBlurRule()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }

@@ -25,6 +25,7 @@ Scope {
             property int cornerSize: Appearance.rounding.screenRounding ?? 20
             property int triggerWidth: 20
             property int triggerHeight: 20
+            property int currentTab: 0
 
             property bool revealed: containerArea.containsMouse || root.forceRevealed
 
@@ -87,20 +88,27 @@ Scope {
                     // }
                 }
 
-                CornerPopupContent {
+                Loader {
+                    id: contentLoader
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
-                    cardWidth: popupWindow.cardWidth
-                    cardHeight: popupWindow.cardHeight
-                    cornerSize: popupWindow.cornerSize
-                    opacity: popupWindow.revealed ? 1 : 0
-                    visible: opacity > 0
-
-                    Behavior on opacity {
+                    property real contentOpacity: popupWindow.revealed ? 1 : 0
+                    Behavior on contentOpacity {
                         NumberAnimation {
                             duration: Appearance.animation.elementMoveFast.duration
                             easing.type: Appearance.animation.elementMoveFast.type
                         }
+                    }
+                    active: popupWindow.revealed || contentOpacity > 0
+                    visible: contentOpacity > 0
+                    opacity: contentOpacity
+
+                    sourceComponent: CornerPopupContent {
+                        cardWidth: popupWindow.cardWidth
+                        cardHeight: popupWindow.cardHeight
+                        cornerSize: popupWindow.cornerSize
+                        currentTab: popupWindow.currentTab
+                        onCurrentTabChanged: popupWindow.currentTab = currentTab
                     }
                 }
             }

@@ -7,7 +7,6 @@ import SleexUiKit.Functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Widgets
 
@@ -47,6 +46,7 @@ Item {
     visible: root.open || root.isAnimating || opacity > 0
 
     Behavior on width {
+        enabled: root.visible
         animation: NumberAnimation {
     duration: Appearance.animation.elementResize.duration
     easing.type: Appearance.animation.elementResize.type
@@ -113,42 +113,13 @@ Item {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-            Item {
+            Rectangle {
                 id: popupVisualBackground
                 anchors.fill: parent
-
-                Shape {
-                    id: popupShape
-                    anchors.fill: parent
-                    antialiasing: true
-
-                    property color bgColor: Appearance.colors.colLayer0
-
-                    ShapePath {
-                        fillColor: popupShape.bgColor
-                        strokeWidth: 0
-
-                        startX: 0
-                        startY: 0
-
-                        PathLine { x: popupShape.width; y: 0 }
-                        PathLine { x: popupShape.width; y: popupShape.height - root.bottomRadius }
-                        PathQuad {
-                            x: popupShape.width - root.bottomRadius
-                            y: popupShape.height
-                            controlX: popupShape.width
-                            controlY: popupShape.height
-                        }
-                        PathLine { x: root.bottomRadius; y: popupShape.height }
-                        PathQuad {
-                            x: 0
-                            y: popupShape.height - root.bottomRadius
-                            controlX: 0
-                            controlY: popupShape.height
-                        }
-                        PathLine { x: 0; y: 0 }
-                    }
-                }
+                antialiasing: true
+                color: Appearance.colors.colLayer0
+                bottomLeftRadius: root.bottomRadius
+                bottomRightRadius: root.bottomRadius
             }
 
             // Popup Content
@@ -181,14 +152,18 @@ Item {
                         focus: root.open
 
                         onAccepted: {
-                            if (appsLoader.item) {
-                                for (let i = 0; i < appsLoader.item.children.length; i++) {
-                                    let child = appsLoader.item.children[i];
-                                    if (child && child.executeApp) {
-                                        child.executeApp();
-                                        break;
-                                    }
+                            if (appsLoader.item && appsLoader.item.count > 0) {
+                                let firstChild = appsLoader.item.itemAtIndex(0);
+                                if (firstChild && firstChild.executeApp) {
+                                    firstChild.executeApp();
+                                    return;
                                 }
+                            }
+                            const currentModel = appsLoader.item ? appsLoader.item.model
+                                : (searchInput.text === "" ? AppSearch.list : AppSearch.fuzzyQuery(searchInput.text));
+                            if (currentModel && currentModel.length > 0 && currentModel[0]) {
+                                currentModel[0].execute();
+                                barRoot.centerPopupOpen = false;
                             }
                         }
 
@@ -232,81 +207,86 @@ Item {
                 }
 
                 // Apps grid
-                StyledFlickable {
-                    id: appsFlickable
+                Loader {
+                    id: appsLoader
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    clip: true
-                    contentWidth: width
-                    contentHeight: appsLoader.item ? appsLoader.item.implicitHeight : 0
+                    active: root.visible
+                    asynchronous: true
+                    sourceComponent: GridView {
+                        id: appsGrid
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        maximumFlickVelocity: 3500
+                        cacheBuffer: 170
 
-                    Loader {
-                        id: appsLoader
-                        width: appsFlickable.width
-                        active: true
-                        asynchronous: true
-                        sourceComponent: GridLayout {
-                            id: appsGrid
-                            width: appsFlickable.width
-                            rowSpacing: 10
-                            columnSpacing: 10
-                            columns: Math.max(1, Math.floor((width + columnSpacing) / (60 + columnSpacing)))
+                        readonly property int columns: Math.max(1, Math.floor((width + 10) / 70))
+                        cellWidth: width / columns
+                        cellHeight: 85
 
-                            Repeater {
-                                id: appsRepeater
-                                model: searchInput.text === "" ? AppSearch.list : AppSearch.fuzzyQuery(searchInput.text)
+                        model: searchInput.text === "" ? AppSearch.list : AppSearch.fuzzyQuery(searchInput.text)
+                        onModelChanged: contentY = 0
+
+                        delegate: Item {
+                            id: appDelegate
+                            required property var modelData
+                            width: GridView.view.cellWidth
+                            height: GridView.view.cellHeight
+
+                            property var executeApp: () => {
+                                appDelegate.modelData.execute();
+                                barRoot.centerPopupOpen = false;
+                            }
+
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 60
+                                height: 75
+                                radius: Appearance.rounding.normal
+                                color: "transparent"
+
+                                property bool isHovered: appMouseArea.containsMouse
 
                                 Rectangle {
-                                    width: 60
-                                    height: 75
+                                    anchors.fill: parent
                                     radius: Appearance.rounding.normal
-                                    color: "transparent"
-                                    
-                                    property bool isHovered: appMouseArea.containsMouse
-                                    property var executeApp: () => {
-                                        modelData.execute();
-                                        barRoot.centerPopupOpen = false;
+                                    color: Appearance.colors.colSecondaryContainer
+                                    opacity: parent.isHovered ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                                }
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 4
+                                    spacing: 4
+
+                                    IconImage {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        implicitSize: 32
+                                        asynchronous: true
+                                        source: Quickshell.iconPath(appDelegate.modelData.icon, "application-x-executable")
                                     }
-                                    
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: Appearance.rounding.normal
-                                        color: Appearance.colors.colSecondaryContainer
-                                        opacity: parent.isHovered ? 1.0 : 0.0
-                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        Layout.alignment: Qt.AlignHCenter
+                                        text: appDelegate.modelData.name
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        horizontalAlignment: Text.AlignHCenter
+                                        maximumLineCount: 2
+                                        wrapMode: Text.Wrap
+                                        elide: Text.ElideRight
+                                        color: Appearance.colors.colOnLayer0
                                     }
-                                    
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        spacing: 4
-                                        
-                                        IconImage {
-                                            Layout.alignment: Qt.AlignHCenter
-                                            implicitSize: 32
-                                            source: Quickshell.iconPath(modelData.icon, "application-x-executable")
-                                        }
-                                        
-                                        StyledText {
-                                            Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignHCenter
-                                            text: modelData.name
-                                            font.pixelSize: Appearance.font.pixelSize.smaller
-                                            horizontalAlignment: Text.AlignHCenter
-                                            maximumLineCount: 2
-                                            wrapMode: Text.Wrap
-                                            elide: Text.ElideRight
-                                            color: Appearance.colors.colOnLayer0
-                                        }
-                                    }
-                                    
-                                    MouseArea {
-                                        id: appMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: executeApp()
-                                    }
+                                }
+
+                                MouseArea {
+                                    id: appMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: appDelegate.executeApp()
                                 }
                             }
                         }

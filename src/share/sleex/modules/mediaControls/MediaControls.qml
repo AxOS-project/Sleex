@@ -73,7 +73,7 @@ Item {
 
     Process {
         id: cavaProc
-        running: root.windowShown
+        running: root.windowShown && root.visible && (root.activePlayer?.isPlaying ?? false)
         onRunningChanged: {
             if (!cavaProc.running) {
                 root.visualizerPoints = [];

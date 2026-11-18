@@ -5,7 +5,6 @@ import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Shapes
 
 Item {
     id: root
@@ -35,44 +34,15 @@ Item {
         color: Appearance.colors.colLayer0
     }
 
-    Item {
+    Rectangle {
         id: mainCard
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         width: root.cardWidth
         height: root.cardHeight
-
-        Shape {
-            id: mainCardShape
-            anchors.fill: parent
-            antialiasing: true
-
-            readonly property real w: parent.width
-            readonly property real h: parent.height
-            readonly property real r: Appearance.rounding.large ?? 24
-
-            ShapePath {
-                fillColor: Appearance.colors.colLayer0
-                strokeWidth: 0
-                strokeColor: "transparent"
-
-                startX: 0
-                startY: mainCardShape.h
-
-                PathLine { x: 0; y: 0 }
-                PathLine { x: mainCardShape.w - mainCardShape.r; y: 0 }
-
-                PathQuad {
-                    x: mainCardShape.w
-                    y: mainCardShape.r
-                    controlX: mainCardShape.w
-                    controlY: 0
-                }
-
-                PathLine { x: mainCardShape.w; y: mainCardShape.h }
-                PathLine { x: 0; y: mainCardShape.h }
-            }
-        }
+        antialiasing: true
+        color: Appearance.colors.colLayer0
+        topRightRadius: Appearance.rounding.large ?? 24
 
         ColumnLayout {
             anchors.fill: parent

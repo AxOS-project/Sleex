@@ -48,7 +48,7 @@ Rectangle {
     }
 
     // Initialize date and times from event data when dialog opens
-    onEventChanged: {
+    function syncFromEvent() {
         startHour = 12;
         startMinute = 0;
         endHour = 13;
@@ -89,6 +89,9 @@ Rectangle {
             }
         });
     }
+
+    onEventChanged: syncFromEvent()
+    Component.onCompleted: syncFromEvent()
 
     function parseDate(dateStr) {
         if (!dateStr) return null;

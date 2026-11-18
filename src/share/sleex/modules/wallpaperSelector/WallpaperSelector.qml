@@ -52,6 +52,7 @@ Scope {
 
         Loader {
             id: wppselectorContentLoader
+            active: GlobalStates.wppselectorOpen
             anchors {
                 fill: parent
                 margins: Appearance.sizes.hyprlandGapsOut
@@ -160,14 +161,17 @@ Scope {
                                     color: Appearance.colors.colLayer2
                                     clip: true
 
-                                    StyledBusyIndicator {
+                                    Loader {
                                         anchors.centerIn: parent
-                                        visible: wallpaperImage.status === Image.Loading || (isUnsplash && Unsplash.currentlyDownloadingId === (modelData.id ? modelData.id : ""))
-                                        running: true
                                         width: 45
                                         height: 45
                                         z: 10
-                                    }                   
+                                        active: wallpaperImage.status === Image.Loading || (isUnsplash && Unsplash.currentlyDownloadingId === (modelData.id ? modelData.id : ""))
+                                        sourceComponent: StyledBusyIndicator {
+                                            running: visible
+                                            Component.onCompleted: animState = "running"
+                                        }
+                                    }
                                          
                                     Image {
                                         id: wallpaperImage
@@ -257,7 +261,7 @@ Scope {
                                     mainText: qsTr("Submit")
                                     onClicked: {
                                         if (apiKeyInput.text.trim().length > 0) {
-                                            Unsplash.saveApiKey(apiKeyInput.text.trim());r
+                                            Unsplash.saveApiKey(apiKeyInput.text.trim());
                                             apiKeyInput.text = "";
                                             if (Unsplash.searchResults.length === 0) {
                                                 Unsplash.search(searchQuery, 1);

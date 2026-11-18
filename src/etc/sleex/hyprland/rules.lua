@@ -140,11 +140,54 @@ hl.layer_rule({
 
 ----- Quickshell Rules -----
 
-hl.layer_rule({
+local function shell_quote(s)
+	return "'" .. s:gsub("'", "'\\''") .. "'"
+end
+
+local function get_settings_db_path()
+	local config_home = os.getenv("XDG_CONFIG_HOME")
+	if not config_home or config_home == "" then
+		config_home = (os.getenv("HOME") or "") .. "/.config"
+	end
+	return config_home .. "/sleex/sleex_settings.db"
+end
+
+local function is_shell_transparency_enabled()
+	local db_path = get_settings_db_path()
+	local f = io.open(db_path, "r")
+	if not f then
+		return false
+	end
+	f:close()
+
+	local cmd = "sqlite3 -readonly -batch -noheader -list "
+		.. shell_quote(db_path)
+		.. " \"SELECT json_extract(config_json, '$.transparency') FROM sleex_settings WHERE module = 'appearance';\" 2>/dev/null"
+	local pipe = io.popen(cmd, "r")
+	if not pipe then
+		return false
+	end
+	local out = pipe:read("*a") or ""
+	pipe:close()
+
+	local val = out:match("^%s*(.-)%s*$")
+	return val == "1" or val == "true"
+end
+
+local quickshell_blur_rule = hl.layer_rule({
+	name = "quickshell-blur",
 	match = { namespace = "quickshell:.*" },
 	blur = true,
 	blur_popups = true,
 	ignore_alpha = 0.2,
+})
+
+local quickshell_noblur_rule = hl.layer_rule({
+	name = "quickshell-noblur",
+	match = { namespace = "quickshell:.*" },
+	blur = false,
+	blur_popups = false,
+	ignore_alpha = 1.0,
 })
 
 hl.layer_rule({
@@ -208,7 +251,8 @@ hl.layer_rule({
 	match = { namespace = "quickshell:screenshot" },
 	no_anim = true,
 })
-hl.layer_rule({
+local quickshell_session_rule = hl.layer_rule({
+	name = "quickshell-session-blur",
 	match = { namespace = "quickshell:session" },
 	blur = true,
 	ignore_alpha = 0,
@@ -227,3 +271,22 @@ hl.layer_rule({
 	ignore_alpha = 1.0,
 	no_anim = true,
 })
+
+function sleex_set_quickshell_blur(shell_blur_enabled)
+	local hl_blur_enabled = hl.get_config("decoration.blur.enabled") ~= false
+	local active = (shell_blur_enabled == true) and hl_blur_enabled
+	quickshell_blur_rule:set_enabled(active)
+	quickshell_noblur_rule:set_enabled(not active)
+	quickshell_session_rule:set_enabled(hl_blur_enabled)
+	if hl.exec_scheduled_prop_refresh_immediately then
+		hl.exec_scheduled_prop_refresh_immediately()
+	end
+end
+
+function sleex_sync_quickshell_blur()
+	sleex_set_quickshell_blur(is_shell_transparency_enabled())
+end
+
+sleex_sync_quickshell_blur()
+hl.on("hyprland.start", sleex_sync_quickshell_blur)
+hl.on("config.reloaded", sleex_sync_quickshell_blur)

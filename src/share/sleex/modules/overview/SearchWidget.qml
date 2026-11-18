@@ -73,7 +73,7 @@ Item { // Wrapper
         {
             action: "wallpaper",
             execute: () => {
-                GlobalStates.wallpaperSelectorOpen = true;
+                GlobalStates.wppselectorOpen = true;
             }
         },
         {
