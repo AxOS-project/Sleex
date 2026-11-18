@@ -22,6 +22,9 @@ Item {
 
     property bool isLockscreen: false
 
+    readonly property bool effectivelyVisible: playerController.visible
+        && (playerController.QsWindow?.window?.visible ?? playerController.Window.window?.visible ?? false)
+
     readonly property bool lyricsButtonEnabled:
     typeof Config !== "undefined"
     && Config?.options?.dashboard?.enableLyrics === true
@@ -146,18 +149,22 @@ Item {
 
     property string currentTrackIdForArt: ""
 
-    onArtUrlChanged: {
+    function syncArtworkForCurrentTrack(allowCrossFade) {
+        if (!playerController.effectivelyVisible) return
         if (!artUrl || artUrl.length === 0) return
-            var newTrackId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
-            if (newTrackId !== currentTrackIdForArt) {
-                currentTrackIdForArt = newTrackId
-                if (!initialArtLoaded) {
-                    loadInitialArt(artUrl)
-                } else {
-                    forceCrossFade(artUrl)
-                }
+        var newTrackId = player?.trackId || (player?.trackTitle + "|" + player?.trackArtist)
+        if (newTrackId !== currentTrackIdForArt) {
+            currentTrackIdForArt = newTrackId
+            if (!initialArtLoaded || !allowCrossFade) {
+                resetCrossFadeState()
+                loadInitialArt(artUrl)
+            } else {
+                forceCrossFade(artUrl)
             }
+        }
     }
+
+    onArtUrlChanged: syncArtworkForCurrentTrack(true)
 
     onPlayerChanged: {
         currentTrackIdForArt = ""
@@ -171,6 +178,23 @@ Item {
         ++quantizerRequestId
         updateStableLength()
         resetAndFetchLyrics()
+        syncArtworkForCurrentTrack(false)
+    }
+
+    onEffectivelyVisibleChanged: {
+        if (effectivelyVisible) {
+            updateStableLength()
+            syncArtworkForCurrentTrack(false)
+            syncLyricsForCurrentTrack()
+            if (player?.playbackState == MprisPlaybackState.Playing) {
+                player.positionChanged()
+            }
+        } else if (crossFadeActive) {
+            resetCrossFadeState()
+            if (lastLoadedArtUrl !== artUrl) {
+                currentTrackIdForArt = ""
+            }
+        }
     }
 
     // ---- color extraction ----
@@ -226,6 +250,7 @@ Item {
     property bool lyricsLoading: false
     property int lyricsRequestId: 0
     property var currentLyricsRequest: null
+    property string lastLyricsTrackKey: ""
     property var lyricsCache: ({})
     property list<real> visualizerPoints: []
     property real maxVisualizerValue: 1000
@@ -266,13 +291,30 @@ Item {
 
     function resetAndFetchLyrics() {
         if (!lyricsButtonEnabled) return
-            if (currentLyricsRequest) currentLyricsRequest.abort()
-                ++lyricsRequestId
-                lyricsLines = []
-                currentLyricIndex = -1
-                lyricsLoading = true
-                fetchingLyrics = true
-                fetchLyrics()
+        if (!playerController.effectivelyVisible) {
+            resetLyricsState()
+            lastLyricsTrackKey = ""
+            return
+        }
+        if (currentLyricsRequest) currentLyricsRequest.abort()
+        ++lyricsRequestId
+        lyricsLines = []
+        currentLyricIndex = -1
+        lastLyricsTrackKey = (player?.trackArtist || "") + "|" + (player?.trackTitle || "")
+        lyricsLoading = true
+        fetchingLyrics = true
+        fetchLyrics()
+    }
+
+    function syncLyricsForCurrentTrack() {
+        if (!lyricsButtonEnabled || !playerController.effectivelyVisible || !player) return
+        const key = (player.trackArtist || "") + "|" + (player.trackTitle || "")
+        if (key === lastLyricsTrackKey) {
+            if (lyricsViewVisible && lyricsLines.length > 0 && lyricsLines[0].timestamp >= 0)
+                updateCurrentLyricFromPosition()
+            return
+        }
+        resetAndFetchLyrics()
     }
 
     function fetchLyrics() {
@@ -348,7 +390,8 @@ Item {
 
     Timer {
         interval: 100
-        running: lyricsViewVisible
+        running: playerController.effectivelyVisible
+        && lyricsViewVisible
         && lyricsLines.length > 0 && lyricsLines[0].timestamp >= 0
         && player?.isPlaying === true
         repeat: true
@@ -402,7 +445,7 @@ Item {
     }
 
     Timer {
-        running: player?.playbackState == MprisPlaybackState.Playing && (GlobalStates.dashboardOpen || playerController.isLockscreen)
+        running: player?.playbackState == MprisPlaybackState.Playing && playerController.effectivelyVisible
         interval: 100; repeat: true
         onTriggered: player.positionChanged()
     }
@@ -470,8 +513,8 @@ Item {
             WaveVisualizer {
                 id: visualizerCanvas
                 anchors.fill: parent
-                live: player?.isPlaying
-                points: playerController.visualizerPoints
+                live: (player?.isPlaying ?? false) && playerController.effectivelyVisible
+                points: playerController.effectivelyVisible ? playerController.visualizerPoints : []
                 maxVisualizerValue: playerController.maxVisualizerValue
                 smoothing: playerController.visualizerSmoothing
                 color: blendedColors.colPrimary
@@ -582,10 +625,11 @@ Item {
                                 value: seekMouseArea.dragging
                                 ? seekMouseArea.dragFraction
                                 : (playerController.stableLength > 0 ? (player?.position ?? 0) / playerController.stableLength : 0)
-                                sperm: player?.isPlaying
+                                sperm: (player?.isPlaying ?? false) && playerController.effectivelyVisible
+                                animateSperm: playerController.effectivelyVisible
                                 antialiasing: true
                                 Behavior on value {
-                                    enabled: !seekMouseArea.dragging
+                                    enabled: !seekMouseArea.dragging && playerController.effectivelyVisible
                                     NumberAnimation { duration: 100; easing.type: Easing.Linear }
                                 }
                             }

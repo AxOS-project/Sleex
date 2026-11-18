@@ -58,8 +58,9 @@ Scope {
                 target: GlobalStates
                 function onDashboardOpenChanged() {
                     if (!GlobalStates.dashboardOpen) {
+                        delayedGrabTimer.stop()
                         grab.active = false
-                    } else {
+                    } else if (dashboardRoot.monitorIsFocused) {
                         delayedGrabTimer.start()
                     }
                 }
@@ -83,7 +84,7 @@ Scope {
                 height: 900
                 scale: dashboardScale
 
-                property bool contentActive: true
+                property bool contentActive: false
                 property bool isAnimating: false
                 property bool slideAnimEnabled: false
                 property bool showAtCenter: false
@@ -96,17 +97,58 @@ Scope {
                 readonly property int offY: animDir === "up"    ? -dashboardRoot.height / dashboardScale
                                             : animDir === "down"  ? dashboardRoot.height / dashboardScale : 0
 
+                function openFocusedDashboard() {
+                    closeHoldTimer.restart()
+                    scaleWrapper.isAnimating = true
+                    scaleWrapper.contentActive = true
+                    if (dashboardContentLoader.status === Loader.Ready) {
+                        scaleWrapper.slideAnimEnabled = true
+                        scaleWrapper.showAtCenter = true
+                    }
+                }
+
+                function resetSlideState(unloadContent) {
+                    scaleWrapper.slideAnimEnabled = false
+                    scaleWrapper.showAtCenter = false
+                    if (unloadContent) {
+                        scaleWrapper.contentActive = false
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) {
+                        openFocusedDashboard()
+                    }
+                }
+
                 Connections {
                     target: GlobalStates
                     function onDashboardOpenChanged() {
                         if (GlobalStates.dashboardOpen) {
-                            closeHoldTimer.restart()
-                            scaleWrapper.isAnimating = true
-                            scaleWrapper.contentActive = true
-                            scaleWrapper.showAtCenter = true
+                            if (dashboardRoot.monitorIsFocused) {
+                                scaleWrapper.openFocusedDashboard()
+                            }
+                        } else if (scaleWrapper.contentActive || scaleWrapper.isAnimating || scaleWrapper.showAtCenter) {
+                            scaleWrapper.isAnimating = false
+                            closeHoldTimer.stop()
+                            scaleWrapper.resetSlideState(false)
+                        }
+                    }
+                }
+                Connections {
+                    target: dashboardRoot
+                    function onMonitorIsFocusedChanged() {
+                        if (dashboardRoot.monitorIsFocused) {
+                            if (GlobalStates.dashboardOpen) {
+                                scaleWrapper.openFocusedDashboard()
+                                delayedGrabTimer.start()
+                            }
                         } else {
-                            scaleWrapper.showAtCenter = false
-                            closeHoldTimer.restart()
+                            delayedGrabTimer.stop()
+                            grab.active = false
+                            if (!scaleWrapper.isAnimating) {
+                                scaleWrapper.resetSlideState(true)
+                            }
                         }
                     }
                 }
@@ -115,6 +157,9 @@ Scope {
                     interval: Config.options.dashboard.animationDuration + 50
                     onTriggered: {
                         scaleWrapper.isAnimating = false
+                        if (!dashboardRoot.monitorIsFocused) {
+                            scaleWrapper.resetSlideState(true)
+                        }
                     }
                 }
 
@@ -123,20 +168,28 @@ Scope {
                     function onAnimationDirectionChanged() {
                         scaleWrapper.slideAnimEnabled = false
                         scaleWrapper.animDir = Config.options.dashboard.animationDirection
-                        Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
+                        if (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) {
+                            Qt.callLater(() => { scaleWrapper.slideAnimEnabled = true })
+                        }
                     }
                 }
 
                 Loader {
                     id: dashboardContentLoader
-                    active: scaleWrapper.contentActive
+                    active: scaleWrapper.contentActive && (dashboardRoot.monitorIsFocused || scaleWrapper.isAnimating)
                     asynchronous: true
                     visible: (GlobalStates.dashboardOpen && dashboardRoot.monitorIsFocused) || scaleWrapper.isAnimating
 
 
                     onLoaded: {
+                        if (!GlobalStates.dashboardOpen || !dashboardRoot.monitorIsFocused) return
+                        scaleWrapper.slideAnimEnabled = false
+                        scaleWrapper.showAtCenter = false
+                        closeHoldTimer.restart()
                         Qt.callLater(() => {
+                            if (!GlobalStates.dashboardOpen || !dashboardRoot.monitorIsFocused) return
                             scaleWrapper.slideAnimEnabled = true
+                            scaleWrapper.showAtCenter = true
                         })
                     }
 
@@ -144,7 +197,7 @@ Scope {
                         x: scaleWrapper.showAtCenter ? 0 : scaleWrapper.offX
                         y: scaleWrapper.showAtCenter ? 0 : scaleWrapper.offY
                         Behavior on x {
-                            enabled: scaleWrapper.slideAnimEnabled
+                            enabled: scaleWrapper.slideAnimEnabled && (dashboardRoot.monitorIsFocused || scaleWrapper.isAnimating)
                             NumberAnimation {
                                 duration: scaleWrapper.animDuration
                                 easing.type: Appearance.animation.elementMove.type
@@ -152,7 +205,7 @@ Scope {
                             }
                         }
                         Behavior on y {
-                            enabled: scaleWrapper.slideAnimEnabled
+                            enabled: scaleWrapper.slideAnimEnabled && (dashboardRoot.monitorIsFocused || scaleWrapper.isAnimating)
                             NumberAnimation {
                                 duration: scaleWrapper.animDuration
                                 easing.type: Appearance.animation.elementMove.type
