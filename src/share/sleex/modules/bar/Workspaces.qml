@@ -193,17 +193,21 @@ Item {
                         implicitWidth: workspaceButtonWidth
                         implicitHeight: workspaceButtonWidth
                         property var biggestWindow: root.biggestWindowPerWorkspace[button.workspaceValue] ?? null
-                        property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
+                        readonly property bool hasBiggestWindow: biggestWindow !== null
+                        readonly property string biggestWindowClass: biggestWindow?.class ?? ""
+                        property var mainAppIconSource: (hasBiggestWindow && !root.useMaterialIcons && Config.options?.bar.workspaces.showAppIcons)
+                            ? Quickshell.iconPath(AppSearch.guessIcon(biggestWindowClass), "image-missing")
+                            : ""
 
                         property string materialIconName: {
-                            if (!biggestWindow) return ""
-                            const winClass = biggestWindow.class.toLowerCase()
+                            if (!hasBiggestWindow || !root.useMaterialIcons || !Config.options?.bar.workspaces.showAppIcons) return ""
+                            const winClass = biggestWindowClass.toLowerCase()
                             return AppSearch.materialIconMap[winClass] || "circle"
                         }
 
                         StyledText { // Workspace number text
                             opacity: GlobalStates.workspaceShowNumbers
-                                || ((Config.options?.bar.workspaces.alwaysShowNumbers && (!Config.options?.bar.workspaces.showAppIcons || !workspaceButtonBackground.biggestWindow || GlobalStates.workspaceShowNumbers))
+                                || ((Config.options?.bar.workspaces.alwaysShowNumbers && (!Config.options?.bar.workspaces.showAppIcons || !workspaceButtonBackground.hasBiggestWindow || GlobalStates.workspaceShowNumbers))
                                 || (GlobalStates.workspaceShowNumbers && !Config.options?.bar.workspaces.showAppIcons)
                                 )  ? 1 : 0
                             z: 3
@@ -231,7 +235,7 @@ Item {
                             id: wsDot
                             opacity: (Config.options?.bar.workspaces.alwaysShowNumbers
                                 || GlobalStates.workspaceShowNumbers
-                                || (Config.options?.bar.workspaces.showAppIcons && workspaceButtonBackground.biggestWindow)
+                                || (Config.options?.bar.workspaces.showAppIcons && workspaceButtonBackground.hasBiggestWindow)
                                 ) ? 0 : 1
                             visible: opacity > 0
                             anchors.centerIn: parent
@@ -256,8 +260,8 @@ Item {
                             width: workspaceButtonWidth
                             height: workspaceButtonWidth
                             opacity: !Config.options?.bar.workspaces.showAppIcons ? 0 :
-                                (workspaceButtonBackground.biggestWindow && !GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
-                                1 : workspaceButtonBackground.biggestWindow ? workspaceIconOpacityShrinked : 0
+                                (workspaceButtonBackground.hasBiggestWindow && !GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
+                                1 : workspaceButtonBackground.hasBiggestWindow ? workspaceIconOpacityShrinked : 0
                                 visible: opacity > 0
                             IconImage {
                                 id: mainAppIcon

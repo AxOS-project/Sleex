@@ -17,14 +17,77 @@ Singleton {
     property var windowByAddress: ({})
     property var monitors: []
     property var layers: ({})
+    property var biggestWindowPerWorkspace: ({})
+
+    // Whitelist only window/workspace/monitor-mutating events so cursor, title, and layer chatter stays silent.
+    readonly property var _trackedEvents: new Set([
+        "openwindow",
+        "closewindow",
+        "movewindowv2",
+        "workspacev2",
+        "changefloatingmode",
+        "fullscreen",
+        "monitoraddedv2",
+        "monitorremovedv2",
+        "configreloaded"
+    ])
 
     function updateWindowList() {
-        getClients.running = true
-        getMonitors.running = true
+        getClients.trigger()
+        getMonitors.trigger()
     }
 
     function updateLayers() {
-        getLayers.running = true
+        getLayers.trigger()
+    }
+
+    function _parseJson(raw, label) {
+        if (!raw || raw.trim().length === 0) return null
+        try {
+            return JSON.parse(raw)
+        } catch (e) {
+            console.warn(`[HyprlandData] Failed to parse ${label}:`, e)
+            return null
+        }
+    }
+
+    function _biggestWindowsEqual(a, b) {
+        const keysA = Object.keys(a)
+        const keysB = Object.keys(b)
+        if (keysA.length !== keysB.length) return false
+        for (let i = 0; i < keysA.length; ++i) {
+            const k = keysA[i]
+            const wa = a[k]
+            const wb = b[k]
+            if (!wa || !wb) return false
+            if (wa.address !== wb.address || wa.class !== wb.class) return false
+            if ((wa.size?.[0] ?? 0) !== (wb.size?.[0] ?? 0) || (wa.size?.[1] ?? 0) !== (wb.size?.[1] ?? 0)) return false
+        }
+        return true
+    }
+
+    function _applyClients(clients) {
+        const tempWinByAddress = {}
+        const tempAddresses = []
+        const tempBiggest = {}
+        for (let i = 0; i < clients.length; ++i) {
+            const win = clients[i]
+            tempWinByAddress[win.address] = win
+            tempAddresses.push(win.address)
+
+            const id = win.workspace?.id
+            if (id === undefined) continue
+            const prev = tempBiggest[id]
+            const prevArea = prev ? (prev.size?.[0] ?? 0) * (prev.size?.[1] ?? 0) : 0
+            const area = (win.size?.[0] ?? 0) * (win.size?.[1] ?? 0)
+            if (area > prevArea) tempBiggest[id] = win
+        }
+        root.windowList = clients
+        root.windowByAddress = tempWinByAddress
+        root.addresses = tempAddresses
+        if (!root._biggestWindowsEqual(root.biggestWindowPerWorkspace, tempBiggest)) {
+            root.biggestWindowPerWorkspace = tempBiggest
+        }
     }
 
     Component.onCompleted: {
@@ -32,62 +95,74 @@ Singleton {
         updateLayers()
     }
 
+    Timer {
+        id: updateTimer
+        interval: 25
+        repeat: false
+        onTriggered: root.updateWindowList()
+    }
+
     Connections {
         target: Hyprland
 
         function onRawEvent(event) {
-            const skipped = ["activewindow", "focusedmon", "monitoradded",
-                "createworkspace", "destroyworkspace", "moveworkspace",
-                "activespecial", "movewindow", "windowtitle"];
-            if (skipped.includes(event.name)) return;
-            updateWindowList();
+            if (root._trackedEvents.has(event.name)) {
+                updateTimer.restart()
+            }
         }
     }
 
-    property var biggestWindowPerWorkspace: ({})
+    component HyprctlJsonProcess: Process {
+        id: proc
+        required property string query
+        property bool rerunPending: false
+        signal jsonReady(var data)
 
-    Process {
-        id: getClients
-        command: ["bash", "-c", "hyprctl clients -j | jq -c"]
-        stdout: SplitParser {
-            onRead: (data) => {
-                root.windowList = JSON.parse(data)
-                let tempWinByAddress = {}
-                let tempBiggest = {}
-                for (var i = 0; i < root.windowList.length; ++i) {
-                    var win = root.windowList[i]
-                    tempWinByAddress[win.address] = win
-                    
-                    const id = win.workspace.id;
-                    const prev = tempBiggest[id];
-                    const prevArea = prev ? prev.size[0] * prev.size[1] : 0;
-                    const area = win.size[0] * win.size[1];
-                    if (area > prevArea) tempBiggest[id] = win;
+        function trigger() {
+            if (running) {
+                rerunPending = true
+                return
+            }
+            running = true
+        }
+
+        command: ["hyprctl", "-j", proc.query]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parsed = root._parseJson(text, proc.query)
+                if (parsed !== null) {
+                    proc.jsonReady(parsed)
                 }
-                root.windowByAddress = tempWinByAddress
-                root.addresses = root.windowList.map((win) => win.address)
-                root.biggestWindowPerWorkspace = tempBiggest
             }
         }
-    }
-    Process {
-        id: getMonitors
-        command: ["bash", "-c", "hyprctl monitors -j | jq -c"]
-        stdout: SplitParser {
-            onRead: (data) => {
-                root.monitors = JSON.parse(data)
+        onExited: {
+            if (rerunPending) {
+                Qt.callLater(() => {
+                    if (!proc.running && proc.rerunPending) {
+                        proc.rerunPending = false
+                        proc.running = true
+                    }
+                })
             }
         }
     }
 
-    Process {
+    HyprctlJsonProcess {
+        id: getClients
+        query: "clients"
+        onJsonReady: (clients) => root._applyClients(clients)
+    }
+
+    HyprctlJsonProcess {
+        id: getMonitors
+        query: "monitors"
+        onJsonReady: (monitors) => { root.monitors = monitors }
+    }
+
+    HyprctlJsonProcess {
         id: getLayers
-        command: ["bash", "-c", "hyprctl layers -j | jq -c"]
-        stdout: SplitParser {
-            onRead: (data) => {
-                root.layers = JSON.parse(data)
-            }
-        }
+        query: "layers"
+        onJsonReady: (layers) => { root.layers = layers }
     }
 }
 
