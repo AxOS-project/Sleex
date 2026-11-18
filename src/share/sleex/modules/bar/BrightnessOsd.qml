@@ -1,23 +1,19 @@
-import Quickshell
-import Quickshell.Hyprland
 import QtQuick
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
-import qs.services
 
 Revealer {
     id: root
     reveal: showOsdValues
 
     property bool showOsdValues: false
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
-    property var brightnessMonitor: Brightness.getMonitorForScreen(focusedScreen)
+    required property var brightnessMonitor
 
     Connections {
-        target: Brightness
+        target: root.brightnessMonitor ?? null
         function onBrightnessChanged() {
-            if (!root.brightnessMonitor.ready) return
+            if (!root.brightnessMonitor?.ready) return
             root.triggerOsd()
         }
     }

@@ -182,6 +182,8 @@ Scope {
                     // Scroll to change brightness
                     WheelHandler {
                         onWheel: (event) => {
+                            if (!barRoot.brightnessMonitor)
+                                return;
                             if (event.angleDelta.y < 0)
                                 barRoot.brightnessMonitor.setBrightness(barRoot.brightnessMonitor.brightness - 0.05);
                             else if (event.angleDelta.y > 0)
@@ -379,6 +381,7 @@ Scope {
                 }
 
                 BrightnessOsd {
+                    brightnessMonitor: barRoot.brightnessMonitor
                     anchors.right: middleSection.left
                     anchors.leftMargin: 10
                     anchors.verticalCenter: middleSection.verticalCenter
