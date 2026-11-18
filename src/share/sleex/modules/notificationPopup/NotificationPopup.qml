@@ -18,8 +18,39 @@ Scope {
 
     PanelWindow {
         id: root
-        visible: (Notifications.popupList.length > 0)
-        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+        readonly property bool hasPopups: Notifications.popupList.length > 0
+
+        function syncScreen() {
+            const target = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+            if (root.screen !== target)
+                root.screen = target
+        }
+
+        function syncState() {
+            if (hasPopups)
+                syncScreen()
+            visible = hasPopups
+        }
+
+        visible: false
+        onHasPopupsChanged: syncState()
+        Component.onCompleted: syncState()
+
+        Connections {
+            target: Hyprland
+            enabled: root.hasPopups
+            function onFocusedMonitorChanged() {
+                root.syncScreen()
+            }
+        }
+
+        Connections {
+            target: Quickshell
+            enabled: root.hasPopups
+            function onScreensChanged() {
+                root.syncScreen()
+            }
+        }
 
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay
