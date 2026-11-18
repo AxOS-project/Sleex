@@ -8,7 +8,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 import Quickshell.Widgets
-import Qt5Compat.GraphicalEffects
 
 MouseArea {
     id: root
@@ -108,26 +107,33 @@ MouseArea {
             }
 
             // Animated gradient overlay shown only when charging.
-            LinearGradient {
+            Rectangle {
                 id: chargingGradient
-                anchors.fill: parent
+                property real animationProgress: 0.0
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                x: -parent.width * (1.0 - animationProgress)
+                width: parent.width * 2
                 visible: root.isCharging
-                start: Qt.point(0, 0)
-                end: Qt.point(parent.width, 0)
-                property real animationPosition: 0.0
                 gradient: Gradient {
-                    GradientStop { position: chargingGradient.animationPosition - 0.5; color: "#7ffc83" }
-                    GradientStop { position: chargingGradient.animationPosition; color: "#8ff455"}
-                    GradientStop { position: chargingGradient.animationPosition + 0.6; color: "#74f278" }
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#74f278" }
+                    GradientStop { position: 0.15; color: "#7ffc83" }
+                    GradientStop { position: 0.3; color: "#8ff455" }
+                    GradientStop { position: 0.5; color: "#74f278" }
+                    GradientStop { position: 0.65; color: "#7ffc83" }
+                    GradientStop { position: 0.8; color: "#8ff455" }
+                    GradientStop { position: 1.0; color: "#74f278" }
                 }
-                PropertyAnimation {
+                NumberAnimation {
                     target: chargingGradient
-                    property: "animationPosition"
-                    from: -0.2
-                    to: 1.2
+                    property: "animationProgress"
+                    from: 0.0
+                    to: 1.0
                     duration: 2500
                     loops: Animation.Infinite
-                    running: root.isCharging
+                    // Fall back to Window.window because QsWindow.window is null inside WlSessionLockSurface.
+                    running: root.isCharging && root.visible && (root.QsWindow?.window?.visible ?? root.Window.window?.visible ?? false)
                 }
             }
 
