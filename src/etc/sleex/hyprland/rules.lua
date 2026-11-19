@@ -278,9 +278,6 @@ function sleex_set_quickshell_blur(shell_blur_enabled)
 	quickshell_blur_rule:set_enabled(active)
 	quickshell_noblur_rule:set_enabled(not active)
 	quickshell_session_rule:set_enabled(hl_blur_enabled)
-	if hl.exec_scheduled_prop_refresh_immediately then
-		hl.exec_scheduled_prop_refresh_immediately()
-	end
 end
 
 function sleex_sync_quickshell_blur()
