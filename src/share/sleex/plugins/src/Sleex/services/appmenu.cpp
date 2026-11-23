@@ -3,17 +3,18 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
+#include <QDBusMetaType>
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusReply>
-#include <QDBusMetaType>
 #include <QDateTime>
-#include <QXmlStreamReader>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QFile>
-#include <QDebug>
+#include <QXmlStreamReader>
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, SleexDBusMenuLayoutItem &layout)
 {
@@ -88,6 +89,12 @@ QDBusArgument &operator<<(QDBusArgument &argument, const SleexDBusMenuItemProper
 
 namespace sleex::services {
 
+/**
+ * @brief Reads the parent PID (`ppid`) of `pid` from `/proc/<pid>/stat` with caching.
+ * @param pid Process ID to inspect.
+ * @param ppidCache Per-scan cache mapping `pid -> ppid`.
+ * @return Parent process ID, or `0` on failure.
+ */
 static uint getParentPid(uint pid, QHash<uint, uint> &ppidCache)
 {
     if (pid == 0)
@@ -114,12 +121,21 @@ static uint getParentPid(uint pid, QHash<uint, uint> &ppidCache)
     return ppid;
 }
 
+/**
+ * @brief Precomputed ancestor tree for a target window's PID.
+ */
 struct WindowPidTree {
     uint windowPid = 0;
     uint windowParent = 0;
     QSet<uint> ancestors;
 };
 
+/**
+ * @brief Builds a 6-level ancestor tree for `windowPid`.
+ * @param windowPid Focused window PID.
+ * @param ppidCache Cache of `pid -> ppid` lookups.
+ * @return Populated `WindowPidTree`.
+ */
 static WindowPidTree buildWindowPidTree(uint windowPid, QHash<uint, uint> &ppidCache)
 {
     WindowPidTree tree;
@@ -127,7 +143,6 @@ static WindowPidTree buildWindowPidTree(uint windowPid, QHash<uint, uint> &ppidC
     if (windowPid == 0)
         return tree;
 
-    // Precompute the 6-level ancestor set of windowPid once
     uint cur = windowPid;
     for (int i = 0; i < 6 && cur > 1; ++i) {
         cur = getParentPid(cur, ppidCache);
@@ -138,6 +153,13 @@ static WindowPidTree buildWindowPidTree(uint windowPid, QHash<uint, uint> &ppidC
     return tree;
 }
 
+/**
+ * @brief Checks whether `servicePid` belongs to the same process tree as `windowTree`.
+ * @param servicePid PID owning a D-Bus service.
+ * @param windowTree Precomputed ancestor tree of the focused window.
+ * @param ppidCache Cache of `pid -> ppid` lookups.
+ * @return `true` if `servicePid` matches, is an ancestor/descendant, or shares a parent with `windowPid`.
+ */
 static bool pidMatchesOrSharesTree(uint servicePid, const WindowPidTree &windowTree, QHash<uint, uint> &ppidCache)
 {
     if (servicePid == 0 || windowTree.windowPid == 0)
@@ -145,7 +167,6 @@ static bool pidMatchesOrSharesTree(uint servicePid, const WindowPidTree &windowT
     if (servicePid == windowTree.windowPid)
         return true;
 
-    // Walk up from servicePid to see if windowPid is an ancestor
     uint cur = servicePid;
     for (int i = 0; i < 6 && cur > 1; ++i) {
         cur = getParentPid(cur, ppidCache);
@@ -153,11 +174,9 @@ static bool pidMatchesOrSharesTree(uint servicePid, const WindowPidTree &windowT
             return true;
     }
 
-    // Check if servicePid is an ancestor of windowPid
     if (windowTree.ancestors.contains(servicePid))
         return true;
 
-    // Check if both share the same immediate parent (e.g. Electron helper + main)
     const uint p1 = getParentPid(servicePid, ppidCache);
     if (p1 > 1 && p1 == windowTree.windowParent)
         return true;
@@ -165,6 +184,12 @@ static bool pidMatchesOrSharesTree(uint servicePid, const WindowPidTree &windowT
     return false;
 }
 
+/**
+ * @brief Convenience overload checking whether `servicePid` and `windowPid` share a process tree.
+ * @param servicePid PID owning a D-Bus service.
+ * @param windowPid PID of the focused window.
+ * @return `true` if related, `false` otherwise.
+ */
 static bool pidMatchesOrSharesTree(uint servicePid, uint windowPid)
 {
     if (servicePid == 0 || windowPid == 0)
@@ -175,6 +200,21 @@ static bool pidMatchesOrSharesTree(uint servicePid, uint windowPid)
     QHash<uint, uint> ppidCache;
     const WindowPidTree windowTree = buildWindowPidTree(windowPid, ppidCache);
     return pidMatchesOrSharesTree(servicePid, windowTree, ppidCache);
+}
+
+/**
+ * @brief Reads the short process executable name from `/proc/<pid>/comm`.
+ * @param pid Target process ID.
+ * @return Trimmed process comm string in lowercase, or empty string if unavailable.
+ */
+static QString readProcComm(uint pid)
+{
+    if (pid == 0)
+        return QString();
+    QFile commFile(QStringLiteral("/proc/%1/comm").arg(pid));
+    if (!commFile.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QString();
+    return QString::fromUtf8(commFile.readLine()).trimmed().toLower();
 }
 
 AppMenuRegistrarAdaptor::AppMenuRegistrarAdaptor(AppMenu *parent)
@@ -218,11 +258,11 @@ AppMenu::AppMenu(QObject *parent)
 
     m_queryDebounceTimer = new QTimer(this);
     m_queryDebounceTimer->setSingleShot(true);
-    connect(m_queryDebounceTimer, &QTimer::timeout, this, &AppMenu::queryHyprlandActiveWindow);
+    connect(m_queryDebounceTimer, &QTimer::timeout, this, &AppMenu::queryFhtcFocusedWindow);
 
     m_reconnectTimer = new QTimer(this);
     m_reconnectTimer->setSingleShot(true);
-    connect(m_reconnectTimer, &QTimer::timeout, this, &AppMenu::connectHyprlandEvents);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &AppMenu::connectFhtcEvents);
 
     auto bus = QDBusConnection::sessionBus();
     if (bus.isConnected()) {
@@ -235,103 +275,172 @@ AppMenu::AppMenu(QObject *parent)
                 this, &AppMenu::onServiceUnregistered);
     }
 
-    connectHyprlandEvents();
-    queryHyprlandActiveWindow();
+    connectFhtcEvents();
+    queryFhtcFocusedWindow();
 }
 
-QString AppMenu::hyprSocketPath(int n)
+QString AppMenu::fhtcSocketPath()
 {
-    const QString sig = qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE");
-    const QString run = qEnvironmentVariable("XDG_RUNTIME_DIR", QStringLiteral("/run/user/1000"));
-    const QString suffix = (n == 2) ? QStringLiteral("2") : QString();
-
-    const QString newPath = QStringLiteral("%1/hypr/%2/.socket%3.sock").arg(run, sig, suffix);
-    if (QFile::exists(newPath))
-        return newPath;
-
-    return QStringLiteral("/tmp/hypr/%1/.socket%2.sock").arg(sig, suffix);
+    return qEnvironmentVariable("FHTC_SOCKET_PATH");
 }
 
-void AppMenu::connectHyprlandEvents()
+void AppMenu::connectFhtcEvents()
 {
-    if (m_hyprEventSocket) {
-        m_hyprEventSocket->deleteLater();
+    if (m_fhtcEventSocket) {
+        m_fhtcEventSocket->deleteLater();
+        m_fhtcEventSocket = nullptr;
     }
-    m_hyprEventSocket = new QLocalSocket(this);
 
-    connect(m_hyprEventSocket, &QLocalSocket::readyRead, this, [this]() {
-        m_hyprEventBuffer += m_hyprEventSocket->readAll();
+    const QString path = fhtcSocketPath();
+    if (path.isEmpty()) {
+        if (!m_reconnectTimer->isActive())
+            m_reconnectTimer->start(2000);
+        return;
+    }
+
+    m_fhtcEventSocket = new QLocalSocket(this);
+
+    connect(m_fhtcEventSocket, &QLocalSocket::connected, this, [this]() {
+        m_fhtcEventSocket->write("\"subscribe\"\n");
+        m_fhtcEventSocket->flush();
+    });
+
+    connect(m_fhtcEventSocket, &QLocalSocket::readyRead, this, [this]() {
+        m_fhtcEventBuffer += m_fhtcEventSocket->readAll();
         while (true) {
-            const int nl = m_hyprEventBuffer.indexOf('\n');
-            if (nl < 0) break;
-            handleHyprlandEvent(m_hyprEventBuffer.left(nl));
-            m_hyprEventBuffer = m_hyprEventBuffer.mid(nl + 1);
+            const int nl = m_fhtcEventBuffer.indexOf('\n');
+            if (nl < 0)
+                break;
+            handleFhtcEventLine(m_fhtcEventBuffer.left(nl).trimmed());
+            m_fhtcEventBuffer.remove(0, nl + 1);
         }
     });
 
-    connect(m_hyprEventSocket, &QLocalSocket::disconnected, this, [this]() {
+    connect(m_fhtcEventSocket, &QLocalSocket::disconnected, this, [this]() {
         if (!m_reconnectTimer->isActive())
             m_reconnectTimer->start(2000);
     });
 
-    connect(m_hyprEventSocket, &QLocalSocket::errorOccurred, this, [this](QLocalSocket::LocalSocketError) {
+    connect(m_fhtcEventSocket, &QLocalSocket::errorOccurred, this, [this](QLocalSocket::LocalSocketError) {
         if (!m_reconnectTimer->isActive())
             m_reconnectTimer->start(2000);
     });
 
-    m_hyprEventSocket->connectToServer(hyprSocketPath(2), QLocalSocket::ReadOnly);
+    m_fhtcEventSocket->connectToServer(path);
 }
 
-void AppMenu::handleHyprlandEvent(const QByteArray &line)
+void AppMenu::handleFhtcEventLine(const QByteArray &line)
 {
-    const int sep = line.indexOf(">>");
-    if (sep < 0) return;
-    const QByteArray event = line.left(sep);
+    if (line.isEmpty())
+        return;
 
-    if (event == "activewindow" || event == "activewindowv2" || event == "closewindow") {
-        if (!m_queryDebounceTimer->isActive())
-            m_queryDebounceTimer->start(50);
+    const QJsonDocument doc = QJsonDocument::fromJson(line);
+    if (!doc.isObject())
+        return;
+
+    const QJsonObject root = doc.object();
+    const QString event = root.value(QStringLiteral("event")).toString();
+    const QJsonValue dataVal = root.value(QStringLiteral("data"));
+
+    if (event == QLatin1String("windows")) {
+        m_fhtcWindows.clear();
+        const QVariantMap winMap = dataVal.toObject().toVariantMap();
+        for (auto it = winMap.constBegin(); it != winMap.constEnd(); ++it) {
+            const QVariantMap w = it.value().toMap();
+            const uint id = w.value(QStringLiteral("id")).toUInt();
+            m_fhtcWindows.insert(id, w);
+            if (w.value(QStringLiteral("focused")).toBool()) {
+                m_focusedFhtcWindowId = static_cast<int>(id);
+                setActiveWindow(w.value(QStringLiteral("pid")).toInt(0),
+                                w.value(QStringLiteral("app-id")).toString(),
+                                id);
+            }
+        }
+    } else if (event == QLatin1String("window-changed")) {
+        const QVariantMap w = dataVal.toObject().toVariantMap();
+        const uint id = w.value(QStringLiteral("id")).toUInt();
+        m_fhtcWindows.insert(id, w);
+        if (static_cast<int>(id) == m_focusedFhtcWindowId || w.value(QStringLiteral("focused")).toBool()) {
+            m_focusedFhtcWindowId = static_cast<int>(id);
+            setActiveWindow(w.value(QStringLiteral("pid")).toInt(0),
+                            w.value(QStringLiteral("app-id")).toString(),
+                            id);
+        }
+    } else if (event == QLatin1String("window-closed")) {
+        const uint id = static_cast<uint>(dataVal.toObject().value(QStringLiteral("id")).toInt(-1));
+        m_fhtcWindows.remove(id);
+        if (static_cast<int>(id) == m_focusedFhtcWindowId) {
+            m_focusedFhtcWindowId = -1;
+            setActiveWindow(0, QString(), 0);
+        }
+    } else if (event == QLatin1String("focused-window-changed")) {
+        const QJsonValue idVal = dataVal.toObject().value(QStringLiteral("id"));
+        if (idVal.isNull() || idVal.isUndefined()) {
+            m_focusedFhtcWindowId = -1;
+            setActiveWindow(0, QString(), 0);
+            return;
+        }
+        const int id = idVal.toInt(-1);
+        m_focusedFhtcWindowId = id;
+        if (id >= 0 && m_fhtcWindows.contains(static_cast<uint>(id))) {
+            const QVariantMap w = m_fhtcWindows.value(static_cast<uint>(id));
+            setActiveWindow(w.value(QStringLiteral("pid")).toInt(0),
+                            w.value(QStringLiteral("app-id")).toString(),
+                            static_cast<uint>(id));
+        } else if (!m_queryDebounceTimer->isActive()) {
+            m_queryDebounceTimer->start(25);
+        }
     }
 }
 
-void AppMenu::queryHyprlandActiveWindow()
+void AppMenu::queryFhtcFocusedWindow()
 {
-    if (m_queryInFlight) return;
+    if (m_queryInFlight)
+        return;
+
+    const QString path = fhtcSocketPath();
+    if (path.isEmpty())
+        return;
+
     m_queryInFlight = true;
 
     auto *sock = new QLocalSocket(this);
     auto buffer = std::make_shared<QByteArray>();
 
     connect(sock, &QLocalSocket::connected, this, [sock]() {
-        sock->write("j/activewindow");
+        sock->write("\"focused-window\"\n");
         sock->flush();
     });
 
-    connect(sock, &QLocalSocket::readyRead, this, [sock, buffer]() {
+    connect(sock, &QLocalSocket::readyRead, this, [this, sock, buffer]() {
         buffer->append(sock->readAll());
-    });
+        const int nl = buffer->indexOf('\n');
+        if (nl < 0)
+            return;
 
-    connect(sock, &QLocalSocket::disconnected, this, [this, sock, buffer]() {
         m_queryInFlight = false;
-        buffer->append(sock->readAll());
+        const QByteArray line = buffer->left(nl).trimmed();
+        sock->disconnectFromServer();
         sock->deleteLater();
 
-        const int brace = buffer->indexOf('{');
-        if (brace < 0) {
-            setActiveWindow(0, QString(), 0);
-            return;
-        }
-
-        const QJsonDocument doc = QJsonDocument::fromJson(buffer->mid(brace));
+        const QJsonDocument doc = QJsonDocument::fromJson(line);
         if (!doc.isObject()) {
             setActiveWindow(0, QString(), 0);
             return;
         }
 
-        const QJsonObject obj = doc.object();
-        const int pid = obj.value(QStringLiteral("pid")).toInt(0);
-        const QString cls = obj.value(QStringLiteral("class")).toString();
-        setActiveWindow(pid, cls, 0);
+        const QJsonValue winVal = doc.object().value(QStringLiteral("window"));
+        if (!winVal.isObject()) {
+            setActiveWindow(0, QString(), 0);
+            return;
+        }
+
+        const QJsonObject winObj = winVal.toObject();
+        const int pid = winObj.value(QStringLiteral("pid")).toInt(0);
+        const QString appId = winObj.value(QStringLiteral("app-id")).toString();
+        const uint winId = static_cast<uint>(winObj.value(QStringLiteral("id")).toInt(0));
+        m_fhtcWindows.insert(winId, winObj.toVariantMap());
+        setActiveWindow(pid, appId, winId);
     });
 
     connect(sock, &QLocalSocket::errorOccurred, this, [this, sock](QLocalSocket::LocalSocketError) {
@@ -339,7 +448,55 @@ void AppMenu::queryHyprlandActiveWindow()
         sock->deleteLater();
     });
 
-    sock->connectToServer(hyprSocketPath(1));
+    sock->connectToServer(path);
+}
+
+uint AppMenu::resolvePidForAppId(const QString &appId)
+{
+    if (appId.isEmpty())
+        return 0;
+
+    const QString lowerApp = appId.toLower();
+    const QString baseApp = lowerApp.section(QLatin1Char('.'), -1);
+
+    // 1. Check already-registered D-Bus menu PIDs
+    for (auto it = m_pidMenus.constBegin(); it != m_pidMenus.constEnd(); ++it) {
+        const QString comm = readProcComm(it.key());
+        if (!comm.isEmpty() && (comm == lowerApp || comm == baseApp || baseApp.startsWith(comm) || comm.startsWith(baseApp))) {
+            return it.key();
+        }
+    }
+
+    // 2. Check cached D-Bus service PIDs
+    for (auto it = m_servicePids.constBegin(); it != m_servicePids.constEnd(); ++it) {
+        if (it.value() == 0)
+            continue;
+        const QString comm = readProcComm(it.value());
+        if (!comm.isEmpty() && (comm == lowerApp || comm == baseApp || baseApp.startsWith(comm) || comm.startsWith(baseApp))) {
+            return it.value();
+        }
+    }
+
+    // 3. Scan session D-Bus service names matching appId
+    auto bus = QDBusConnection::sessionBus();
+    if (bus.isConnected() && bus.interface()) {
+        const QDBusReply<QStringList> namesReply = bus.interface()->registeredServiceNames();
+        if (namesReply.isValid()) {
+            const QStringList services = namesReply.value();
+            for (const QString &service : services) {
+                if (service.compare(appId, Qt::CaseInsensitive) == 0 ||
+                    service.startsWith(appId + QLatin1Char('.'), Qt::CaseInsensitive)) {
+                    QDBusReply<uint> pidReply = bus.interface()->servicePid(service);
+                    if (pidReply.isValid() && pidReply.value() > 0) {
+                        m_servicePids.insert(service, pidReply.value());
+                        return pidReply.value();
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
 }
 
 void AppMenu::registerWindowInternal(uint windowId, const QString &senderService, const QDBusObjectPath &menuObjectPath)
@@ -424,7 +581,11 @@ void AppMenu::onServiceUnregistered(const QString &service)
 
 void AppMenu::setActiveWindow(int pid, const QString &appId, uint windowId)
 {
-    const uint uPid = pid > 0 ? static_cast<uint>(pid) : 0;
+    uint uPid = pid > 0 ? static_cast<uint>(pid) : 0;
+    if (uPid == 0 && !appId.isEmpty()) {
+        uPid = resolvePidForAppId(appId);
+    }
+
     if (m_activePid == uPid && m_activeAppId == appId && m_activeWindowId == windowId)
         return;
 
@@ -432,7 +593,7 @@ void AppMenu::setActiveWindow(int pid, const QString &appId, uint windowId)
     m_activeAppId = appId;
     m_activeWindowId = windowId;
 
-    if (uPid == 0 && windowId == 0) {
+    if (uPid == 0 && windowId == 0 && appId.isEmpty()) {
         clearCurrentTarget();
         return;
     }
@@ -485,8 +646,6 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
     if (!namesReply.isValid())
         return;
 
-    // Insert immediately before probing so focus churn does not re-scan while async
-    // probes are in flight or after they fail; async probe or RegisterWindow clears it.
     m_noMenuPids.insert(pid);
 
     const QStringList services = namesReply.value();
@@ -495,7 +654,6 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
     const WindowPidTree windowTree = buildWindowPidTree(pid, ppidCache);
 
     for (const QString &service : services) {
-        // Skip well-known system/desktop services to keep discovery fast
         if (service.startsWith(QLatin1String("org.freedesktop.")) ||
             service.startsWith(QLatin1String("org.kde.StatusNotifier")) ||
             service.startsWith(QLatin1String("org.gtk.vfs")) ||
@@ -526,7 +684,6 @@ void AppMenu::discoverMenuForPid(uint pid, uint /*windowId*/)
 
 void AppMenu::probeServiceMenuPaths(const QString &service, uint pid)
 {
-    // Probe common object paths first (/MenuBar, /MenuBar/1, /MenuBar/2, /com/canonical/menu/...)
     static const QStringList commonPaths = {
         QStringLiteral("/MenuBar"),
         QStringLiteral("/MenuBar/1"),
@@ -597,8 +754,6 @@ void AppMenu::introspectForDbusMenu(const QString &service, const QString &path,
                 } else if (reader.name() == QLatin1String("node")) {
                     const auto nodeName = reader.attributes().value(QLatin1String("name")).toString();
                     if (!nodeName.isEmpty() && !nodeName.startsWith(QLatin1Char('/'))) {
-                        // Avoid StatusNotifierItem tray context menus when looking for main MenuBar,
-                        // unless it's the only menu exported
                         childNodes.append(nodeName);
                     }
                 }
@@ -608,7 +763,6 @@ void AppMenu::introspectForDbusMenu(const QString &service, const QString &path,
         if (hasDbusMenu && path != QLatin1String("/")) {
             MenuTarget target{service, path, pid};
             m_noMenuPids.remove(pid);
-            // Prefer /MenuBar over tray menus
             if (!m_pidMenus.contains(pid) || path.contains(QLatin1String("MenuBar"), Qt::CaseInsensitive)) {
                 m_pidMenus.insert(pid, target);
                 m_serviceWatcher.addWatchedService(service);
@@ -813,10 +967,10 @@ QVariantMap AppMenu::layoutToVariantMap(const SleexDBusMenuLayoutItem &item) con
     map[QStringLiteral("iconName")] = iconName;
 
     const QString toggleType = item.properties.value(QStringLiteral("toggle-type")).toString();
-    map[QStringLiteral("toggleType")] = toggleType; // "checkmark", "radio", or ""
+    map[QStringLiteral("toggleType")] = toggleType;
 
     const int toggleState = item.properties.value(QStringLiteral("toggle-state"), 0).toInt();
-    map[QStringLiteral("toggleState")] = toggleState; // 1 = checked
+    map[QStringLiteral("toggleState")] = toggleState;
 
     map[QStringLiteral("shortcut")] = formatShortcut(item.properties.value(QStringLiteral("shortcut")));
 
@@ -879,7 +1033,6 @@ QString AppMenu::formatShortcut(const QVariant &shortcutVar)
     if (!shortcutVar.isValid())
         return QString();
 
-    // DBusMenu shortcut is aas (array of array of strings), e.g. [["Control", "Shift", "S"]]
     QStringList tokens;
     if (shortcutVar.canConvert<QDBusArgument>()) {
         const QDBusArgument arg = shortcutVar.value<QDBusArgument>();
