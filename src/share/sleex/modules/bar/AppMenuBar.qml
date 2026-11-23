@@ -29,7 +29,11 @@ Item {
 
     onActiveWindowChanged: AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.activeWindow["app-id"] ?? "", root.activeWindow.id ?? 0);
 
-    Component.onCompleted: root.hasActiveWindow ? AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0) : null;
+    Component.onCompleted: {
+        if (root.hasActiveWindow) {
+            AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0);
+        }
+    }
 
     /**
      * A list of fallback menus to display when no native D-Bus menu is available.
