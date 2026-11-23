@@ -7,7 +7,6 @@ import SleexUiKit.Appearance
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope {
     id: root

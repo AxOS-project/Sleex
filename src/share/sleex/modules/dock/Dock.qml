@@ -11,7 +11,7 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope { // Scope
     id: root
@@ -25,10 +25,14 @@ Scope { // Scope
             id: dockRoot
             screen: modelData
 
+            readonly property bool hasFocusedWindow: FhtcWorkspaces.focusedWindow !== null
+                && FhtcWorkspaces.focusedWindow !== undefined
+                && Object.keys(FhtcWorkspaces.focusedWindow).length > 0
+
             property bool reveal: root.pinned
                 || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse)
                 || dockApps.requestDockShow
-                || (!ToplevelManager.activeToplevel?.activated)
+                || !hasFocusedWindow
 
             anchors {
                 bottom: true

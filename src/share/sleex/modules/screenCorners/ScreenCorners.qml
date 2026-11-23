@@ -6,19 +6,19 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: screenCorners
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
+    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
 
     Variants {
         model: Quickshell.screens
 
         PanelWindow {
-            visible: (Config.options.appearance.fakeScreenRounding === 1 
-                || (Config.options.appearance.fakeScreenRounding === 2 
-                    && !activeWindow?.fullscreen))
+            visible: (Config.options.appearance.fakeScreenRounding === 1
+                || (Config.options.appearance.fakeScreenRounding === 2
+                    && !activeWindow?.fullscreened))
 
             property var modelData
 
@@ -26,20 +26,6 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             mask: Region {
                 item: null
-            }
-            HyprlandWindow.visibleMask: Region {
-                Region {
-                    item: topLeftCorner
-                }
-                Region {
-                    item: topRightCorner
-                }
-                Region {
-                    item: bottomLeftCorner
-                }
-                Region {
-                    item: bottomRightCorner
-                }
             }
             WlrLayershell.namespace: "quickshell:screenCorners"
             WlrLayershell.layer: WlrLayer.Overlay

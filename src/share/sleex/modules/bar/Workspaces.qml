@@ -8,20 +8,35 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Wayland
-import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
+import Sleex.Fhtc
 
 Item {
     id: root
     required property var bar
     property bool borderless: Config.options.bar.borderless
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
-    
-    readonly property int workspaceGroup: Math.floor((monitor.activeWorkspace?.id - 1) / Config.options.bar.workspaces.shown)
+    readonly property string screenName: bar.screen.name
+    readonly property var monitor: FhtcMonitors.monitors[screenName] ?? null
+    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
+    readonly property bool hasActiveWindow: activeWindow !== null && activeWindow !== undefined && Object.keys(activeWindow).length > 0
+
+    readonly property var screenWorkspaces: {
+        const monWsIds = monitor?.workspaces
+        const all = FhtcWorkspaces.workspaces
+        if (!all)
+            return []
+        if (monWsIds && monWsIds.length > 0) {
+            return monWsIds.map(id => all[String(id)]).filter(ws => ws !== undefined)
+        }
+        return Object.values(all)
+            .filter(ws => ws.output === root.screenName)
+            .sort((a, b) => a.id - b.id)
+    }
+
+    readonly property int activeWorkspaceIndex: monitor?.["active-workspace-idx"] ?? 0
+    readonly property int workspaceGroup: Math.floor(activeWorkspaceIndex / Config.options.bar.workspaces.shown)
     property list<bool> workspaceOccupied: []
     property int widgetPadding: 0
     property int horizontalPadding: 5
@@ -30,41 +45,52 @@ Item {
     property real workspaceIconSizeShrinked: workspaceButtonWidth * 0.55
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
-    property int workspaceIndexInGroup: (monitor.activeWorkspace?.id - 1) % Config.options.bar.workspaces.shown
+    property int workspaceIndexInGroup: activeWorkspaceIndex % Config.options.bar.workspaces.shown
 
     property bool useMaterialIcons: Config.options.bar.workspaces.useMaterialIcons
 
-    property var biggestWindowPerWorkspace: HyprlandData.biggestWindowPerWorkspace
-    
-    // Function to update workspaceOccupied
+    function biggestWindowForWorkspace(workspaceId) {
+        if (workspaceId === undefined || workspaceId < 0)
+            return null
+        const wins = Object.values(FhtcWorkspaces.windows ?? {}).filter(w => w["workspace-id"] === workspaceId)
+        if (wins.length === 0)
+            return null
+        return wins.reduce((best, win) => {
+            const bestArea = (best.size?.[0] ?? 0) * (best.size?.[1] ?? 0)
+            const winArea = (win.size?.[0] ?? 0) * (win.size?.[1] ?? 0)
+            return winArea > bestArea ? win : best
+        }, wins[0])
+    }
+
     function updateWorkspaceOccupied() {
-        workspaceOccupied = Array.from({ length: Config.options.bar.workspaces.shown }, (_, i) => {
-            return Hyprland.workspaces.values.some(ws => ws.id === workspaceGroup * Config.options.bar.workspaces.shown + i + 1);
+        const shown = Config.options.bar.workspaces.shown
+        const base = workspaceGroup * shown
+        workspaceOccupied = Array.from({ length: shown }, (_, i) => {
+            const ws = screenWorkspaces[base + i]
+            return ws ? ((ws.windows?.length ?? 0) > 0) : false
         })
     }
 
-    // Initialize workspaceOccupied when the component is created
     Component.onCompleted: updateWorkspaceOccupied()
+    onScreenWorkspacesChanged: updateWorkspaceOccupied()
+    onWorkspaceGroupChanged: updateWorkspaceOccupied()
 
-    // Listen for changes in Hyprland.workspaces.values
     Connections {
-        target: Hyprland.workspaces
-        function onValuesChanged() {
-            updateWorkspaceOccupied();
-        }
+        target: FhtcWorkspaces
+        function onWorkspacesChanged() { root.updateWorkspaceOccupied() }
+        function onWindowsChanged() { root.updateWorkspaceOccupied() }
     }
 
     implicitWidth: rowLayout.implicitWidth + horizontalPadding * 2
     implicitHeight: 40
 
-
     // Scroll to switch workspaces
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0)
-                Hyprland.dispatch(`hl.dsp.focus({workspace = "r+1"})`);
+                FhtcIpc.dispatch("focus-next-workspace")
             else if (event.angleDelta.y > 0)
-                Hyprland.dispatch(`hl.dsp.focus({workspace = "r-1"})`);
+                FhtcIpc.dispatch("focus-previous-workspace")
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -91,8 +117,8 @@ Item {
                     implicitWidth: workspaceButtonWidth
                     implicitHeight: workspaceButtonWidth
                     radius: Appearance.rounding.full
-                    property var leftOccupied: (workspaceOccupied[index-1] && !(!activeWindow?.activated && monitor.activeWorkspace?.id === index))
-                    property var rightOccupied: (workspaceOccupied[index+1] && !(!activeWindow?.activated && monitor.activeWorkspace?.id === index+2))
+                    property var leftOccupied: (workspaceOccupied[index - 1] && !(!root.hasActiveWindow && root.workspaceIndexInGroup === index - 1))
+                    property var rightOccupied: (workspaceOccupied[index + 1] && !(!root.hasActiveWindow && root.workspaceIndexInGroup === index + 1))
                     property var radiusLeft: leftOccupied ? 0 : Appearance.rounding.full
                     property var radiusRight: rightOccupied ? 0 : Appearance.rounding.full
 
@@ -100,43 +126,38 @@ Item {
                     bottomLeftRadius: radiusLeft
                     topRightRadius: radiusRight
                     bottomRightRadius: radiusRight
-                    
+
                     color: ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 0.4)
-                    opacity: (workspaceOccupied[index] && !(!activeWindow?.activated && monitor.activeWorkspace?.id === index+1)) ? 1 : 0
+                    opacity: (workspaceOccupied[index] && !(!root.hasActiveWindow && root.workspaceIndexInGroup === index)) ? 1 : 0
 
                     Behavior on opacity {
                         animation: NumberAnimation {
-    duration: Appearance.animation.elementMove.duration
-    easing.type: Appearance.animation.elementMove.type
-    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-}
+                            duration: Appearance.animation.elementMove.duration
+                            easing.type: Appearance.animation.elementMove.type
+                            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                        }
                     }
                     Behavior on radiusLeft {
                         animation: NumberAnimation {
-    duration: Appearance.animation.elementMove.duration
-    easing.type: Appearance.animation.elementMove.type
-    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-}
+                            duration: Appearance.animation.elementMove.duration
+                            easing.type: Appearance.animation.elementMove.type
+                            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                        }
                     }
-
                     Behavior on radiusRight {
                         animation: NumberAnimation {
-    duration: Appearance.animation.elementMove.duration
-    easing.type: Appearance.animation.elementMove.type
-    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-}
+                            duration: Appearance.animation.elementMove.duration
+                            easing.type: Appearance.animation.elementMove.type
+                            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                        }
                     }
-
                 }
-
             }
-
         }
 
         // Active workspace
         Rectangle {
             z: 2
-            // Make active ws indicator, which has a brighter color, smaller to look like it is of the same size as ws occupied highlight
             property real activeWorkspaceMargin: 2
             implicitHeight: workspaceButtonWidth - activeWorkspaceMargin * 2
             radius: Appearance.rounding.full
@@ -150,18 +171,18 @@ Item {
 
             Behavior on activeWorkspaceMargin {
                 animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
             }
-            Behavior on idx1 { // Leading anim
+            Behavior on idx1 {
                 NumberAnimation {
                     duration: 100
                     easing.type: Easing.OutSine
                 }
             }
-            Behavior on idx2 { // Following anim
+            Behavior on idx2 {
                 NumberAnimation {
                     duration: 300
                     easing.type: Easing.OutSine
@@ -183,18 +204,29 @@ Item {
 
                 Button {
                     id: button
-                    property int workspaceValue: workspaceGroup * Config.options.bar.workspaces.shown + index + 1
+                    readonly property int wsIndexOnMonitor: workspaceGroup * Config.options.bar.workspaces.shown + index
+                    property int workspaceValue: wsIndexOnMonitor + 1
+                    readonly property int workspaceId: root.screenWorkspaces[wsIndexOnMonitor]?.id ?? -1
+                    readonly property bool isActiveWorkspace: root.activeWorkspaceIndex === wsIndexOnMonitor
+
                     Layout.fillHeight: true
-                    onPressed: Hyprland.dispatch(`hl.dsp.focus({ workspace = ${workspaceValue}})`)
+                    onPressed: {
+                        if (button.workspaceId >= 0) {
+                            FhtcIpc.dispatch("focus-workspace", { "workspace-id": button.workspaceId })
+                        }
+                    }
                     width: workspaceButtonWidth
-                    
+
                     background: Item {
                         id: workspaceButtonBackground
                         implicitWidth: workspaceButtonWidth
                         implicitHeight: workspaceButtonWidth
-                        property var biggestWindow: root.biggestWindowPerWorkspace[button.workspaceValue] ?? null
+                        property var biggestWindow: {
+                            const _ = FhtcWorkspaces.windows
+                            return root.biggestWindowForWorkspace(button.workspaceId)
+                        }
                         readonly property bool hasBiggestWindow: biggestWindow !== null
-                        readonly property string biggestWindowClass: biggestWindow?.class ?? ""
+                        readonly property string biggestWindowClass: biggestWindow?.["app-id"] ?? ""
                         property var mainAppIconSource: (hasBiggestWindow && !root.useMaterialIcons && Config.options?.bar.workspaces.showAppIcons)
                             ? Quickshell.iconPath(AppSearch.guessIcon(biggestWindowClass), "image-missing")
                             : ""
@@ -205,11 +237,11 @@ Item {
                             return AppSearch.materialIconMap[winClass] || "circle"
                         }
 
-                        StyledText { // Workspace number text
+                        StyledText {
                             opacity: GlobalStates.workspaceShowNumbers
                                 || ((Config.options?.bar.workspaces.alwaysShowNumbers && (!Config.options?.bar.workspaces.showAppIcons || !workspaceButtonBackground.hasBiggestWindow || GlobalStates.workspaceShowNumbers))
                                 || (GlobalStates.workspaceShowNumbers && !Config.options?.bar.workspaces.showAppIcons)
-                                )  ? 1 : 0
+                                ) ? 1 : 0
                             z: 3
 
                             anchors.centerIn: parent
@@ -218,20 +250,22 @@ Item {
                             font.pixelSize: Appearance.font.pixelSize.small - ((text.length - 1) * (text !== "10") * 2)
                             text: `${button.workspaceValue}`
                             elide: Text.ElideRight
-                            color: (monitor.activeWorkspace?.id == button.workspaceValue) ? 
-                                Appearance.m3colors.m3onPrimary : 
-                                (workspaceOccupied[index] ? Appearance.m3colors.m3onSecondaryContainer : 
-                                    Appearance.colors.colOnLayer1Inactive)
+                            color: button.isActiveWorkspace
+                                ? Appearance.m3colors.m3onPrimary
+                                : (workspaceOccupied[index]
+                                    ? Appearance.m3colors.m3onSecondaryContainer
+                                    : Appearance.colors.colOnLayer1Inactive)
 
                             Behavior on opacity {
                                 animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
                             }
                         }
-                        Rectangle { // Dot instead of ws number
+
+                        Rectangle {
                             id: wsDot
                             opacity: (Config.options?.bar.workspaces.alwaysShowNumbers
                                 || GlobalStates.workspaceShowNumbers
@@ -242,36 +276,39 @@ Item {
                             width: workspaceButtonWidth * 0.18
                             height: width
                             radius: width / 2
-                            color: (monitor.activeWorkspace?.id == button.workspaceValue) ? 
-                                Appearance.m3colors.m3onPrimary : 
-                                (workspaceOccupied[index] ? Appearance.m3colors.m3onSecondaryContainer : 
-                                    Appearance.colors.colOnLayer1Inactive)
+                            color: button.isActiveWorkspace
+                                ? Appearance.m3colors.m3onPrimary
+                                : (workspaceOccupied[index]
+                                    ? Appearance.m3colors.m3onSecondaryContainer
+                                    : Appearance.colors.colOnLayer1Inactive)
 
                             Behavior on opacity {
                                 animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
                             }
                         }
-                        Item { // Main app icon
+
+                        Item {
                             anchors.centerIn: parent
                             width: workspaceButtonWidth
                             height: workspaceButtonWidth
                             opacity: !Config.options?.bar.workspaces.showAppIcons ? 0 :
-                                (workspaceButtonBackground.hasBiggestWindow && !GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
+                                (workspaceButtonBackground.hasBiggestWindow && !GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ?
                                 1 : workspaceButtonBackground.hasBiggestWindow ? workspaceIconOpacityShrinked : 0
-                                visible: opacity > 0
+                            visible: opacity > 0
+
                             IconImage {
                                 id: mainAppIcon
                                 anchors.bottom: parent.bottom
                                 anchors.right: parent.right
-                                anchors.bottomMargin: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
+                                anchors.bottomMargin: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ?
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
-                                anchors.rightMargin: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ? 
+                                anchors.rightMargin: (!GlobalStates.workspaceShowNumbers && Config.options?.bar.workspaces.showAppIcons) ?
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
-                                
+
                                 visible: !root.useMaterialIcons
 
                                 source: workspaceButtonBackground.mainAppIconSource
@@ -279,33 +316,32 @@ Item {
 
                                 Behavior on opacity {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on anchors.bottomMargin {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on anchors.rightMargin {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on implicitSize {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
-
                             }
 
                             MaterialSymbol {
@@ -314,51 +350,47 @@ Item {
                                 iconSize: (!GlobalStates.workspaceShowNumbers) ? workspaceIconSize : workspaceIconSizeShrinked
                                 anchors.bottom: parent.bottom
                                 anchors.right: parent.right
-                                anchors.bottomMargin: (!GlobalStates.workspaceShowNumbers) ? 
+                                anchors.bottomMargin: (!GlobalStates.workspaceShowNumbers) ?
                                     (workspaceButtonWidth - workspaceIconSize) / 2 - 2 : workspaceIconMarginShrinked
-                                anchors.rightMargin: (!GlobalStates.workspaceShowNumbers) ? 
+                                anchors.rightMargin: (!GlobalStates.workspaceShowNumbers) ?
                                     (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
-                                color: (monitor.activeWorkspace?.id == button.workspaceValue) ? 
-                                    Appearance.m3colors.m3onPrimary : Appearance.m3colors.m3onSecondaryContainer
+                                color: button.isActiveWorkspace
+                                    ? Appearance.m3colors.m3onPrimary
+                                    : Appearance.m3colors.m3onSecondaryContainer
 
                                 Behavior on opacity {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on anchors.bottomMargin {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on anchors.rightMargin {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                                 Behavior on iconSize {
                                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
                                 }
                             }
                         }
                     }
-                    
                 }
-
             }
-
         }
-
     }
-
 }

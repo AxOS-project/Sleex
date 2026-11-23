@@ -15,6 +15,7 @@ import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 
 import Sleex.Services
+import Sleex.Fhtc
 
 Scope {
     id: bar
@@ -60,13 +61,13 @@ Scope {
             Connections {
                 target: GlobalStates
                 function onCenterPopupToggleRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = !barRoot.centerPopupOpen
                 }
                 function onCenterPopupOpenRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = true
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = true
                 }
                 function onCenterPopupCloseRequested(screenName) {
-                    if (!screenName || screenName === barRoot.screen?.name || screenName === Hyprland.focusedMonitor?.name) barRoot.centerPopupOpen = false
+                    if (!screenName || screenName === barRoot.screen?.name || screenName === FhtcMonitors.activeMonitorName) barRoot.centerPopupOpen = false
                 }
             }
 
@@ -534,10 +535,10 @@ Scope {
                                         NotifIndicator {}
                                     }
 
-                                    HyprlandXkbIndicator {
-                                        Layout.alignment: Qt.AlignVCenter
-                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
-                                    }
+                                    // HyprlandXkbIndicator {
+                                    //     Layout.alignment: Qt.AlignVCenter
+                                    //     Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                    // }
 
 
                                     Revealer {

@@ -4,6 +4,8 @@ import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import Sleex.Fhtc
+import Sleex.Widgets
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
@@ -31,9 +33,9 @@ Item {
     Component.onCompleted: pinnedAppsStable = Config.options?.dock.pinnedApps ?? []
 
     Layout.fillHeight: true
-    Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
+    Layout.topMargin: Appearance.sizes.hyprlandGapsOut
     implicitWidth: listView.implicitWidth
-    
+
     StyledListView {
         id: listView
         spacing: 2
@@ -46,10 +48,10 @@ Item {
 
         Behavior on implicitWidth {
             animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
 
         model: ScriptModel {
@@ -70,14 +72,18 @@ Item {
                 if (pinnedApps.length > 0) {
                     map.set("SEPARATOR", { pinned: false, toplevels: [] });
                 }
-                
-                // Open windows
-                for (const toplevel of ToplevelManager.toplevels.values) {
-                    if (!map.has(toplevel.appId.toLowerCase())) map.set(toplevel.appId.toLowerCase(), ({
+
+                // Open windows from fht-compositor IPC
+                for (const win of Object.values(FhtcWorkspaces.windows ?? {})) {
+                    const rawAppId = win["app-id"] ?? "";
+                    if (!rawAppId)
+                        continue;
+                    const key = rawAppId.toLowerCase();
+                    if (!map.has(key)) map.set(key, ({
                         pinned: false,
                         toplevels: []
                     }));
-                    map.get(toplevel.appId.toLowerCase()).toplevels.push(toplevel);
+                    map.get(key).toplevels.push(win);
                 }
 
                 var values = [];
@@ -96,21 +102,11 @@ Item {
         }
     }
 
-    // Ensure WlBufferManager initializes against the visible dock window at startup (no capture active).
-    ScreencopyView {
-        visible: false
-        width: 0
-        height: 0
-        captureSource: null
-        live: false
-    }
-
     PopupWindow {
         id: previewPopup
         property var appTopLevel: root.lastHoveredButton?.appToplevel
         property bool allPreviewsReady: false
         readonly property bool hoverConditions: popupMouseArea.containsMouse || root.buttonHovered
-        // Keep preview delegates and capture active while hovered or visible (including fade-out) so initial frames arrive before showing.
         readonly property bool previewActive: visible || hoverConditions
         onPreviewActiveChanged: {
             if (!previewActive) {
@@ -125,15 +121,15 @@ Item {
         Connections {
             target: root
             function onLastHoveredButtonChanged() {
-                previewPopup.allPreviewsReady = false; // Reset readiness when the hovered button changes
-            } 
+                previewPopup.allPreviewsReady = false;
+            }
         }
         function updatePreviewReadiness() {
             if (!previewActive || (appTopLevel?.toplevels?.length ?? 0) === 0) {
                 allPreviewsReady = false;
                 return;
             }
-            for(var i = 0; i < previewRowLayout.children.length; i++) {
+            for (var i = 0; i < previewRowLayout.children.length; i++) {
                 const view = previewRowLayout.children[i];
                 if (view.hasContent === false) {
                     allPreviewsReady = false;
@@ -146,12 +142,7 @@ Item {
         property bool show: false
 
         onShouldShowChanged: {
-            if (shouldShow) {
-                // show = true;
-                updateTimer.restart();
-            } else {
-                updateTimer.restart();
-            }
+            updateTimer.restart();
         }
         Timer {
             id: updateTimer
@@ -165,7 +156,6 @@ Item {
             adjustment: PopupAdjustment.None
             gravity: Edges.Top | Edges.Right
             edges: Edges.Top | Edges.Left
-
         }
         visible: previewPopup.show || popupBackground.opacity > 0
         color: "transparent"
@@ -189,10 +179,10 @@ Item {
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
             }
             Rectangle {
@@ -202,10 +192,10 @@ Item {
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
                 clip: true
                 color: Appearance.colors.colSurfaceContainer
@@ -218,18 +208,18 @@ Item {
                 Behavior on implicitWidth {
                     enabled: previewPopup.visible
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
                 Behavior on implicitHeight {
                     enabled: previewPopup.visible
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
 
                 RowLayout {
@@ -242,12 +232,17 @@ Item {
                         RippleButton {
                             id: windowButton
                             required property var modelData
+                            readonly property alias hasContent: screencopyView.hasContent
                             padding: 0
                             middleClickAction: () => {
-                                windowButton.modelData?.close();
+                                if (windowButton.modelData?.id !== undefined) {
+                                    FhtcIpc.dispatch("close-window", { "window-id": windowButton.modelData.id, "kill": false });
+                                }
                             }
                             onClicked: {
-                                windowButton.modelData?.activate();
+                                if (windowButton.modelData?.id !== undefined) {
+                                    FhtcIpc.dispatch("focus-window", { "window-id": windowButton.modelData.id });
+                                }
                             }
                             contentItem: ColumnLayout {
                                 implicitWidth: screencopyView.implicitWidth
@@ -263,7 +258,7 @@ Item {
                                         StyledText {
                                             Layout.fillWidth: true
                                             font.pixelSize: Appearance.font.pixelSize.small
-                                            text: windowButton.modelData?.title
+                                            text: windowButton.modelData?.title ?? ""
                                             elide: Text.ElideRight
                                             color: Appearance.m3colors.m3onSurface
                                         }
@@ -282,15 +277,16 @@ Item {
                                             color: Appearance.m3colors.m3onSurface
                                         }
                                         onClicked: {
-                                            windowButton.modelData?.close();
+                                            if (windowButton.modelData?.id !== undefined) {
+                                                FhtcIpc.dispatch("close-window", { "window-id": windowButton.modelData.id, "kill": false });
+                                            }
                                         }
                                     }
                                 }
-                                ScreencopyView {
+                                ExtCaptureItem {
                                     id: screencopyView
-                                    captureSource: previewPopup.previewActive ? windowButton.modelData : null
-                                    live: previewPopup.previewActive
-                                    paintCursor: true
+                                    windowId: previewPopup.previewActive ? (windowButton.modelData?.["wayland-id"] ?? "") : ""
+                                    active: previewPopup.previewActive && windowId !== ""
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
                                     onHasContentChanged: {
                                         if (hasContent)

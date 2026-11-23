@@ -9,7 +9,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: notificationPopup
@@ -21,7 +21,7 @@ Scope {
         readonly property bool hasPopups: Notifications.popupList.length > 0
 
         function syncScreen() {
-            const target = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+            const target = Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName) ?? null
             if (root.screen !== target)
                 root.screen = target
         }
@@ -37,9 +37,9 @@ Scope {
         Component.onCompleted: syncState()
 
         Connections {
-            target: Hyprland
+            target: FhtcMonitors
             enabled: root.hasPopups
-            function onFocusedMonitorChanged() {
+            function onActiveMonitorChanged() {
                 root.syncScreen()
             }
         }

@@ -4,6 +4,7 @@ import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import Sleex.Widgets
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
@@ -11,8 +12,6 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
-import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Item { // Window
     id: root
@@ -23,28 +22,28 @@ Item { // Window
     property var availableWorkspaceWidth
     property var availableWorkspaceHeight
     property bool restrictToWorkspace: true
-    property real initX: Math.max((windowData?.at[0] - monitorData?.reserved[0]) * root.scale, 0) + xOffset
-    property real initY: Math.max((windowData?.at[1] - monitorData?.reserved[1]) * root.scale, 0) + yOffset
+    property real initX: Math.max((windowData?.location?.[0] ?? 0) * root.scale, 0) + xOffset
+    property real initY: Math.max((windowData?.location?.[1] ?? 0) * root.scale, 0) + yOffset
     property real xOffset: 0
     property real yOffset: 0
-    
-    property var targetWindowWidth: windowData?.size[0] * scale
-    property var targetWindowHeight: windowData?.size[1] * scale
+
+    property var targetWindowWidth: (windowData?.size?.[0] ?? 0) * scale
+    property var targetWindowHeight: (windowData?.size?.[1] ?? 0) * scale
     property bool hovered: false
     property bool pressed: false
 
     property var iconToWindowRatio: 0.35
     property var xwaylandIndicatorToIconRatio: 0.35
     property var iconToWindowRatioCompact: 0.6
-    property var iconPath: Quickshell.iconPath(AppSearch.guessIcon(windowData?.class), "image-missing")
+    property var iconPath: Quickshell.iconPath(AppSearch.guessIcon(windowData?.["app-id"] ?? ""), "image-missing")
     property bool compactMode: Appearance.font.pixelSize.smaller * 4 > targetWindowHeight || Appearance.font.pixelSize.smaller * 4 > targetWindowWidth
 
-    property bool indicateXWayland: (Config.options.overview.showXwaylandIndicator && windowData?.xwayland) ?? false
-    
+    property bool indicateXWayland: false
+
     x: initX
     y: initY
-    width: Math.round(Math.min(windowData?.size[0] * root.scale, (restrictToWorkspace ? windowData?.size[0] : availableWorkspaceWidth - x + xOffset)))
-    height: Math.round(Math.min(windowData?.size[1] * root.scale, (restrictToWorkspace ? windowData?.size[1] : availableWorkspaceHeight - y + yOffset)))
+    width: Math.round(Math.min((windowData?.size?.[0] ?? 0) * root.scale, (restrictToWorkspace ? (windowData?.size?.[0] ?? 0) : availableWorkspaceWidth - x + xOffset)))
+    height: Math.round(Math.min((windowData?.size?.[1] ?? 0) * root.scale, (restrictToWorkspace ? (windowData?.size?.[1] ?? 0) : availableWorkspaceHeight - y + yOffset)))
 
     layer.enabled: true
     layer.effect: OpacityMask {
@@ -57,47 +56,47 @@ Item { // Window
 
     Behavior on x {
         animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+            duration: Appearance.animation.elementMoveEnter.duration
+            easing.type: Appearance.animation.elementMoveEnter.type
+            easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+        }
     }
     Behavior on y {
         animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+            duration: Appearance.animation.elementMoveEnter.duration
+            easing.type: Appearance.animation.elementMoveEnter.type
+            easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+        }
     }
     Behavior on width {
         animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+            duration: Appearance.animation.elementMoveEnter.duration
+            easing.type: Appearance.animation.elementMoveEnter.type
+            easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+        }
     }
     Behavior on height {
         animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+            duration: Appearance.animation.elementMoveEnter.duration
+            easing.type: Appearance.animation.elementMoveEnter.type
+            easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+        }
     }
 
-    ScreencopyView {
+    ExtCaptureItem {
         id: windowPreview
         anchors.fill: parent
-        captureSource: (GlobalStates.overviewOpen && root.visible) ? root.toplevel : null
-        live: GlobalStates.overviewOpen && root.visible
+        windowId: (GlobalStates.overviewOpen && root.visible) ? (root.windowData?.["wayland-id"] ?? "") : ""
+        active: GlobalStates.overviewOpen && root.visible && windowId !== ""
 
         Rectangle {
             anchors.fill: parent
             radius: Appearance.rounding.windowRounding * root.scale
-            color: pressed ? ColorUtils.transparentize(Appearance.colors.colLayer2Active, 0.5) : 
-                hovered ? ColorUtils.transparentize(Appearance.colors.colLayer2Hover, 0.7) : 
+            color: pressed ? ColorUtils.transparentize(Appearance.colors.colLayer2Active, 0.5) :
+                hovered ? ColorUtils.transparentize(Appearance.colors.colLayer2Hover, 0.7) :
                 ColorUtils.transparentize(Appearance.colors.colLayer2)
-            border.color : ColorUtils.transparentize(Appearance.m3colors.m3outline, 0.7)
-            border.width : 1
+            border.color: ColorUtils.transparentize(Appearance.m3colors.m3outline, 0.7)
+            border.width: 1
         }
 
         ColumnLayout {
@@ -109,7 +108,6 @@ Item { // Window
             Image {
                 id: windowIcon
                 property var iconSize: Math.min(targetWindowWidth, targetWindowHeight) * (root.compactMode ? root.iconToWindowRatioCompact : root.iconToWindowRatio)
-                // mipmap: true
                 Layout.alignment: Qt.AlignHCenter
                 source: root.iconPath
                 width: iconSize
@@ -118,17 +116,17 @@ Item { // Window
 
                 Behavior on width {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveEnter.duration
+                        easing.type: Appearance.animation.elementMoveEnter.type
+                        easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+                    }
                 }
                 Behavior on height {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveEnter.duration
-    easing.type: Appearance.animation.elementMoveEnter.type
-    easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveEnter.duration
+                        easing.type: Appearance.animation.elementMoveEnter.type
+                        easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+                    }
                 }
             }
         }

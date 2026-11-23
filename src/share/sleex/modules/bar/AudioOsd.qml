@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Hyprland
 import QtQuick.Layouts
 import QtQuick
 import qs.modules.common
