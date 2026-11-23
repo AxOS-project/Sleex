@@ -1,0 +1,53 @@
+# Window rules
+[[rules]]
+match-app-id = [
+    "blueberry.py",
+    "com.axos-project.axinstall",
+    "steam",
+    "org.pulseaudio.pavucontrol",
+    "cheese",
+    "timeshift-gtk",
+    "org.gnome.PowerStats",
+    "lstopo",
+    "org.gnome.ColorProfileViewer",
+    "qt5ct",
+    "rustdesk",
+    "org.kde.plasmawindowed",
+    "kcm.networkmanagement",
+    "gcr-prompter",
+    "org.freedesktop.impl.portal.desktop.voxel"
+]
+match-title = [
+    "Open File",
+    "Select a File",
+    "Choose wallpaper",
+    "Open Folder",
+    "Save File",
+    "Save As",
+    "Library",
+    "File Upload",
+    "Choose",
+    "Sleex Settings",
+    "Calculator",
+    "BoxBuddy",
+    "Popsicle",
+    "Trayscale",
+    "Choose Files",
+    "Save Image"
+]
+floating = true
+centered = true
+
+[[rules]]
+is-floating = true
+ontop = true
+
+[[rules]]
+match-app-id = ["org.gnome.Calculator"]
+floating = true
+centered = true
+
+# Layer-shell rules
+[[layer-rules]]
+match-namespace = "^quickshell:(bar|dock|dashboard|overview|cheatsheet|notificationPopup|wppselector|session|appmenu)$"
+blur = { disable = false, passes = 4, radius = 5, noise = 0.01 }

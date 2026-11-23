@@ -1,6 +1,6 @@
 # Desktop Shell Architecture & Interaction Model
 
-The Sleex Desktop Shell runs as an integrated Wayland layer-shell environment powered by **Quickshell**. It creates a cohesive, reactive desktop interface synchronized with the **Hyprland** window manager.
+The Sleex Desktop Shell runs as an integrated Wayland layer-shell environment powered by **Quickshell**. It creates a cohesive, reactive desktop interface synchronized with the **`fht-compositor`** Wayland compositor via the `Sleex.Fhtc` IPC plugin.
 
 ---
 
@@ -52,7 +52,6 @@ stateDiagram-v2
 - `GlobalStates.dashboardOpen`: Active when the fullscreen Bento dashboard is opened.
 - `GlobalStates.workspaceShowNumbers`: Temporarily true while the `SUPER` modifier key is held down, displaying workspace numbers instead of application icons in the status bar.
 - `GlobalStates.screenLocked`: Controls the native `WlSessionLock` activation.
-- `GlobalStates.screenZoom`: Smooth zooming factor via Hyprland's `cursor:zoom_factor`.
 
 ---
 
@@ -60,8 +59,8 @@ stateDiagram-v2
 
 When an overlay surface opens (such as the Dashboard, Overview, or Wallpaper Selector):
 
-1. **HyprlandFocusGrab**: Quickshell creates a Wayland input grab. All keyboard keystrokes route directly to the active overlay.
-2. **Backdrop Dismissal**: Clicking anywhere outside the active widget surface immediately releases the focus grab and smoothly animates the overlay closed.
+1. **Exclusive Layer Keyboard Focus**: The overlay sets `WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive` so all keyboard keystrokes route directly to the active overlay.
+2. **Backdrop Dismissal**: Clicking anywhere on the full-screen backdrop outside the active widget surface immediately dismisses and animates the overlay closed.
 3. **Escape Key Handling**: Pressing `Escape` on any overlay sends a dismissal signal, returning focus to the active client window without disrupting the workflow.
 
 ---
@@ -70,7 +69,7 @@ When an overlay surface opens (such as the Dashboard, Overview, or Wallpaper Sel
 
 - **Per-Monitor Panels**: The top bar and desktop background automatically instantiate across all connected screens discovered by Quickshell.
 - **Screen Filtering**: Users can restrict the bar to specific monitors via `Config.options.bar.screenList` (e.g. `["eDP-1", "DP-1"]`).
-- **Focused Screen Popups**: Interactive drawers like the Center Island Popup and Session Menu prioritize displaying on whichever display currently holds the active Hyprland cursor focus.
+- **Focused Screen Popups**: Interactive drawers like the Center Island Popup and Session Menu prioritize displaying on whichever display currently holds active focus in `fht-compositor` (`FhtcMonitors.activeMonitorName`).
 
 ---
 
@@ -80,4 +79,4 @@ The shell daemon can be reloaded or managed on the fly:
 
 - **Restart Shell**: `SUPER + End` (terminates active `qs` process and relaunches `qs -p /usr/share/sleex/shell.qml`).
 - **Start Shell**: `SUPER + CTRL + End`.
-- **Hyprland & Quickshell Sync**: Quick toggle inside the Dashboard header reloads Hyprland rules and Quickshell components simultaneously without requiring a logout.
+- **Compositor & Quickshell Sync**: Quick toggle inside the Dashboard header dispatches `reload-config` to `fht-compositor` and reloads Quickshell components simultaneously without requiring a logout.

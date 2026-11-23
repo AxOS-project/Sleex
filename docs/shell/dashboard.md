@@ -28,7 +28,7 @@ The top header of the dashboard features a system status bar and essential quick
 
 ### 2. Header Utility Buttons
 - **Bento Layout Customizer**: Enters interactive edit mode for the Bento widget grid.
-- **Reload Desktop**: Reloads Hyprland and Quickshell configs without closing open windows.
+- **Reload Desktop**: Reloads `fht-compositor` (`reload-config`) and Quickshell configs without closing open windows.
 - **Open Settings**: Launches the Sleex Settings application.
 - **Session Actions**: Triggers the session management overlay.
 

@@ -24,16 +24,15 @@ The App Launcher is a modern, fuzzy-searchable application menu integrated into 
 
 ## 1. Multi-Workspace Window Visualizer
 
-When opened, the overview displays a scaled visual matrix of Hyprland workspaces:
+When opened, the overview displays a scaled visual matrix of `fht-compositor` workspaces:
 
 - **Live Tiling Grid**:
   - Workspaces are rendered across rows and columns.
-  - Shows live thumbnail of open windows preserving their relative tiling positions and aspect ratios.
+  - Shows live DMA-BUF thumbnails of open windows via `ext-image-copy-capture-v1`, preserving their relative tiling positions and aspect ratios.
 - **Window Interaction**:
   - **Left Click Window**: Immediately closes the overview and focuses that window.
   - **Middle Click**: Terminates or closes the hovered window directly from the overview.
-  - **Drag & Drop**: Click and hold a window to drag it into another workspace. Releasing the mouse button drops the window into the new workspace.
-  - **XWayland Badge**: Displays a subtle indicator for windows running via XWayland translation.
+  - **Drag & Drop**: Click and hold a window to drag it into another workspace. Releasing the mouse button sends the window into the target workspace via `fht-compositor` IPC.
 
 ---
 

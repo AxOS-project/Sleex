@@ -34,7 +34,7 @@ The dock supports three distinct modes of operation:
 
 ### 1. Pinned on Startup
 - When pinned, the dock reserves an exclusive bottom margin on the display.
-- Tiled application windows in Hyprland automatically avoid overlapping the dock.
+- Tiled application windows in `fht-compositor` automatically avoid overlapping the dock.
 
 ### 2. Hover-to-Reveal
 - The dock slides down off-screen, leaving an invisible 3 px trigger region at the bottom edge.

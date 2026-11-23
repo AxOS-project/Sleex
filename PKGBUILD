@@ -1,29 +1,29 @@
 pkgname="sleex"
-pkgver="1.41"
-pkgrel="4"
+pkgver="2.0"
+pkgrel="1"
 pkgdesc="Desktop environment focused on aesthetics and performance"
 arch=("x86_64")
 depends=(
   # Audio
   'cava' 'pavucontrol-qt' 'wireplumber' 'libdbusmenu-gtk3' 'playerctl'
   # Backlight
-  'hyprsunset' 'geoclue' 'brightnessctl' 'ddcutil'
+  'gammastep' 'geoclue' 'brightnessctl' 'ddcutil'
   # Basic
   "axel" "bc" "coreutils" "cliphist" "cmake" "curl" "rsync" "wget" "ripgrep" "jq" "meson" "xdg-user-dirs" "foot" "power-profiles-daemon" "mission-center" "kvantum" "inotify-tools" "lm_sensors" "qt5ct" "qt6ct" "sqlite"
   # Cursor
   "bibata-cursor-theme-bin"
   # Fonts & Themes
   'adw-gtk-theme' 'breeze-plus' 'eza' 'fish' 'fontconfig' 'matugen-bin' 'starship' 'ttf-gabarito-git' 'ttf-jetbrains-mono-nerd' 'ttf-material-design-icons-extended' 'ttf-material-symbols-variable' 'ttf-readex-pro' 'ttf-rubik-vf' 'ttf-twemoji'
-  # Hyprland dependencies
-  'hyprutils' 'hyprpicker' 'hyprlang' 'hyprland-qt-support' 'hyprland-guiutils' 'hyprcursor' 'hyprwayland-scanner' 'hyprland' 'xdg-desktop-portal-hyprland' 'wl-clipboard' 'hyprlock'
+  # Compositor & Wayland dependencies
+  'fht-compositor-git' 'fht-share-picker-git' 'hyprpicker' 'wl-clipboard'
   # QT/KDE dependencies
   'bluedevil' 'gnome-keyring' 'networkmanager' 'polkit-kde-agent' 'voxel' 'kwrite' "libnm" "gio-qt" "qt6-connectivity"
   # Portal
-  'xdg-desktop-portal'
+  'xdg-desktop-portal' 'xdg-desktop-portal-gtk'
   # Python deps
-  'clang' 'uv' 'gtk4' 'libadwaita' 'libsoup3' 'libportal-gtk4' 'gobject-introspection' 'sassc' 'python-setproctitle' 'python-pywayland'
+  'clang' 'uv' 'gtk4' 'libadwaita' 'libsoup3' 'libportal-gtk4' 'gobject-introspection' 'sassc' 'python-setproctitle' 'python-pywayland' 'python-toml'
   # Screencast/Screenrecord
-  'hyprshot' 'ksnip' 'wf-recorder' 'slurp' 'grim' 'tesseract' 'tesseract-data-eng'
+  'ksnip' 'wf-recorder' 'slurp' 'grim' 'tesseract' 'tesseract-data-eng'
   # Tools
   'kdialog' 'qt6-5compat' 'qt6-avif-image-plugin' 'qt6-base' 'qt6-declarative' 'qt6-imageformats' 'qt6-multimedia' 'qt6-positioning' 'qt6-quicktimeline' 'qt6-sensors' 'qt6-svg' 'qt6-tools' 'qt6-translations' 'qt6-virtualkeyboard' 'qt6-wayland' 'syntax-highlighting' 'upower' 'wtype' 'ydotool' 'fprintd' 'khal' 'vdirsyncer' 'python-aiohttp-oauthlib' 'swappy' 'hypnos' 'bluez-utils' 'howdy-git' 'sdbus-cpp' 'papirus-folders'
   # Widgets
@@ -36,7 +36,6 @@ depends=(
   "sleex-ui-kit" "sleex-welcome-screen"
 )
 optdepends=(
-  "hyprwayland-scanner: Wayland protocol scanner for Hyprland"
   "neofetch: Fancy system info in your terminal"
   "firefox: Web browser"
   "pipewire-pulse: PulseAudio replacement via PipeWire"
@@ -79,7 +78,4 @@ package() {
 
   mkdir -p "$pkgdir/usr/share/xdg-desktop-portal"
   cp -r "$srcdir/share/xdg-desktop-portal/"* "$pkgdir/usr/share/xdg-desktop-portal/"
-
-  mkdir -p "$pkgdir/usr/libalpm/hooks"
-  cp -r "$srcdir/share/libalpm/hooks/"* "$pkgdir/usr/libalpm/hooks/"
 }

@@ -1,6 +1,6 @@
 # Sleex Documentation
 
-Welcome to the comprehensive documentation for **Sleex**, the flagship desktop environment of AxOS built on **Hyprland** (Wayland compositor) and **Quickshell** (Qt 6 / QML layer shell).
+Welcome to the comprehensive documentation for **Sleex**, the flagship desktop environment of AxOS built on **`fht-compositor`** (Wayland compositor) and **Quickshell** (Qt 6 / QML layer shell).
 
 ---
 
