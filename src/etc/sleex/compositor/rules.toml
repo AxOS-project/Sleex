@@ -51,3 +51,55 @@ centered = true
 [[layer-rules]]
 match-namespace = "^quickshell:(bar|dock|dashboard|overview|cheatsheet|notificationPopup|wppselector|session|appmenu)$"
 blur = { disable = false, passes = 4, radius = 5, noise = 0.01 }
+
+[[layer-rules]]
+match-namespace = [
+    "^walker$",
+    "^selection$",
+    "^overview$",
+    "^anyrun$",
+    "^indicator.*$",
+    "^osk$",
+    "^hyprpicker$",
+    "^noanim$",
+    "^quickshell:background$",
+    "^quickshell:screenCorners$",
+    "^quickshell:lockWindowPusher$",
+    "^quickshell:overlay$",
+    "^quickshell:regionSelector$",
+    "^quickshell:screenshot$",
+    "^quickshell:batterywarning$",
+    "^quickshell:criticalaction$"
+]
+no-anim = true
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:bar$",
+    "^quickshell:reloadPopup$"
+]
+animation = "slide"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:cheatsheet$",
+    "^quickshell:dock$",
+    "^quickshell:osk$",
+    "^quickshell:dashboard$"
+]
+animation = "slide-bottom"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:overview$",
+    "^quickshell:wallpaperSelector$",
+    "^quickshell:wppselector$"
+]
+animation = "slide-top"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:notificationPopup$",
+    "^quickshell:session$"
+]
+animation = "fade"

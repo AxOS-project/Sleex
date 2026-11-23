@@ -62,3 +62,8 @@ noise = 0.05
 # Animations. Makes everything smooooooooooooooth!
 [animations]
 disable = false
+
+[animations.layer-open-close]
+disable = false
+duration = 250
+style = "popin 93%"
