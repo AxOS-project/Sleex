@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick Concurrent Sql Network DBus Bluetooth)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Qml Gui Quick Concurrent Sql Network DBus Bluetooth)
 find_package(PkgConfig REQUIRED)
 find_package(sdbus-c++ REQUIRED)
 
@@ -31,10 +31,11 @@ function(qml_module arg_TARGET)
     install(FILES "${module_qmldir}" DESTINATION "${module_dir}")
     install(FILES "${module_typeinfo}" DESTINATION "${module_dir}")
 
-    target_link_libraries(${arg_TARGET} PRIVATE Qt::Core Qt::Qml ${arg_LIBRARIES})
+    target_link_libraries(${arg_TARGET} PRIVATE Qt6::Core Qt6::Qml ${arg_LIBRARIES})
 endfunction()
 
 add_subdirectory(services)
 add_subdirectory(core)
 add_subdirectory(utils)
 add_subdirectory(widgets)
+add_subdirectory(fhtc)
