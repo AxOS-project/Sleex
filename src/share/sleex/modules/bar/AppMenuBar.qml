@@ -27,19 +27,9 @@ Item {
 
     onCurrentAppIdChanged: openMenuIndex = -1
 
-    onActiveWindowChanged: {
-        if (root.hasActiveWindow) {
-            AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0);
-        } else {
-            AppMenu.setActiveWindow(0, "", 0);
-        }
-    }
+    onActiveWindowChanged: AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.activeWindow["app-id"] ?? "", root.activeWindow.id ?? 0);
 
-    Component.onCompleted: {
-        if (root.hasActiveWindow) {
-            AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0);
-        }
-    }
+    Component.onCompleted: root.hasActiveWindow ? AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0) : null;
 
     /**
      * A list of fallback menus to display when no native D-Bus menu is available.
