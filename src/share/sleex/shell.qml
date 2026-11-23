@@ -30,6 +30,7 @@ import QtQuick.Controls
 import qs.services
 
 import Sleex.Core
+import Sleex.Fhtc
 import SleexUiKit.Appearance
 
 ShellRoot {
@@ -56,19 +57,16 @@ ShellRoot {
 
     AppearanceBridge {} // Init the bridge to populate the Appearance singleton
 
-    function syncHyprlandBlurRule(): void {
-        const enabled = Config.options.appearance.transparency ? "true" : "false"
-        Quickshell.execDetached([
-            "hyprctl",
-            "eval",
-            `if sleex_set_quickshell_blur then sleex_set_quickshell_blur(${enabled}) end`
-        ])
+    function syncFhtcBlurRule(): void {
+        const disableStr = Config.options.appearance.transparency ? "false" : "true"
+        Quickshell.execDetached(["python3", "/usr/share/sleex/scripts/fht/sync_blur.py", disableStr])
+        FhtcIpc.dispatch("reload-config")
     }
 
     Connections {
         target: Config.options.appearance
         function onTransparencyChanged() {
-            if (Config.loaded) syncHyprlandBlurRule()
+            if (Config.loaded) syncFhtcBlurRule()
         }
     }
 
@@ -81,7 +79,7 @@ ShellRoot {
         FocusOnOpen.init()
         NightLight.load()
         SuspendFader.start()
-        syncHyprlandBlurRule()
+        syncFhtcBlurRule()
     }
 
     LazyLoader { active: enableBar; component: Bar {} }

@@ -230,7 +230,7 @@ void Monitors::applyChanges(const QVariantList &changes)
         if (m.contains(QStringLiteral("y")))
             mi->setY(m.value(QStringLiteral("y")).toInt());
         if (m.contains(QStringLiteral("scale")))
-            mi->setScale(qMax(1, qRound(m.value(QStringLiteral("scale")).toDouble())));
+            mi->setScale(qBound(0.25, m.value(QStringLiteral("scale")).toDouble(), 3.0));
         if (m.contains(QStringLiteral("mirror")))
             mi->setMirrorOf(m.value(QStringLiteral("mirror")).toString());
         if (m.contains(QStringLiteral("mode"))) {
@@ -258,7 +258,7 @@ void Monitors::applyChanges(const QVariantList &changes)
 
 void Monitors::applyScale(const QString &name, double scale)
 {
-    applyRule(name, -1, -1, qQNaN(), -1, -1, qMax(1, qRound(scale)));
+    applyRule(name, -1, -1, qQNaN(), -1, -1, qBound(0.25, scale, 3.0));
 }
 
 void Monitors::applyMode(const QString &name, const QString &mode)
@@ -315,7 +315,7 @@ void Monitors::applyRule(const QString &name,
     if (newY >= 0)
         mi->setY(newY);
     if (!std::isnan(newScale))
-        mi->setScale(qMax(1, qRound(newScale)));
+        mi->setScale(qBound(0.25, newScale, 3.0));
 
     if (!saveMonitorsConfig()) {
         setError(QStringLiteral("Failed to write ~/.config/fht/monitors.toml"));
@@ -523,8 +523,12 @@ bool Monitors::saveMonitorsConfig() const
         out << QStringLiteral("position = { x = %1, y = %2 }\n")
                    .arg(mi->x())
                    .arg(mi->y());
-        out << QStringLiteral("scale = %1\n")
-                   .arg(qMax(1, qRound(mi->scale())));
+        const double s = mi->scale();
+        if (std::abs(s - std::round(s)) < 0.001) {
+            out << QStringLiteral("scale = %1\n").arg(static_cast<int>(std::round(s)));
+        } else {
+            out << QStringLiteral("scale = %1\n").arg(s, 0, 'f', 2);
+        }
     }
 
     return true;
