@@ -73,6 +73,15 @@ jobs:
           max_kit = int(os.environ["MAX_KIT_CHARS"])
           system_prompt = os.environ["SYSTEM_PROMPT"].strip()
 
+          pr_info = json.loads(subprocess.check_output(
+              ["gh", "pr", "view", pr, "--json", "state,isDraft"],
+              text=True
+          ))
+          pr_state = pr_info["state"]
+          if pr_state != "OPEN" or pr_info["isDraft"]:
+              print(f"PR #{pr} is {pr_state}{' and a draft' if pr_info['isDraft'] else ''}; skipping review.")
+              exit(0)
+
           diff = subprocess.check_output(["gh", "pr", "diff", pr], text=True)
           if not diff.strip():
               print("Empty diff, skipping review.")
@@ -152,11 +161,6 @@ jobs:
 
           verdict = parsed["verdict"]
           review = parsed["review"]
-
-          pr_state = subprocess.check_output(
-              ["gh", "pr", "view", pr, "--json", "state", "--jq", ".state"],
-              text=True
-          ).strip()
 
           if pr_state != "OPEN":
               print(f"PR #{pr} is {pr_state}; forcing COMMENT instead of {verdict}.")
