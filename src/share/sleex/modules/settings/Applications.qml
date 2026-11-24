@@ -11,277 +11,276 @@ import SleexUiKit.Appearance
 
 ContentPage {
     id: root
-    // forceWidth: true
 
-    property var browserApps: []
-    property var fileManagerApps: []
-    property var imageViewerApps: []
-    property var videoPlayerApps: []
-    property var musicPlayerApps: []
-    property var documentViewerApps: []
+    readonly property var kinds: ({
+        webBrowser:     ["x-scheme-handler/http", "x-scheme-handler/https", "text/html"],
+        fileManager:    ["inode/directory"],
+        imageViewer:    ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/bmp"],
+        videoPlayer:    ["video/mp4", "video/mkv", "video/webm", "video/avi", "video/x-matroska"],
+        musicPlayer:    ["audio/mpeg", "audio/mp3", "audio/flac", "audio/ogg", "audio/x-flac", "audio/x-wav", "audio/wav", "audio/aac", "audio/x-m4a", "audio/mp4"],
+        documentViewer: [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+            "application/vnd.oasis.opendocument.text",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.oasis.opendocument.presentation"
+        ]
+    })
 
+    property var currentDefaults: ({})
+    property var offeredByMime: ({})
     property bool scanFinished: false
 
+    function entryFor(desktopId) {
+        if (!desktopId) return null;
+        const shortId = desktopId.replace(/\.desktop$/, "");
+        return DesktopEntries.byId(shortId)
+            ?? DesktopEntries.applications.values.find(a => a.id === shortId)
+            ?? null;
+    }
+
+    function appItemsFor(kind) {
+        const primaryMime = kinds[kind][0];
+        const rawIds = (offeredByMime[primaryMime] ?? []).slice();
+        const cur = currentDefaults[kind] || Config.options.apps[kind] || "";
+        if (cur && !rawIds.includes(cur))
+            rawIds.unshift(cur);
+
+        const seen = new Set();
+        const items = [];
+
+        for (const id of rawIds) {
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+
+            const entry = entryFor(id);
+            if (entry && entry.noDisplay) continue;
+
+            const name = entry?.name ?? id.replace(/\.desktop$/, "");
+            const iconSource = entry?.icon
+                ? Quickshell.iconPath(entry.icon, "image-missing")
+                : Quickshell.iconPath("image-missing");
+
+            items.push({ id, name, iconSource });
+        }
+
+        // Keep the active default first, sort the rest alphabetically
+        return items.sort((a, b) => {
+            if (a.id === cur) return -1;
+            if (b.id === cur) return 1;
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    function setDefault(kind, desktopId) {
+        const next = Object.assign({}, currentDefaults);
+        next[kind] = desktopId;
+        currentDefaults = next;
+        Config.options.apps[kind] = desktopId;
+        Quickshell.execDetached(["xdg-mime", "default", desktopId].concat(kinds[kind]));
+    }
+
     Process {
-        id: mimeScanner
+        id: reader
         running: true
-        command: ["sh", "-c", `
-            PATHS="$HOME/.local/share/applications/*.desktop $HOME/.local/share/flatpak/exports/share/applications/*.desktop /var/lib/flatpak/exports/share/applications/*.desktop /usr/local/share/applications/*.desktop /usr/share/applications/*.desktop"
-            seen=""
-            for file in $PATHS; do
-                [ -f "$file" ] || continue
-                b=$(basename "$file")
-                case "$seen" in *"|$b|"*) continue;; esac
-                seen="$seen|$b|"
-                awk -v b="$b" '
-                    /^Name=/ && !name { name=$0; sub(/^Name=/, "", name) }
-                    /^Icon=/ && !icon { icon=$0; sub(/^Icon=/, "", icon) }
-                    /^MimeType=/ && !mime { mime=$0; sub(/^MimeType=/, "", mime) }
-                    END { printf "%s|%s|%s|%s\\n", name, b, icon, mime }
-                ' "$file"
+        command: [
+            "sh", "-c",
+            `for k in "$@"; do
+                printf "default %s %s\\n" "\${k%%=*}" "$(xdg-mime query default "\${k#*=}" 2>/dev/null)"
             done
-        `]
+            cat /usr/share/applications/mimeinfo.cache \\
+                /usr/local/share/applications/mimeinfo.cache \\
+                /var/lib/flatpak/exports/share/applications/mimeinfo.cache \\
+                "$HOME/.local/share/flatpak/exports/share/applications/mimeinfo.cache" \\
+                "$HOME/.local/share/applications/mimeinfo.cache" 2>/dev/null`,
+            "sh"
+        ].concat(Object.keys(root.kinds).map(k => k + "=" + root.kinds[k][0]))
 
-        stdout: StdioCollector{
+        stdout: StdioCollector {
             onStreamFinished: {
-                const patterns = {
-                    BROWSER: /x-scheme-handler\/http/,
-                    FILE: /inode\/directory/,
-                    IMAGE: /image\//,
-                    VIDEO: /video\//,
-                    MUSIC: /audio\//,
-                    DOCUMENT: /application\/(pdf|vnd\.openxmlformats|vnd\.oasis)/
-                };
-                let temp = { BROWSER: [], FILE: [], IMAGE: [], VIDEO: [], MUSIC: [], DOCUMENT: [] };
+                const cur = {};
+                const off = {};
 
-                text.trim().split("\n").forEach(line => {
-                    if (!line) return;
-                    const parts = line.split("|");
-                    if (parts.length < 4) return;
-                    const name = parts[0];
-                    const value = parts[1];
-                    const icon = parts[2];
-                    const mime = parts.slice(3).join("|");
-                    if (!name || !value) return;
-
-                    for (const cat in patterns) {
-                        if (patterns[cat].test(mime)) {
-                            temp[cat].push({ name, value, icon: icon ?? "" });
+                for (const line of text.split("\n")) {
+                    const defMatch = line.match(/^default (\w+) ?(.*)$/);
+                    if (defMatch) {
+                        cur[defMatch[1]] = defMatch[2].trim();
+                        continue;
+                    }
+                    const eq = line.indexOf("=");
+                    if (eq > 0 && !line.startsWith("[")) {
+                        const mime = line.slice(0, eq).trim();
+                        const apps = line.slice(eq + 1).split(";").filter(Boolean);
+                        if (!off[mime]) off[mime] = [];
+                        for (const app of apps) {
+                            if (!off[mime].includes(app)) off[mime].push(app);
                         }
                     }
-                });
+                }
 
-                const sortFn = (a, b) => a.name.localeCompare(b.name);
-                root.browserApps = temp.BROWSER.sort(sortFn);
-                root.fileManagerApps = temp.FILE.sort(sortFn);
-                root.imageViewerApps = temp.IMAGE.sort(sortFn);
-                root.videoPlayerApps = temp.VIDEO.sort(sortFn);
-                root.musicPlayerApps = temp.MUSIC.sort(sortFn);
-                root.documentViewerApps = temp.DOCUMENT.sort(sortFn);
+                root.currentDefaults = cur;
+                root.offeredByMime = off;
                 root.scanFinished = true;
             }
         }
     }
 
-    function appIcon(app) {
-        if (!app) return "image-missing";
-        if (app.icon && app.icon.length > 0 && Quickshell.iconPath(app.icon, true).length > 0 && !app.icon.includes("image-missing"))
-            return app.icon;
-        const entry = DesktopEntries.byId(String(app.value).replace(/\.desktop$/, ""));
-        if (entry && entry.icon && Quickshell.iconPath(entry.icon, true).length > 0 && !entry.icon.includes("image-missing"))
-            return entry.icon;
-        return "image-missing";
-    }
+    component AppPicker: ColumnLayout {
+        id: pickerRoot
 
-    function defaultAppEntry(currentValue) {
-        if (!currentValue) return null;
-        return DesktopEntries.byId(String(currentValue).replace(/\.desktop$/, ""));
-    }
+        property string title
+        property string subtitle
+        property string materialIcon
+        property string kind
+        property bool expanded: false
 
-    function defaultAppName(currentValue) {
-        if (!currentValue) return "None";
-        const entry = root.defaultAppEntry(currentValue);
-        if (entry && entry.name) return entry.name;
-        return String(currentValue).replace(/\.desktop$/, "");
-    }
+        readonly property var apps: root.scanFinished ? root.appItemsFor(kind) : []
+        readonly property string activeId: root.currentDefaults[kind] || Config.options.apps[kind] || ""
 
-    function defaultAppIcon(currentValue) {
-        const entry = root.defaultAppEntry(currentValue);
-        if (entry && entry.icon && Quickshell.iconPath(entry.icon, true).length > 0)
-            return entry.icon;
-        return "image-missing";
-    }
+        Layout.fillWidth: true
+        spacing: 8
 
-    function setDefault(configKey, mimetypes, desktopFile) {
-        Config.options.apps[configKey] = desktopFile;
-        Quickshell.execDetached(["xdg-mime", "default", desktopFile].concat(mimetypes));
-    }
+        MouseArea {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            cursorShape: Qt.PointingHandCursor
+            onClicked: pickerRoot.expanded = !pickerRoot.expanded
 
-    Component {
-        id: appPicker
+            RowLayout {
+                anchors.fill: parent
+                spacing: 10
 
-        ColumnLayout {
-            id: pickerRoot
-            anchors.fill: parent
+                Rectangle {
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer2
 
-            property string title
-            property string subtitle
-            property string materialIcon
-            property string configKey
-            property var apps: []
-            property string currentValue: ""
-            property var mimetypes: []
-            property bool expanded: false
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: pickerRoot.materialIcon
+                        iconSize: 22
+                        color: Appearance.colors.colPrimary
+                    }
+                }
 
-            spacing: 8
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
 
-            // Clickable category header — click to expand/collapse the section.
-            // Sections start minimised so the icon scan has time to finish
-            // loading everything before the cards are revealed.
-            MouseArea {
-                id: headerArea
-                Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                cursorShape: Qt.PointingHandCursor
-                onClicked: pickerRoot.expanded = !pickerRoot.expanded
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: pickerRoot.title
+                        font.pixelSize: Appearance.font.pixelSize.larger
+                        font.weight: Font.Medium
+                    }
 
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: 10
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: pickerRoot.subtitle
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+        }
+
+        Flow {
+            Layout.fillWidth: true
+            spacing: 10
+            visible: pickerRoot.expanded && pickerRoot.apps.length > 0
+
+            Repeater {
+                model: pickerRoot.expanded ? pickerRoot.apps : []
+
+                delegate: Rectangle {
+                    id: card
+                    required property var modelData
+
+                    readonly property bool selected: pickerRoot.activeId === modelData.id
+                    readonly property bool cardHovered: cardMouseArea.containsMouse
+
+                    width: 150
+                    height: 110
+                    radius: Appearance.rounding.normal
+                    scale: cardMouseArea.pressed ? 0.95 : 1.0
+
+                    color: selected ? Appearance.colors.colPrimaryContainer :
+                           cardHovered ? Appearance.colors.colLayer2 :
+                           Appearance.colors.colLayer1
+                    border.color: selected ? Appearance.colors.colPrimary : "transparent"
+                    border.width: 1.5
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                     Rectangle {
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
-                        radius: Appearance.rounding.small
-                        color: Appearance.colors.colLayer2
+                        visible: card.selected
+                        anchors { top: parent.top; right: parent.right; topMargin: 7; rightMargin: 7 }
+                        width: 24
+                        height: 24
+                        radius: 12
+                        color: Appearance.colors.colPrimary
 
                         MaterialSymbol {
                             anchors.centerIn: parent
-                            text: pickerRoot.materialIcon
-                            iconSize: 22
-                            color: Appearance.colors.colPrimary
+                            text: "check"
+                            iconSize: 16
+                            color: Appearance.colors.colOnPrimary
                         }
                     }
 
                     ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
+                        anchors.centerIn: parent
+                        spacing: 8
 
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: pickerRoot.title
-                            font.pixelSize: Appearance.font.pixelSize.larger
-                            font.weight: Font.Medium
+                        IconImage {
+                            Layout.preferredWidth: 46
+                            Layout.preferredHeight: 46
+                            Layout.alignment: Qt.AlignHCenter
+                            asynchronous: true
+                            source: card.modelData.iconSource
                         }
 
                         StyledText {
-                            Layout.fillWidth: true
-                            text: pickerRoot.subtitle
+                            text: card.modelData.name
                             font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
+                            color: card.selected ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer1
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            Layout.maximumWidth: 138
+                            Layout.alignment: Qt.AlignHCenter
                         }
                     }
 
-                }
-            }
-
-            // App cards
-            Flow {
-                Layout.fillWidth: true
-                spacing: 10
-                visible: pickerRoot.apps.length > 0 && pickerRoot.expanded
-                opacity: (pickerRoot.apps.length > 0 && root.scanFinished && pickerRoot.expanded) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                Repeater {
-                    model: pickerRoot.apps
-
-                    delegate: Rectangle {
-                        id: card
-                        required property var modelData
-
-                        property bool selected: pickerRoot.currentValue === card.modelData.value
-                        property bool cardHovered: cardMouseArea.containsMouse
-
-                        width: 150
-                        height: 110
-                        radius: Appearance.rounding.normal
-                        scale: cardMouseArea.pressed ? 0.95 : 1.0
-
-                        color: card.selected ? Appearance.colors.colPrimaryContainer :
-                               card.cardHovered ? Appearance.colors.colLayer2 :
-                               Appearance.colors.colLayer1
-                        border.color: card.selected ? Appearance.colors.colPrimary : "transparent"
-                        border.width: 1.5
-
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-
-                        // Selection badge
-                        Rectangle {
-                            visible: card.selected
-                            anchors { top: parent.top; right: parent.right; topMargin: 7; rightMargin: 7 }
-                            width: 24
-                            height: 24
-                            radius: 12
-                            color: Appearance.colors.colPrimary
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "check"
-                                iconSize: 16
-                                color: Appearance.colors.colOnPrimary
-                            }
-                        }
-
-                        ColumnLayout {
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            IconImage {
-                                Layout.preferredWidth: 46
-                                Layout.preferredHeight: 46
-                                Layout.alignment: Qt.AlignHCenter
-                                asynchronous: false
-                                source: Quickshell.iconPath(root.appIcon(card.modelData), "image-missing")
-                            }
-
-                            StyledText {
-                                text: card.modelData.name
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: card.selected ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer1
-                                horizontalAlignment: Text.AlignHCenter
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
-                                Layout.maximumWidth: 138
-                                Layout.alignment: Qt.AlignHCenter
-                            }
-                        }
-
-                        MouseArea {
-                            id: cardMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.setDefault(pickerRoot.configKey, pickerRoot.mimetypes, card.modelData.value)
-                        }
+                    MouseArea {
+                        id: cardMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.setDefault(pickerRoot.kind, card.modelData.id)
                     }
                 }
             }
+        }
 
-            // Empty state
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: emptyText.implicitHeight + 4
-                visible: pickerRoot.apps.length === 0 && root.scanFinished && pickerRoot.expanded
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: emptyText.implicitHeight + 4
+            visible: pickerRoot.expanded && root.scanFinished && pickerRoot.apps.length === 0
 
-                StyledText {
-                    id: emptyText
-                    anchors.centerIn: parent
-                    text: "No applications found for this category"
-                    color: Appearance.colors.colSubtext
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                }
+            StyledText {
+                id: emptyText
+                anchors.centerIn: parent
+                text: "No applications found for this category"
+                color: Appearance.colors.colSubtext
+                font.pixelSize: Appearance.font.pixelSize.smaller
             }
         }
     }
@@ -304,95 +303,12 @@ ContentPage {
                 wrapMode: Text.Wrap
             }
 
-            Loader {
-        asynchronous: true
-                id: browserPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: browserPicker.item; property: "title"; value: "Web Browser" }
-                Binding { target: browserPicker.item; property: "subtitle"; value: "Opens links and web pages" }
-                Binding { target: browserPicker.item; property: "materialIcon"; value: "language" }
-                Binding { target: browserPicker.item; property: "configKey"; value: "webBrowser" }
-                Binding { target: browserPicker.item; property: "apps"; value: root.browserApps }
-                Binding { target: browserPicker.item; property: "currentValue"; value: Config.options.apps.webBrowser }
-                Binding { target: browserPicker.item; property: "mimetypes"; value: ["x-scheme-handler/http", "x-scheme-handler/https"] }
-            }
-
-            Loader {
-        asynchronous: true
-                id: fileManagerPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: fileManagerPicker.item; property: "title"; value: "File Manager" }
-                Binding { target: fileManagerPicker.item; property: "subtitle"; value: "Opens folders and directories" }
-                Binding { target: fileManagerPicker.item; property: "materialIcon"; value: "folder_open" }
-                Binding { target: fileManagerPicker.item; property: "configKey"; value: "fileManager" }
-                Binding { target: fileManagerPicker.item; property: "apps"; value: root.fileManagerApps }
-                Binding { target: fileManagerPicker.item; property: "currentValue"; value: Config.options.apps.fileManager }
-                Binding { target: fileManagerPicker.item; property: "mimetypes"; value: ["inode/directory"] }
-            }
-
-            Loader {
-        asynchronous: true
-                id: imageViewerPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: imageViewerPicker.item; property: "title"; value: "Image Viewer" }
-                Binding { target: imageViewerPicker.item; property: "subtitle"; value: "Opens pictures and images" }
-                Binding { target: imageViewerPicker.item; property: "materialIcon"; value: "image" }
-                Binding { target: imageViewerPicker.item; property: "configKey"; value: "imageViewer" }
-                Binding { target: imageViewerPicker.item; property: "apps"; value: root.imageViewerApps }
-                Binding { target: imageViewerPicker.item; property: "currentValue"; value: Config.options.apps.imageViewer }
-                Binding { target: imageViewerPicker.item; property: "mimetypes"; value: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/bmp"] }
-            }
-
-            Loader {
-        asynchronous: true
-                id: videoPlayerPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: videoPlayerPicker.item; property: "title"; value: "Video Player" }
-                Binding { target: videoPlayerPicker.item; property: "subtitle"; value: "Opens videos and movies" }
-                Binding { target: videoPlayerPicker.item; property: "materialIcon"; value: "movie" }
-                Binding { target: videoPlayerPicker.item; property: "configKey"; value: "videoPlayer" }
-                Binding { target: videoPlayerPicker.item; property: "apps"; value: root.videoPlayerApps }
-                Binding { target: videoPlayerPicker.item; property: "currentValue"; value: Config.options.apps.videoPlayer }
-                Binding { target: videoPlayerPicker.item; property: "mimetypes"; value: ["video/mp4", "video/mkv", "video/webm", "video/avi", "video/x-matroska"] }
-            }
-
-            Loader {
-        asynchronous: true
-                id: musicPlayerPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: musicPlayerPicker.item; property: "title"; value: "Music Player" }
-                Binding { target: musicPlayerPicker.item; property: "subtitle"; value: "Plays music and audio files" }
-                Binding { target: musicPlayerPicker.item; property: "materialIcon"; value: "music_note" }
-                Binding { target: musicPlayerPicker.item; property: "configKey"; value: "musicPlayer" }
-                Binding { target: musicPlayerPicker.item; property: "apps"; value: root.musicPlayerApps }
-                Binding { target: musicPlayerPicker.item; property: "currentValue"; value: Config.options.apps.musicPlayer }
-                Binding { target: musicPlayerPicker.item; property: "mimetypes"; value: ["audio/mpeg", "audio/mp3", "audio/flac", "audio/ogg", "audio/x-flac", "audio/x-wav", "audio/wav", "audio/aac", "audio/x-m4a", "audio/mp4"] }
-            }
-
-            Loader {
-        asynchronous: true
-                id: documentViewerPicker
-                Layout.fillWidth: true
-                active: true
-                sourceComponent: appPicker
-                Binding { target: documentViewerPicker.item; property: "title"; value: "Document Viewer" }
-                Binding { target: documentViewerPicker.item; property: "subtitle"; value: "Opens PDFs and office documents" }
-                Binding { target: documentViewerPicker.item; property: "materialIcon"; value: "description" }
-                Binding { target: documentViewerPicker.item; property: "configKey"; value: "documentViewer" }
-                Binding { target: documentViewerPicker.item; property: "apps"; value: root.documentViewerApps }
-                Binding { target: documentViewerPicker.item; property: "currentValue"; value: Config.options.apps.documentViewer }
-                Binding { target: documentViewerPicker.item; property: "mimetypes"; value: ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword", "application/vnd.oasis.opendocument.text", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.oasis.opendocument.spreadsheet", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.oasis.opendocument.presentation"] }
-            }
+            AppPicker { title: "Web Browser"; subtitle: "Opens links and web pages"; materialIcon: "language"; kind: "webBrowser" }
+            AppPicker { title: "File Manager"; subtitle: "Opens folders and directories"; materialIcon: "folder_open"; kind: "fileManager" }
+            AppPicker { title: "Image Viewer"; subtitle: "Opens pictures and images"; materialIcon: "image"; kind: "imageViewer" }
+            AppPicker { title: "Video Player"; subtitle: "Opens videos and movies"; materialIcon: "movie"; kind: "videoPlayer" }
+            AppPicker { title: "Music Player"; subtitle: "Plays music and audio files"; materialIcon: "music_note"; kind: "musicPlayer" }
+            AppPicker { title: "Document Viewer"; subtitle: "Opens PDFs and office documents"; materialIcon: "description"; kind: "documentViewer" }
         }
     }
 }
