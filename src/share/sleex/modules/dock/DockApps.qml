@@ -285,7 +285,7 @@ Item {
                                 }
                                 ExtCaptureItem {
                                     id: screencopyView
-                                    windowId: previewPopup.previewActive ? (windowButton.modelData?.["wayland-id"] ?? "") : ""
+                                    windowId: previewPopup.previewActive ? (windowButton.modelData?.["foreign-handle"] ?? "") : ""
                                     active: previewPopup.previewActive && windowId !== ""
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
                                     onHasContentChanged: {

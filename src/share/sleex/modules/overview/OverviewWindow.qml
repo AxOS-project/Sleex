@@ -86,7 +86,7 @@ Item { // Window
     ExtCaptureItem {
         id: windowPreview
         anchors.fill: parent
-        windowId: (GlobalStates.overviewOpen && root.visible) ? (root.windowData?.["wayland-id"] ?? "") : ""
+        windowId: (GlobalStates.overviewOpen && root.visible) ? (root.windowData?.["foreign-handle"] ?? "") : ""
         active: GlobalStates.overviewOpen && root.visible && windowId !== ""
 
         Rectangle {
