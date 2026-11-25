@@ -8,7 +8,7 @@ The Display Settings page provides multi-monitor arrangement, display calibratio
 
 ## 1. Interactive Multi-Monitor Arrangement Canvas (`DisplaySettings.qml`)
 
-Sleex features a spatial drag-and-drop monitor layout canvas that communicates directly with Hyprland's display manager:
+Sleex features a spatial drag-and-drop monitor layout canvas that communicates directly with `fht-compositor` via its Unix IPC socket:
 
 ### Canvas Interactions
 - **Visual Display Tiles**:
@@ -19,12 +19,11 @@ Sleex features a spatial drag-and-drop monitor layout canvas that communicates d
 - **Scale Animation**:
   - Tiles scale up slightly when clicked and dragged for tactile feedback.
 - **Monitor Settings**:
-  - **Resolution & Refresh Rate**: Pulled dynamically from hardware EDID modes.
-  - **Display Scaling**: Configure fractional or integer HiDPI scaling (1.0x, 1.25x, 1.5x, 2.0x).
+  - **Resolution & Refresh Rate**: Pulled dynamically from hardware EDID modes reported by `fht-compositor ipc outputs`.
+  - **Display Scaling**: Configure display scaling from 25% to 300% (`0.25x`–`3.0x`).
   - **Orientation / Rotation**: 0° (Normal), 90° (Portrait), 180° (Inverted), 270° (Portrait Inverted).
-  - **Mirror Mode**: Clones another active display.
 - **Apply Changes Bar**:
-  - Pending changes are tracked in a change-set. Clicking "Apply Changes" updates Hyprland monitor keywords dynamically.
+  - Pending changes are tracked in a change-set. Clicking "Apply Changes" writes `~/.config/fht/monitors.toml` and reloads `fht-compositor` dynamically.
 
 ---
 

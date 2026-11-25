@@ -5,7 +5,6 @@ import SleexUiKit.Functions
 import Qt.labs.platform
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 
 Singleton {
     // XDG Dirs, with "file://"
@@ -26,6 +25,7 @@ Singleton {
     property string notificationsPath: FileUtils.trimFileProtocol(`${Directories.cache}/sleex/notifications/notifications.json`)
     property string generatedMaterialThemePath: FileUtils.trimFileProtocol(`${Directories.state}/sleex/user/generated/colors.json`)
     property string cliphistDecode: FileUtils.trimFileProtocol(`/tmp/sleex/media/cliphist`)
+    property string scriptsPath: FileUtils.trimFileProtocol('/usr/share/sleex/scripts')
     property string wallpaperSwitchScriptPath: FileUtils.trimFileProtocol('/usr/share/sleex/scripts/colors/switchwall.sh')
     property string wallpaperPath: FileUtils.trimFileProtocol(`/usr/share/backgrounds/sleex`)
 

@@ -5,9 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Simple hyprsunset service with automatic mode.
- * In theory we don't need this because hyprsunset has a config file, but it somehow doesn't work.
- * It should also be possible to control it via hyprctl, but it doesn't work consistently either so we're just killing and launching.
+ * Simple gammastep night light service with automatic schedule mode.
  */
 Singleton {
     id: root
@@ -54,8 +52,9 @@ Singleton {
     }
 
     onColorTemperatureChanged: {
-        if (root.active)
-            Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(colorTemperature)]);
+        if (root.active) {
+            Quickshell.execDetached(["bash", "-c", `pkill gammastep; gammastep -O ${root.colorTemperature}`]);
+        }
     }
 
     function reEvaluate() {
@@ -76,12 +75,12 @@ Singleton {
     function enable() {
         root.active = true;
         Quickshell.execDetached(["bash", "-c",
-            `pidof hyprsunset || hyprsunset --temperature ${root.colorTemperature}`]);
+            `pidof gammastep || gammastep -O ${root.colorTemperature}`]);
     }
 
     function disable() {
         root.active = false;
-        Quickshell.execDetached(["bash", "-c", "pkill hyprsunset"]);
+        Quickshell.execDetached(["pkill", "gammastep"]);
     }
 
     function fetchState() {
@@ -91,15 +90,12 @@ Singleton {
     Process {
         id: fetchProc
         running: true
-        command: ["bash", "-c", "hyprctl hyprsunset temperature"]
+        command: ["bash", "-c", "pidof gammastep"]
         stdout: StdioCollector {
             id: stateCollector
             onStreamFinished: {
                 const output = stateCollector.text.trim();
-                if (output.length == 0 || output.startsWith("Couldn't"))
-                    root.active = false;
-                else
-                    root.active = (output != "6500");
+                root.active = (output.length > 0 && !output.startsWith("Couldn't"));
             }
         }
     }

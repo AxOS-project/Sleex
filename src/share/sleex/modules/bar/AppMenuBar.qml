@@ -3,11 +3,11 @@ import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 import SleexUiKit.Functions
 import Sleex.Services
+import Sleex.Fhtc
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import Quickshell.Widgets
 import Quickshell
 
@@ -15,8 +15,9 @@ Item {
     id: root
     required property var bar
     property bool active: true
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
-    readonly property string currentAppId: activeWindow?.activated ? (activeWindow?.appId ?? "") : ""
+    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
+    readonly property bool hasActiveWindow: activeWindow !== null && activeWindow !== undefined && Object.keys(activeWindow).length > 0
+    readonly property string currentAppId: hasActiveWindow ? (activeWindow["app-id"] ?? "") : ""
     readonly property DesktopEntry desktopEntry: (root.active && currentAppId !== "") ? DesktopEntries.heuristicLookup(currentAppId) : null
 
     property int openMenuIndex: -1
@@ -26,12 +27,20 @@ Item {
 
     onCurrentAppIdChanged: openMenuIndex = -1
 
+    onActiveWindowChanged: AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.activeWindow["app-id"] ?? "", root.activeWindow.id ?? 0);
+
+    Component.onCompleted: {
+        if (root.hasActiveWindow) {
+            AppMenu.setActiveWindow(root.activeWindow.pid ?? 0, root.currentAppId, root.activeWindow.id ?? 0);
+        }
+    }
+
     /**
      * A list of fallback menus to display when no native D-Bus menu is available.
-     * Only includes real, existing actions connected to DesktopEntry, Wayland Toplevel, or Hyprland.
+     * Only includes real, existing actions connected to DesktopEntry or fht-compositor IPC.
      */
     readonly property var fallbackMenus: {
-        if (!root.active || !root.activeWindow?.activated) {
+        if (!root.active || !root.hasActiveWindow) {
             return [];
         }
 
@@ -73,10 +82,10 @@ Item {
             {
                 name: qsTr("Window"),
                 items: [
-                    { name: qsTr("Fullscreen"),      shortcut: "Super+F",    action: "fullscreen" },
-                    { name: qsTr("Toggle Floating"), shortcut: "Super+Alt+Space",       action: "togglefloating" },
+                    { name: qsTr("Fullscreen"),      shortcut: "Super+F",         action: "fullscreen" },
+                    { name: qsTr("Toggle Floating"), shortcut: "Super+Alt+Space", action: "togglefloating" },
                     { isSeparator: true, name: "" },
-                    { name: qsTr("Close Window"),    shortcut: "Super+Q", action: "close" },
+                    { name: qsTr("Close Window"),    shortcut: "Super+Q",         action: "close" },
                 ]
             },
         ];
@@ -104,28 +113,18 @@ Item {
             return;
         }
 
-        // Direct Wayland Toplevel & Hyprland window actions
         if (item.action) {
             switch (item.action) {
             case "fullscreen":
-                if (root.activeWindow) root.activeWindow.fullscreen = !root.activeWindow.fullscreen;
+                FhtcIpc.dispatch("fullscreen-window");
                 return;
             case "togglefloating":
-                Hyprland.dispatch("hl.dsp.window.float()");
+                FhtcIpc.dispatch("float-window");
                 return;
             case "close":
-                if (root.activeWindow) root.activeWindow.close();
+                FhtcIpc.dispatch("close-window", { "kill": false });
                 return;
             }
-        }
-    }
-
-    HyprlandFocusGrab {
-        id: menuFocusGrab
-        active: root.openMenuIndex !== -1 && dropdownLoader.active
-        windows: dropdownLoader.active ? [dropdownLoader.item, root.QsWindow?.window] : []
-        onCleared: {
-            root.openMenuIndex = -1;
         }
     }
 
@@ -135,12 +134,14 @@ Item {
 
         component: PanelWindow {
             id: dropdownWindow
+            screen: root.bar?.screen ?? null
             color: "transparent"
 
             anchors {
-                top: !Config.options.bar.bottom
-                bottom: Config.options.bar.bottom
+                top: true
+                bottom: true
                 left: true
+                right: true
             }
 
             readonly property var topMenuObject: (root.openMenuIndex >= 0 && root.openMenuIndex < root.menus.length)
@@ -167,28 +168,24 @@ Item {
                 }
             }
 
-            implicitWidth: dropdownBg.implicitWidth + Appearance.sizes.elevationMargin * 2
-            implicitHeight: dropdownBg.implicitHeight + Appearance.sizes.elevationMargin * 2
-
-            mask: Region {
-                item: dropdownBg
-            }
-
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
 
-            margins {
-                left: {
-                    if (!activeButton) return 0;
-                    const mapped = root.QsWindow?.mapFromItem(activeButton, 0, 0);
-                    return mapped ? mapped.x : 0;
-                }
-                top: !Config.options.bar.bottom ? Appearance.sizes.barHeight : 0
-                bottom: Config.options.bar.bottom ? Appearance.sizes.barHeight : 0
-            }
-
             WlrLayershell.namespace: "quickshell:appmenu"
             WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+
+            FocusScope {
+                anchors.fill: parent
+                focus: true
+                Keys.onEscapePressed: root.openMenuIndex = -1
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                onPressed: root.openMenuIndex = -1
+            }
 
             StyledRectangularShadow {
                 target: dropdownBg
@@ -197,11 +194,16 @@ Item {
             Rectangle {
                 id: dropdownBg
                 readonly property real padding: 6
+                x: {
+                    if (!dropdownWindow.activeButton) return Appearance.sizes.elevationMargin;
+                    const mapped = root.QsWindow?.mapFromItem(dropdownWindow.activeButton, 0, 0);
+                    return (mapped ? mapped.x : 0) + Appearance.sizes.elevationMargin;
+                }
                 anchors {
-                    left: parent.left
                     top: !Config.options.bar.bottom ? parent.top : undefined
                     bottom: Config.options.bar.bottom ? parent.bottom : undefined
-                    margins: Appearance.sizes.elevationMargin
+                    topMargin: (!Config.options.bar.bottom ? Appearance.sizes.barHeight : 0) + Appearance.sizes.elevationMargin
+                    bottomMargin: (Config.options.bar.bottom ? Appearance.sizes.barHeight : 0) + Appearance.sizes.elevationMargin
                 }
                 implicitWidth: dropdownColumn.implicitWidth + padding * 2
                 implicitHeight: dropdownColumn.implicitHeight + padding * 2
@@ -219,6 +221,11 @@ Item {
                         easing.type: Appearance.animation.elementMoveFast.type
                         easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                     }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.AllButtons
                 }
 
                 ColumnLayout {
@@ -353,7 +360,6 @@ Item {
                                             }
                                         }
 
-                                        // Optional item icon
                                         Loader {
                                             active: (modelData.iconName || "") !== ""
                                             visible: active
@@ -485,7 +491,6 @@ Item {
                         }
                     }
 
-                    // If a menu is already open, hovering another button switches to it
                     onContainsMouseChanged: {
                         if (containsMouse && root.openMenuIndex !== -1 && root.openMenuIndex !== menuButton.index) {
                             if (menuButton.modelData.itemId !== undefined && AppMenu.hasNativeMenu) {

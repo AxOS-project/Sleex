@@ -1,0 +1,105 @@
+# Window rules
+[[rules]]
+match-app-id = [
+    "blueberry.py",
+    "com.axos-project.axinstall",
+    "steam",
+    "org.pulseaudio.pavucontrol",
+    "cheese",
+    "timeshift-gtk",
+    "org.gnome.PowerStats",
+    "lstopo",
+    "org.gnome.ColorProfileViewer",
+    "qt5ct",
+    "rustdesk",
+    "org.kde.plasmawindowed",
+    "kcm.networkmanagement",
+    "gcr-prompter",
+    "org.freedesktop.impl.portal.desktop.voxel"
+]
+match-title = [
+    "Open File",
+    "Select a File",
+    "Choose wallpaper",
+    "Open Folder",
+    "Save File",
+    "Save As",
+    "Library",
+    "File Upload",
+    "Choose",
+    "Sleex Settings",
+    "Calculator",
+    "BoxBuddy",
+    "Popsicle",
+    "Trayscale",
+    "Choose Files",
+    "Save Image"
+]
+floating = true
+centered = true
+
+[[rules]]
+is-floating = true
+ontop = true
+
+[[rules]]
+match-app-id = ["org.gnome.Calculator"]
+floating = true
+centered = true
+
+# Layer-shell rules
+[[layer-rules]]
+match-namespace = "^quickshell:(bar|dock|dashboard|overview|cheatsheet|notificationPopup|wppselector|session|appmenu)$"
+blur = { disable = false, passes = 4, radius = 5, noise = 0.01 }
+
+[[layer-rules]]
+match-namespace = [
+    "^walker$",
+    "^selection$",
+    "^overview$",
+    "^anyrun$",
+    "^indicator.*$",
+    "^osk$",
+    "^hyprpicker$",
+    "^noanim$",
+    "^quickshell:background$",
+    "^quickshell:screenCorners$",
+    "^quickshell:lockWindowPusher$",
+    "^quickshell:overlay$",
+    "^quickshell:regionSelector$",
+    "^quickshell:screenshot$",
+    "^quickshell:batterywarning$",
+    "^quickshell:criticalaction$"
+]
+no-anim = true
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:bar$",
+    "^quickshell:reloadPopup$"
+]
+animation = "slide"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:cheatsheet$",
+    "^quickshell:dock$",
+    "^quickshell:osk$",
+    "^quickshell:dashboard$"
+]
+animation = "slide-bottom"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:overview$",
+    "^quickshell:wallpaperSelector$",
+    "^quickshell:wppselector$"
+]
+animation = "slide-top"
+
+[[layer-rules]]
+match-namespace = [
+    "^quickshell:notificationPopup$",
+    "^quickshell:session$"
+]
+animation = "fade"

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Sleex.Fhtc
 pragma Singleton
 pragma ComponentBehavior: Bound
 
@@ -22,7 +23,7 @@ Singleton {
 
     property real screenZoom: 1
     onScreenZoomChanged: {
-        Quickshell.execDetached(["hyprctl", "keyword", "cursor:zoom_factor", `${root.screenZoom.toString()}`]);
+        // TODO: Screen zoom is not currently exposed by fht-compositor IPC
     }
     Behavior on screenZoom {
         animation: NumberAnimation {
@@ -105,15 +106,15 @@ Singleton {
         target: "centerPopup"
 
         function toggle(): void {
-            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupToggleRequested(FhtcMonitors.activeMonitorName ?? "");
         }
 
         function open(): void {
-            root.centerPopupOpenRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupOpenRequested(FhtcMonitors.activeMonitorName ?? "");
         }
 
         function close(): void {
-            root.centerPopupCloseRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupCloseRequested(FhtcMonitors.activeMonitorName ?? "");
         }
     }
 
@@ -122,7 +123,7 @@ Singleton {
         description: qsTr("Toggle center bar popup on focused screen")
 
         onPressed: {
-            root.centerPopupToggleRequested(Hyprland.focusedMonitor?.name ?? "");
+            root.centerPopupToggleRequested(FhtcMonitors.activeMonitorName ?? "");
         }
     }
 }

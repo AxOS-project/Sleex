@@ -5,7 +5,6 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Quickshell.Hyprland
 import Sleex.Services
 import "displaySettings" as DS
 import SleexUiKit.Appearance

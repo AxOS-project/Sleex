@@ -1,19 +1,21 @@
 #include "monitors.hpp"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QSet>
-#include <cmath>
-#include <QTextStream>
 #include <QStandardPaths>
-#include <QDir>
+#include <QTextStream>
+#include <algorithm>
+#include <cmath>
 
 namespace sleex::services {
 
 Monitors::Monitors(QObject *parent) : QObject(parent)
 {
-    // Periodic safety-net poll (event socket handles most updates)
     m_pollTimer = new QTimer(this);
     m_pollTimer->setInterval(10000);
     connect(m_pollTimer, &QTimer::timeout, this, &Monitors::refresh);
@@ -32,74 +34,96 @@ Monitors::~Monitors()
     qDeleteAll(m_monitors);
 }
 
-QString Monitors::socketPath(int n)
+QString Monitors::socketPath()
 {
-    const QString sig = qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE");
-    const QString run = qEnvironmentVariable("XDG_RUNTIME_DIR",
-                                             QStringLiteral("/run/user/1000"));
-    const QString suffix = (n == 2) ? QStringLiteral("2") : QString();
-
-    // Hyprland >= 0.40
-    const QString newPath =
-        QStringLiteral("%1/hypr/%2/.socket%3.sock").arg(run, sig, suffix);
-    if (QFile::exists(newPath)) return newPath;
-
-    // Older Hyprland
-    const QString oldPath =
-        QStringLiteral("/tmp/hypr/%1/.socket%2.sock").arg(sig, suffix);
-    return oldPath;
+    return qEnvironmentVariable("FHTC_SOCKET_PATH");
 }
 
-void Monitors::sendRequest(const QString &command,
-                             bool           jsonResponse,
-                             std::function<void(bool, const QByteArray &)> cb)
+void Monitors::sendRequest(const QByteArray &jsonLine,
+                           std::function<void(bool, const QByteArray &)> cb)
 {
-    auto *sock   = new QLocalSocket(this);
-    auto  buffer = std::make_shared<QByteArray>();
+    const QString path = socketPath();
+    if (path.isEmpty()) {
+        cb(false, {});
+        return;
+    }
 
-    connect(sock, &QLocalSocket::connected, this, [sock, command, jsonResponse]() {
-        const QByteArray payload = jsonResponse
-            ? QStringLiteral("j/%1").arg(command).toUtf8()
-            : command.toUtf8();
-        sock->write(payload);
+    auto *sock = new QLocalSocket(this);
+    auto buffer = std::make_shared<QByteArray>();
+    auto completed = std::make_shared<bool>(false);
+
+    connect(sock, &QLocalSocket::connected, this, [sock, jsonLine]() {
+        sock->write(jsonLine + '\n');
         sock->flush();
     });
 
-    connect(sock, &QLocalSocket::readyRead, this, [sock, buffer]() {
+    connect(sock, &QLocalSocket::readyRead, this, [sock, buffer, completed, cb]() {
         buffer->append(sock->readAll());
+        const int nl = buffer->indexOf('\n');
+        if (nl >= 0 && !*completed) {
+            *completed = true;
+            const QByteArray line = buffer->left(nl).trimmed();
+            const QJsonDocument doc = QJsonDocument::fromJson(line);
+            const bool isError = doc.isObject() && doc.object().contains(QStringLiteral("error"));
+            cb(!isError, line);
+            sock->disconnectFromServer();
+            sock->deleteLater();
+        }
     });
 
-    connect(sock, &QLocalSocket::disconnected, this, [sock, buffer, cb]() {
-        buffer->append(sock->readAll()); // flush any remaining bytes
-        const bool ok = !buffer->startsWith("err");
-        cb(ok, *buffer);
+    connect(sock, &QLocalSocket::disconnected, this, [sock, buffer, completed, cb]() {
+        if (!*completed) {
+            *completed = true;
+            buffer->append(sock->readAll());
+            const QByteArray line = buffer->trimmed();
+            const bool ok = !line.isEmpty() && !(QJsonDocument::fromJson(line).isObject() &&
+                                                 QJsonDocument::fromJson(line).object().contains(QStringLiteral("error")));
+            cb(ok, line);
+        }
         sock->deleteLater();
     });
 
     connect(sock, &QLocalSocket::errorOccurred, this,
-            [sock, cb](QLocalSocket::LocalSocketError) {
+            [sock, completed, cb](QLocalSocket::LocalSocketError) {
+                if (!*completed) {
+                    *completed = true;
+                    cb(false, {});
+                }
                 sock->deleteLater();
-                cb(false, {});
             });
 
-    sock->connectToServer(socketPath(1));
+    sock->connectToServer(path);
 }
-
 
 void Monitors::connectEventSocket()
 {
     if (m_eventSocket) {
         m_eventSocket->deleteLater();
+        m_eventSocket = nullptr;
     }
+
+    const QString path = socketPath();
+    if (path.isEmpty()) {
+        if (!m_reconnectTimer->isActive())
+            m_reconnectTimer->start(2000);
+        return;
+    }
+
     m_eventSocket = new QLocalSocket(this);
+
+    connect(m_eventSocket, &QLocalSocket::connected, this, [this]() {
+        m_eventSocket->write("\"subscribe\"\n");
+        m_eventSocket->flush();
+    });
 
     connect(m_eventSocket, &QLocalSocket::readyRead, this, [this]() {
         m_eventBuffer += m_eventSocket->readAll();
         while (true) {
             const int nl = m_eventBuffer.indexOf('\n');
-            if (nl < 0) break;
-            handleEventLine(m_eventBuffer.left(nl));
-            m_eventBuffer = m_eventBuffer.mid(nl + 1);
+            if (nl < 0)
+                break;
+            handleEventLine(m_eventBuffer.left(nl).trimmed());
+            m_eventBuffer.remove(0, nl + 1);
         }
     });
 
@@ -114,36 +138,49 @@ void Monitors::connectEventSocket()
                     m_reconnectTimer->start(2000);
             });
 
-    m_eventSocket->connectToServer(socketPath(2));
+    m_eventSocket->connectToServer(path);
 }
 
 void Monitors::handleEventLine(const QByteArray &line)
 {
-    const int sep = line.indexOf(">>");
-    if (sep < 0) return;
-    const QByteArray event = line.left(sep);
+    if (line.isEmpty())
+        return;
 
-    static const QSet<QByteArray> monitorEvents = {
-        "monitoradded",
-        "monitorremoved",
-        "monitoraddedv2",
-        "monitorremovedv2",
-        "configreloaded",
-    };
+    const QJsonDocument doc = QJsonDocument::fromJson(line);
+    if (!doc.isObject())
+        return;
 
-    if (monitorEvents.contains(event))
+    const QJsonObject root = doc.object();
+    const QString event = root.value(QStringLiteral("event")).toString();
+    if (event == QLatin1String("space")) {
+        const QJsonObject spaceObj = root.value(QStringLiteral("data")).toObject();
+        m_spaceMonitors = spaceObj.value(QStringLiteral("monitors")).toObject().toVariantMap();
         refresh();
+    }
 }
 
 void Monitors::refresh()
 {
-    sendRequest(QStringLiteral("monitors"), true,
-                [this](bool ok, const QByteArray &raw) {
-                    if (!ok) {
-                        setError(QStringLiteral("monitors request failed"));
-                        return;
+    sendRequest(QByteArrayLiteral("\"space\""),
+                [this](bool spaceOk, const QByteArray &spaceRaw) {
+                    if (spaceOk) {
+                        const QJsonDocument spaceDoc = QJsonDocument::fromJson(spaceRaw);
+                        if (spaceDoc.isObject()) {
+                            const QJsonObject spaceObj = spaceDoc.object().value(QStringLiteral("space")).toObject();
+                            if (!spaceObj.isEmpty()) {
+                                m_spaceMonitors = spaceObj.value(QStringLiteral("monitors")).toObject().toVariantMap();
+                            }
+                        }
                     }
-                    parseHyprctlOutput(raw);
+
+                    sendRequest(QByteArrayLiteral("\"outputs\""),
+                                [this](bool ok, const QByteArray &raw) {
+                                    if (!ok) {
+                                        setError(QStringLiteral("outputs request failed"));
+                                        return;
+                                    }
+                                    parseFhtcOutputs(raw);
+                                });
                 });
 }
 
@@ -154,99 +191,74 @@ void Monitors::applyPosition(const QString &name, int x, int y)
 
 void Monitors::applyAllPositions(const QVariantList &changes)
 {
-    if (changes.isEmpty()) return;
+    if (changes.isEmpty())
+        return;
 
-    struct Change { QString name; int x; int y; };
-    QList<Change> pending;
     for (const QVariant &v : changes) {
         const QVariantMap m = v.toMap();
-        pending.append({ m[QStringLiteral("name")].toString(),
-                         m[QStringLiteral("x")].toInt(),
-                         m[QStringLiteral("y")].toInt() });
+        const QString name = m.value(QStringLiteral("name")).toString();
+        MonitorInfo *mi = findMonitor(name);
+        if (!mi)
+            continue;
+        mi->setX(qMax(0, m.value(QStringLiteral("x")).toInt()));
+        mi->setY(qMax(0, m.value(QStringLiteral("y")).toInt()));
     }
 
-    auto idx   = std::make_shared<int>(0);
-    auto apply = std::make_shared<std::function<void()>>();
+    if (!saveMonitorsConfig()) {
+        setError(QStringLiteral("Failed to write ~/.config/fht/monitors.toml"));
+        emit applyFailed(m_lastError);
+        return;
+    }
 
-    *apply = [this, pending, idx, apply]() {
-        if (*idx >= pending.size()) {
-            setBusy(false);
-            QTimer::singleShot(400, this, &Monitors::refresh);
-            emit applySucceeded();
-            return;
-        }
-        const auto &ch = pending[(*idx)++];
-        MonitorInfo *mi = findMonitor(ch.name);
-        if (!mi) { (*apply)(); return; }
-
-        const QString rule =
-            QStringLiteral("%1,%2x%3@%4,%5x%6,%7")
-                .arg(ch.name)
-                .arg(mi->width()).arg(mi->height())
-                .arg(mi->refreshRate(), 0, 'f', 2)
-                .arg(qMax(0, ch.x)).arg(qMax(0, ch.y))
-                .arg(mi->scale(), 0, 'f', 2);
-
-        sendRequest(QStringLiteral("keyword monitor %1").arg(rule), false,
-                    [this, ch, apply](bool ok, const QByteArray &) {
-                        if (!ok) {
-                            setBusy(false);
-                            setError(QStringLiteral("Failed to apply position for ") + ch.name);
-                            emit applyFailed(m_lastError);
-                            return;
-                        }
-                        (*apply)();
-                    });
-    };
-
-    setBusy(true);
-    setError(QString());
-    (*apply)();
+    reloadCompositorConfig();
 }
 
 void Monitors::applyChanges(const QVariantList &changes)
 {
-    if (changes.isEmpty()) return;
+    if (changes.isEmpty())
+        return;
 
     for (const QVariant &v : changes) {
         const QVariantMap m = v.toMap();
-        QString name = m[QStringLiteral("name")].toString();
+        const QString name = m.value(QStringLiteral("name")).toString();
         MonitorInfo *mi = findMonitor(name);
-        if (!mi) continue;
+        if (!mi)
+            continue;
 
-        if (m.contains(QStringLiteral("x"))) mi->setX(m[QStringLiteral("x")].toInt());
-        if (m.contains(QStringLiteral("y"))) mi->setY(m[QStringLiteral("y")].toInt());
-        if (m.contains(QStringLiteral("scale"))) mi->setScale(m[QStringLiteral("scale")].toDouble());
-        if (m.contains(QStringLiteral("mirror"))) mi->setMirrorOf(m[QStringLiteral("mirror")].toString());
+        if (m.contains(QStringLiteral("x")))
+            mi->setX(m.value(QStringLiteral("x")).toInt());
+        if (m.contains(QStringLiteral("y")))
+            mi->setY(m.value(QStringLiteral("y")).toInt());
+        if (m.contains(QStringLiteral("scale")))
+            mi->setScale(qBound(0.25, m.value(QStringLiteral("scale")).toDouble(), 3.0));
+        if (m.contains(QStringLiteral("mirror")))
+            mi->setMirrorOf(m.value(QStringLiteral("mirror")).toString());
         if (m.contains(QStringLiteral("mode"))) {
-            QString mode = m[QStringLiteral("mode")].toString();
-            QStringList parts = mode.split(QLatin1Char('x'));
+            const QString mode = m.value(QStringLiteral("mode")).toString();
+            const QStringList parts = mode.split(QLatin1Char('x'));
             if (parts.size() == 2) {
                 mi->setWidth(parts[0].toInt());
                 mi->setHeight(parts[1].toInt());
+                const double modeRr = m_modeRefreshRates.value(name).value(mode, 0.0);
+                if (modeRr > 0.0) {
+                    mi->setRefreshRate(modeRr);
+                }
             }
         }
     }
 
-    saveMonitorsConfig();
+    if (!saveMonitorsConfig()) {
+        setError(QStringLiteral("Failed to write ~/.config/fht/monitors.toml"));
+        emit applyFailed(m_lastError);
+        return;
+    }
 
-    setBusy(true);
-    sendRequest(QStringLiteral("reload"), false, [this](bool ok, const QByteArray &) {
-        setBusy(false);
-        if (!ok) {
-            setError(QStringLiteral("Failed to reload hyprland"));
-            emit applyFailed(m_lastError);
-        } else {
-            setError(QString());
-            QTimer::singleShot(350, this, &Monitors::refresh);
-            emit applySucceeded();
-        }
-    });
+    reloadCompositorConfig();
 }
 
 void Monitors::applyScale(const QString &name, double scale)
 {
-    applyRule(name, -1, -1, qQNaN(), -1, -1, qBound(0.25, scale, 4.0));
+    applyRule(name, -1, -1, qQNaN(), -1, -1, qBound(0.25, scale, 3.0));
 }
 
 void Monitors::applyMode(const QString &name, const QString &mode)
@@ -263,50 +275,14 @@ void Monitors::applyMode(const QString &name, const QString &mode)
         setError(QStringLiteral("Invalid mode dimensions: ") + mode);
         return;
     }
-    applyRule(name, w, h, qQNaN(), -1, -1, qQNaN());
+    const double rr = m_modeRefreshRates.value(name).value(mode, qQNaN());
+    applyRule(name, w, h, rr, -1, -1, qQNaN());
 }
 
-void Monitors::applyMirror(const QString &name, const QString &mirrorTarget)
+void Monitors::applyMirror(const QString &name, const QString & /*mirrorTarget*/)
 {
-    MonitorInfo *mi = findMonitor(name);
-
-    if (mirrorTarget.isEmpty()) {
-        // Restore exact pre-mirror state
-        if (m_snapshots.contains(name)) {
-            const MonitorSnapshot &s = m_snapshots[name];
-            applyRule(name, s.w, s.h, s.rr, s.x, s.y, s.scale);
-            m_snapshots.remove(name);
-        } else {
-            // No snapshot — fallback to current known values
-            applyRule(name, -1, -1, qQNaN(), -1, -1, qQNaN());
-        }
-        return;
-    }
-
-    // Snapshot current state before mirroring
-    if (mi) {
-        m_snapshots[name] = { mi->width(), mi->height(),
-                               mi->x(),    mi->y(),
-                               mi->refreshRate(), mi->scale() };
-    }
-
-    const QString rule =
-        QStringLiteral("%1,preferred,auto,1,mirror,%2").arg(name, mirrorTarget);
-
-    setBusy(true);
-    sendRequest(QStringLiteral("keyword monitor %1").arg(rule), false,
-                [this, name](bool ok, const QByteArray &) {
-                    setBusy(false);
-                    if (!ok) {
-                        setError(QStringLiteral("Mirror failed for ") + name);
-                        m_snapshots.remove(name);
-                        emit applyFailed(m_lastError);
-                    } else {
-                        setError(QString());
-                        QTimer::singleShot(350, this, &Monitors::refresh);
-                        emit applySucceeded();
-                    }
-                });
+    setError(QStringLiteral("Display mirroring is not supported by fht-compositor (") + name + QStringLiteral(")"));
+    emit applyFailed(m_lastError);
 }
 
 void Monitors::resetPositions()
@@ -314,14 +290,13 @@ void Monitors::resetPositions()
     refresh();
 }
 
-
 void Monitors::applyRule(const QString &name,
-                          int            newW,
-                          int            newH,
-                          double         newRR,
-                          int            newX,
-                          int            newY,
-                          double         newScale)
+                         int            newW,
+                         int            newH,
+                         double         newRR,
+                         int            newX,
+                         int            newY,
+                         double         newScale)
 {
     MonitorInfo *mi = findMonitor(name);
     if (!mi) {
@@ -329,27 +304,36 @@ void Monitors::applyRule(const QString &name,
         return;
     }
 
-    const int    w     = (newW     > 0)           ? newW     : mi->width();
-    const int    h     = (newH     > 0)           ? newH     : mi->height();
-    const double rr    = !std::isnan(newRR)       ? newRR    : mi->refreshRate();
-    const int    x     = (newX     >= 0)          ? newX     : mi->x();
-    const int    y     = (newY     >= 0)          ? newY     : mi->y();
-    const double scale = !std::isnan(newScale)    ? newScale : mi->scale();
+    if (newW > 0)
+        mi->setWidth(newW);
+    if (newH > 0)
+        mi->setHeight(newH);
+    if (!std::isnan(newRR) && newRR > 0.0)
+        mi->setRefreshRate(newRR);
+    if (newX >= 0)
+        mi->setX(newX);
+    if (newY >= 0)
+        mi->setY(newY);
+    if (!std::isnan(newScale))
+        mi->setScale(qBound(0.25, newScale, 3.0));
 
-    const QString rule =
-        QStringLiteral("%1,%2x%3@%4,%5x%6,%7")
-            .arg(name)
-            .arg(w).arg(h)
-            .arg(rr,    0, 'f', 2)
-            .arg(x).arg(y)
-            .arg(scale, 0, 'f', 2);
+    if (!saveMonitorsConfig()) {
+        setError(QStringLiteral("Failed to write ~/.config/fht/monitors.toml"));
+        emit applyFailed(m_lastError);
+        return;
+    }
 
+    reloadCompositorConfig();
+}
+
+void Monitors::reloadCompositorConfig()
+{
     setBusy(true);
-    sendRequest(QStringLiteral("keyword monitor %1").arg(rule), false,
-                [this, name](bool ok, const QByteArray &) {
+    sendRequest(QByteArrayLiteral("{\"action\":\"reload-config\"}"),
+                [this](bool ok, const QByteArray &) {
                     setBusy(false);
                     if (!ok) {
-                        setError(QStringLiteral("keyword monitor failed for ") + name);
+                        setError(QStringLiteral("Failed to reload fht-compositor configuration"));
                         emit applyFailed(m_lastError);
                     } else {
                         setError(QString());
@@ -359,74 +343,86 @@ void Monitors::applyRule(const QString &name,
                 });
 }
 
-
-void Monitors::parseHyprctlOutput(const QByteArray &raw)
+void Monitors::parseFhtcOutputs(const QByteArray &raw)
 {
-    // The control socket prepends "ok\n" before the JSON payload — strip it
-    QByteArray json = raw;
-    const int bracket = json.indexOf('[');
-    if (bracket < 0) {
-        setError(QStringLiteral("No JSON array in hyprctl response"));
-        return;
-    }
-    json = json.mid(bracket);
-
     QJsonParseError err;
-    const QJsonDocument doc = QJsonDocument::fromJson(json, &err);
-    if (err.error != QJsonParseError::NoError) {
+    const QJsonDocument doc = QJsonDocument::fromJson(raw, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
         setError(QStringLiteral("JSON parse error: ") + err.errorString());
         return;
     }
-    if (!doc.isArray()) {
-        setError(QStringLiteral("Expected JSON array in hyprctl response"));
-        return;
-    }
 
-    const QJsonArray arr = doc.array();
+    const QJsonObject root = doc.object();
+    const QJsonObject outputsObj = root.contains(QStringLiteral("outputs"))
+                                       ? root.value(QStringLiteral("outputs")).toObject()
+                                       : root;
 
     QMap<QString, MonitorInfo*> existing;
     for (QObject *obj : std::as_const(m_monitors)) {
         auto *mi = qobject_cast<MonitorInfo*>(obj);
-        if (mi) existing.insert(mi->name(), mi);
+        if (mi)
+            existing.insert(mi->name(), mi);
     }
 
     QList<QObject*> newList;
-    QSet<QString>   seen;
+    QSet<QString> seen;
 
-    for (const QJsonValue &val : arr) {
-        const QJsonObject o = val.toObject();
+    QStringList outputNames = outputsObj.keys();
+    outputNames.sort();
 
-        const QString name = o[QStringLiteral("name")].toString();
-        if (name.isEmpty()) continue;
+    for (const QString &key : outputNames) {
+        const QJsonObject o = outputsObj.value(key).toObject();
+        const QString name = o.value(QStringLiteral("name")).toString(key);
+        if (name.isEmpty())
+            continue;
         seen.insert(name);
 
-        const int    x           = o[QStringLiteral("x")].toInt();
-        const int    y           = o[QStringLiteral("y")].toInt();
-        const int    w           = o[QStringLiteral("width")].toInt();
-        const int    h           = o[QStringLiteral("height")].toInt();
-        const double scale       = o[QStringLiteral("scale")].toDouble(1.0);
-        const double refreshRate = o[QStringLiteral("refreshRate")].toDouble(60.0);
-        const bool   enabled     = !o[QStringLiteral("disabled")].toBool(false);
-        const bool   focused     = o[QStringLiteral("focused")].toBool(false);
-        const QString make       = o[QStringLiteral("make")].toString();
-        const QString model      = o[QStringLiteral("model")].toString();
+        const QJsonArray posArr = o.value(QStringLiteral("position")).toArray();
+        const int x = posArr.size() >= 1 ? posArr.at(0).toInt(0) : 0;
+        const int y = posArr.size() >= 2 ? posArr.at(1).toInt(0) : 0;
 
-        // mirrorOf is "none" when not mirroring
-        const QString rawMirror  = o[QStringLiteral("mirrorOf")].toString();
-        const QString mirrorOf   = (rawMirror == QStringLiteral("none"))
-                                       ? QString()
-                                       : rawMirror;
+        const QJsonArray sizeArr = o.value(QStringLiteral("size")).toArray();
+        int w = sizeArr.size() >= 1 ? sizeArr.at(0).toInt(1920) : 1920;
+        int h = sizeArr.size() >= 2 ? sizeArr.at(1).toInt(1080) : 1080;
 
-        // availableModes: "1920x1080@60.01Hz" → strip @RR suffix → "1920x1080"
+        const double scale = static_cast<double>(qMax(1, o.value(QStringLiteral("scale")).toInt(1)));
+        double refreshRate = 60.0;
+
+        const QJsonArray modesArr = o.value(QStringLiteral("modes")).toArray();
+        const QJsonValue activeIdxVal = o.value(QStringLiteral("active-mode-idx"));
+        const int activeModeIdx = (activeIdxVal.isNull() || activeIdxVal.isUndefined())
+                                      ? -1
+                                      : activeIdxVal.toInt(-1);
+
         QStringList modes;
-        for (const QJsonValue &mv : o[QStringLiteral("availableModes")].toArray()) {
-            const QString res = mv.toString()
-                                  .section(QLatin1Char('@'), 0, 0)
-                                  .trimmed();
-            if (!res.isEmpty() && !modes.contains(res))
+        QHash<QString, double> refreshByRes;
+
+        for (int i = 0; i < modesArr.size(); ++i) {
+            const QJsonObject modeObj = modesArr.at(i).toObject();
+            const QJsonArray dims = modeObj.value(QStringLiteral("dimensions")).toArray();
+            if (dims.size() < 2)
+                continue;
+            const int mw = dims.at(0).toInt();
+            const int mh = dims.at(1).toInt();
+            const double mrr = modeObj.value(QStringLiteral("refresh")).toDouble(60.0);
+            const bool preferred = modeObj.value(QStringLiteral("preferred")).toBool(false);
+
+            const QString res = QStringLiteral("%1x%2").arg(mw).arg(mh);
+            if (!modes.contains(res)) {
                 modes.append(res);
+            }
+            if (!refreshByRes.contains(res) || preferred || mrr > refreshByRes.value(res)) {
+                refreshByRes.insert(res, mrr);
+            }
+
+            if (i == activeModeIdx) {
+                w = mw;
+                h = mh;
+                refreshRate = mrr;
+            }
         }
-        // Sort largest resolution first
+        m_modeRefreshRates.insert(name, refreshByRes);
+
         std::sort(modes.begin(), modes.end(), [](const QString &a, const QString &b) {
             auto px = [](const QString &s) {
                 const QStringList p = s.split(QLatin1Char('x'));
@@ -435,36 +431,39 @@ void Monitors::parseHyprctlOutput(const QByteArray &raw)
             return px(a) > px(b);
         });
 
+        const QVariantMap spaceMon = m_spaceMonitors.value(name).toMap();
+        const bool enabled = true;
+        const bool primary = spaceMon.value(QStringLiteral("active")).toBool();
+        const QString make = o.value(QStringLiteral("make")).toString();
+        const QString model = o.value(QStringLiteral("model")).toString();
+
         MonitorInfo *mi = existing.value(name, nullptr);
-        if (!mi) mi = new MonitorInfo(this);
+        if (!mi)
+            mi = new MonitorInfo(this);
 
         mi->setAll(name, x, y, w, h, scale, refreshRate,
-                   enabled, focused, make, model, modes, mirrorOf);
+                   enabled, primary, make, model, modes, QString());
         newList.append(mi);
     }
 
-    // Clean up disconnected monitors
     for (auto it = existing.begin(); it != existing.end(); ++it) {
-    if (!seen.contains(it.key())) {
-        MonitorInfo *mi = it.value();
-        if (m_snapshots.contains(mi->name())) {
-            // Still mirroring, keep ghost with snapshot position so tile shows
-            const MonitorSnapshot &s = m_snapshots[mi->name()];
-            mi->setAll(mi->name(), s.x, s.y, s.w, s.h,
-                       s.scale, s.rr,
-                       mi->enabled(), mi->primary(),
-                       mi->make(), mi->model(),
-                       mi->availableModes(),
-                       mi->mirrorOf());   // mirrorOf still set from last known state
-            newList.append(mi);
-        } else {
-            mi->deleteLater();
+        if (!seen.contains(it.key())) {
+            it.value()->deleteLater();
         }
     }
-}
 
     m_monitors = newList;
-    saveMonitorsConfig();
+
+    // Ensure ~/.config/fht/monitors.toml exists on first discovery without overwriting manual edits on every poll
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    if (configDir.isEmpty()) {
+        configDir = QDir::homePath() + QStringLiteral("/.config");
+    }
+    const QFileInfo cfgInfo(configDir + QStringLiteral("/fht/monitors.toml"));
+    if (!cfgInfo.exists() || cfgInfo.size() == 0) {
+        saveMonitorsConfig();
+    }
+
     emit monitorsChanged();
     setError(QString());
 }
@@ -473,63 +472,82 @@ MonitorInfo *Monitors::findMonitor(const QString &name)
 {
     for (QObject *obj : std::as_const(m_monitors)) {
         auto *m = qobject_cast<MonitorInfo*>(obj);
-        if (m && m->name() == name) return m;
+        if (m && m->name() == name)
+            return m;
     }
     return nullptr;
 }
 
-void Monitors::saveMonitorsConfig() const
+bool Monitors::saveMonitorsConfig() const
 {
     QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     if (configDir.isEmpty()) {
         configDir = QDir::homePath() + QStringLiteral("/.config");
     }
-    
+
     QDir dir(configDir);
-    if (!dir.exists(QStringLiteral("sleex"))) {
-        dir.mkpath(QStringLiteral("sleex"));
+    if (!dir.exists(QStringLiteral("fht"))) {
+        dir.mkpath(QStringLiteral("fht"));
     }
-    
-    QString filePath = configDir + QStringLiteral("/sleex/monitors.lua");
+
+    const QString filePath = configDir + QStringLiteral("/fht/monitors.toml");
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return;
+        return false;
     }
-    
+
+    static const QRegularExpression kBareKeyRe(QStringLiteral("^[A-Za-z0-9_-]+$"));
+
     QTextStream out(&file);
-    out << "-- This file is generated by sleex monitor settings\n";
-    
+    out << "# This file is generated by sleex monitor settings\n";
+
     for (QObject *obj : m_monitors) {
         auto *mi = qobject_cast<MonitorInfo*>(obj);
-        if (!mi) continue;
-        
+        if (!mi)
+            continue;
+
+        const QString key = kBareKeyRe.match(mi->name()).hasMatch()
+                                ? mi->name()
+                                : QStringLiteral("\"%1\"").arg(mi->name());
+
+        out << QStringLiteral("\n[outputs.%1]\n").arg(key);
         if (!mi->enabled()) {
-            out << QStringLiteral("hl.monitor({ output = \"%1\", disabled = true })\n").arg(mi->name());
+            out << QStringLiteral("disable = true\n");
             continue;
         }
-        
-        if (!mi->mirrorOf().isEmpty()) {
-            out << QStringLiteral("hl.monitor({ output = \"%1\", mode = \"preferred\", position = \"auto\", scale = 1, mirror = \"%2\" })\n")
-                       .arg(mi->name(), mi->mirrorOf());
+
+        out << QStringLiteral("mode = \"%1x%2@%3\"\n")
+                   .arg(mi->width())
+                   .arg(mi->height())
+                   .arg(mi->refreshRate(), 0, 'f', 2);
+        out << QStringLiteral("position = { x = %1, y = %2 }\n")
+                   .arg(mi->x())
+                   .arg(mi->y());
+        const double s = mi->scale();
+        if (std::abs(s - std::round(s)) < 0.001) {
+            out << QStringLiteral("scale = %1\n").arg(static_cast<int>(std::round(s)));
         } else {
-            out << QStringLiteral("hl.monitor({ output = \"%1\", mode = \"%2x%3@%4\", position = \"%5x%6\", scale = %7 })\n")
-                       .arg(mi->name())
-                       .arg(mi->width()).arg(mi->height())
-                       .arg(mi->refreshRate(), 0, 'f', 2)
-                       .arg(mi->x()).arg(mi->y())
-                       .arg(mi->scale(), 0, 'f', 2);
+            out << QStringLiteral("scale = %1\n").arg(s, 0, 'f', 2);
         }
     }
+
+    return true;
 }
 
 void Monitors::setBusy(bool b)
 {
-    if (m_busy != b) { m_busy = b; emit busyChanged(); }
+    if (m_busy != b) {
+        m_busy = b;
+        emit busyChanged();
+    }
 }
 
 void Monitors::setError(const QString &e)
 {
-    if (m_lastError != e) { m_lastError = e; emit lastErrorChanged(); }
+    if (m_lastError != e) {
+        m_lastError = e;
+        emit lastErrorChanged();
+    }
 }
 
 } // namespace sleex::services

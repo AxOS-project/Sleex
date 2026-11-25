@@ -4,6 +4,7 @@ import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
+import Sleex.Fhtc
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -11,32 +12,24 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Item {
     id: root
     required property var panelWindow
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
-    readonly property var toplevels: ToplevelManager.toplevels
+    readonly property string screenName: panelWindow.screen.name
+    readonly property var monitor: FhtcMonitors.monitors[screenName] ?? null
     readonly property int workspacesShown: Config.options.overview.numOfRows * Config.options.overview.numOfCols
-    readonly property int workspaceGroup: Math.floor((monitor.activeWorkspace?.id - 1) / workspacesShown)
-    property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
-    property var windows: HyprlandData.windowList
-    property var windowByAddress: HyprlandData.windowByAddress
-    property var windowAddresses: HyprlandData.addresses
-    property var monitorData: HyprlandData.monitors.find(m => m.id === root.monitor.id)
+    readonly property int activeWorkspaceIndex: monitor?.["active-workspace-idx"] ?? 0
+    readonly property int workspaceGroup: Math.floor(activeWorkspaceIndex / workspacesShown)
+    property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screenName)
     property real scale: Config.options.overview.scale
     property color activeBorderColor: Appearance.colors.colSecondary
 
-    property real workspaceImplicitWidth: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.height - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale) :
-        ((monitor.width - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale)
-    property real workspaceImplicitHeight: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.width - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale) :
-        ((monitor.height - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale)
+    property real workspaceImplicitWidth: panelWindow.screen.width * root.scale
+    property real workspaceImplicitHeight: panelWindow.screen.height * root.scale
 
     property real workspaceNumberMargin: 80
-    property real workspaceNumberSize: Math.min(workspaceImplicitHeight, workspaceImplicitWidth) * monitor.scale
+    property real workspaceNumberSize: Math.min(workspaceImplicitHeight, workspaceImplicitWidth) * (panelWindow.screen.devicePixelRatio ?? 1)
     property int workspaceZ: 0
     property int windowZ: 1
     property int windowDraggingZ: 99999
@@ -65,6 +58,10 @@ Item {
         radius: Appearance.rounding.screenRounding * root.scale + padding
         color: Appearance.colors.colLayer0
 
+        MouseArea {
+            anchors.fill: parent
+        }
+
         ColumnLayout { // Workspaces
             id: workspaceColumnLayout
 
@@ -75,6 +72,7 @@ Item {
                 model: Config.options.overview.numOfRows
                 delegate: RowLayout {
                     id: row
+                    required property int index
                     property int rowIndex: index
                     spacing: workspaceSpacing
 
@@ -82,9 +80,12 @@ Item {
                         model: Config.options.overview.numOfCols
                         Rectangle { // Workspace
                             id: workspace
+                            required property int index
                             property int colIndex: index
-                            property int workspaceValue: root.workspaceGroup * workspacesShown + rowIndex * Config.options.overview.numOfCols + colIndex + 1
-                            property color defaultWorkspaceColor: Appearance.colors.colLayer1 // TODO: reconsider this color for a cleaner look
+                            readonly property int wsIndex: root.workspaceGroup * root.workspacesShown + row.rowIndex * Config.options.overview.numOfCols + colIndex
+                            property int workspaceValue: wsIndex + 1
+                            readonly property int workspaceId: root.monitor?.workspaces?.[wsIndex] ?? -1
+                            property color defaultWorkspaceColor: Appearance.colors.colLayer1
                             property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
                             property color hoveredBorderColor: Appearance.colors.colLayer2Hover
                             property bool hoveredWhileDragging: false
@@ -113,7 +114,11 @@ Item {
                                 onClicked: {
                                     if (root.draggingTargetWorkspace === -1) {
                                         GlobalStates.overviewOpen = false
-                                        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${workspace.workspaceValue} })`)
+                                        if (workspace.workspaceId >= 0) {
+                                            FhtcIpc.dispatch("focus-workspace", { "workspace-id": workspace.workspaceId })
+                                        } else {
+                                            FhtcIpc.dispatch("focus-workspace-by-index", { "workspace-idx": workspace.wsIndex })
+                                        }
                                     }
                                 }
                             }
@@ -121,13 +126,13 @@ Item {
                             DropArea {
                                 anchors.fill: parent
                                 onEntered: {
-                                    root.draggingTargetWorkspace = workspace.workspaceValue
+                                    root.draggingTargetWorkspace = workspace.workspaceId
                                     if (root.draggingFromWorkspace == root.draggingTargetWorkspace) return;
                                     hoveredWhileDragging = true
                                 }
                                 onExited: {
                                     hoveredWhileDragging = false
-                                    if (root.draggingTargetWorkspace == workspace.workspaceValue) root.draggingTargetWorkspace = -1
+                                    if (root.draggingTargetWorkspace == workspace.workspaceId) root.draggingTargetWorkspace = -1
                                 }
                             }
 
@@ -146,36 +151,33 @@ Item {
             Repeater { // Window repeater
                 model: ScriptModel {
                     values: {
-                        // console.log(JSON.stringify(ToplevelManager.toplevels.values.map(t => t), null, 2))
-                        return ToplevelManager.toplevels.values.filter((toplevel) => {
-                            const address = `0x${toplevel.HyprlandToplevel.address}`
-                            // console.log(`Checking window with address: ${address}`)
-                            var win = windowByAddress[address]
-                            return (root.workspaceGroup * root.workspacesShown < win?.workspace?.id && win?.workspace?.id <= (root.workspaceGroup + 1) * root.workspacesShown)
-                        })
+                        const monWs = root.monitor?.workspaces ?? []
+                        const start = root.workspaceGroup * root.workspacesShown
+                        const visibleWsIds = monWs.slice(start, start + root.workspacesShown)
+                        return Object.values(FhtcWorkspaces.windows ?? {}).filter(win => visibleWsIds.includes(win["workspace-id"]))
                     }
                 }
                 delegate: OverviewWindow {
                     id: window
                     required property var modelData
-                    property var address: `0x${modelData.HyprlandToplevel.address}`
-                    windowData: windowByAddress[address]
-                    toplevel: modelData
-                    monitorData: root.monitorData
+                    windowData: modelData
                     scale: root.scale
                     availableWorkspaceWidth: root.workspaceImplicitWidth
                     availableWorkspaceHeight: root.workspaceImplicitHeight
 
-                    property int monitorId: windowData?.monitor
-                    property var monitor: HyprlandData.monitors[monitorId]
+                    readonly property int wsIndexInMonitor: {
+                        const monWs = root.monitor?.workspaces ?? []
+                        const idx = monWs.indexOf(windowData?.["workspace-id"])
+                        return idx >= 0 ? idx : 0
+                    }
 
                     property bool atInitPosition: (initX == x && initY == y)
                     restrictToWorkspace: Drag.active || atInitPosition
 
-                    property int workspaceColIndex: (windowData?.workspace.id - 1) % Config.options.overview.numOfCols
-                    property int workspaceRowIndex: Math.floor((windowData?.workspace.id - 1) % root.workspacesShown / Config.options.overview.numOfCols)
-                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex - (monitor?.x * root.scale)
-                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex - (monitor?.y * root.scale)
+                    property int workspaceColIndex: wsIndexInMonitor % Config.options.overview.numOfCols
+                    property int workspaceRowIndex: Math.floor((wsIndexInMonitor % root.workspacesShown) / Config.options.overview.numOfCols)
+                    xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
+                    yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
 
                     Timer {
                         id: updateWindowPosition
@@ -183,9 +185,8 @@ Item {
                         repeat: false
                         running: false
                         onTriggered: {
-                            window.x = Math.round(Math.max((windowData?.at[0] - monitorData?.reserved[0]) * root.scale, 0) + xOffset)
-                            window.y = Math.round(Math.max((windowData?.at[1] - monitorData?.reserved[1]) * root.scale, 0) + yOffset)
-                            // console.log(`[OverviewWindow] Updated position for window ${windowData?.address} to (${window.x}, ${window.y})`)
+                            window.x = Math.round(Math.max((windowData?.location?.[0] ?? 0) * root.scale, 0) + xOffset)
+                            window.y = Math.round(Math.max((windowData?.location?.[1] ?? 0) * root.scale, 0) + yOffset)
                         }
                     }
 
@@ -196,27 +197,28 @@ Item {
                         id: dragArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onEntered: hovered = true // For hover color change
-                        onExited: hovered = false // For hover color change
+                        onEntered: hovered = true
+                        onExited: hovered = false
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                         drag.target: parent
                         onPressed: {
-                            root.draggingFromWorkspace = windowData?.workspace.id
+                            root.draggingFromWorkspace = windowData?.["workspace-id"] ?? -1
                             window.pressed = true
                             window.Drag.active = true
                             window.Drag.source = window
-                            // console.log(`[OverviewWindow] Dragging window ${windowData?.address} from position (${window.x}, ${window.y})`)
                         }
                         onReleased: {
                             const targetWorkspace = root.draggingTargetWorkspace
                             window.pressed = false
                             window.Drag.active = false
                             root.draggingFromWorkspace = -1
-                            if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                                Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, window = "address:${windowData.address}" })`)
+                            if (targetWorkspace !== -1 && targetWorkspace !== windowData?.["workspace-id"]) {
+                                FhtcIpc.dispatch("send-window-to-workspace", {
+                                    "window-id": windowData.id,
+                                    "workspace-id": targetWorkspace
+                                })
                                 updateWindowPosition.restart()
-                            }
-                            else {
+                            } else {
                                 window.x = window.initX
                                 window.y = window.initY
                             }
@@ -226,10 +228,10 @@ Item {
 
                             if (event.button === Qt.LeftButton) {
                                 GlobalStates.overviewOpen = false
-                                Hyprland.dispatch(`hl.dsp.focus({ window = "address:${windowData.address}" })`)
+                                FhtcIpc.dispatch("focus-window", { "window-id": windowData.id })
                                 event.accepted = true
                             } else if (event.button === Qt.MiddleButton) {
-                                Hyprland.dispatch(`hl.dsp.window.close({ window = "address:${windowData.address}" })`)
+                                FhtcIpc.dispatch("close-window", { "window-id": windowData.id, "kill": false })
                                 event.accepted = true
                             }
                         }
@@ -237,7 +239,7 @@ Item {
                         StyledToolTip {
                             extraVisibleCondition: false
                             alternativeVisibleCondition: dragArea.containsMouse && !window.Drag.active
-                            text: `${windowData.title}\n[${windowData.class}] ${windowData.xwayland ? "[XWayland] " : ""}\n`
+                            text: `${windowData?.title ?? ""}\n[${windowData?.["app-id"] ?? ""}]\n`
                         }
                     }
                 }
@@ -245,9 +247,9 @@ Item {
 
             Rectangle { // Focused workspace indicator
                 id: focusedWorkspaceIndicator
-                property int activeWorkspaceInGroup: monitor.activeWorkspace?.id - (root.workspaceGroup * root.workspacesShown)
-                property int activeWorkspaceRowIndex: Math.floor((activeWorkspaceInGroup - 1) / Config.options.overview.numOfCols)
-                property int activeWorkspaceColIndex: (activeWorkspaceInGroup - 1) % Config.options.overview.numOfCols
+                property int activeWorkspaceInGroup: root.activeWorkspaceIndex - (root.workspaceGroup * root.workspacesShown)
+                property int activeWorkspaceRowIndex: Math.floor(activeWorkspaceInGroup / Config.options.overview.numOfCols)
+                property int activeWorkspaceColIndex: activeWorkspaceInGroup % Config.options.overview.numOfCols
                 x: (root.workspaceImplicitWidth + workspaceSpacing) * activeWorkspaceColIndex
                 y: (root.workspaceImplicitHeight + workspaceSpacing) * activeWorkspaceRowIndex
                 z: root.windowZ
@@ -259,17 +261,17 @@ Item {
                 border.color: root.activeBorderColor
                 Behavior on x {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
                 Behavior on y {
                     animation: NumberAnimation {
-    duration: Appearance.animation.elementMoveFast.duration
-    easing.type: Appearance.animation.elementMoveFast.type
-    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-}
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
             }
         }

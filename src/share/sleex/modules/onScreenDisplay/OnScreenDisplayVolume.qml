@@ -9,12 +9,13 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: root
     property bool showOsdValues: false
     property string protectionMessage: ""
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property var focusedScreen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName) ?? null
 
     function triggerOsd() {
         showOsdValues = true

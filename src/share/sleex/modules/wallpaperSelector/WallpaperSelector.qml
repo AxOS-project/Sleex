@@ -31,32 +31,33 @@ Scope {
 
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:wppselector"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: GlobalStates.wppselectorOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         color: "transparent"
 
-        implicitWidth: 1000
-        implicitHeight: 700
-
-        HyprlandFocusGrab {
-            id: grab
-            windows: [ wppselectorRoot ]
-            active: GlobalStates.wppselectorOpen && !GlobalStates.tutorialMode
-            onCleared: () => {
-                if (!active && !GlobalStates.tutorialMode) wppselectorRoot.hide()
-            }
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
         }
 
-        anchors.top: true
-        margins {
-            top: Appearance.sizes.hyprlandGapsOut * 3
+        MouseArea {
+            anchors.fill: parent
+            onPressed: {
+                if (!GlobalStates.tutorialMode) wppselectorRoot.hide()
+            }
         }
 
         Loader {
             id: wppselectorContentLoader
             active: GlobalStates.wppselectorOpen
+            width: 1000
+            height: 700
             anchors {
-                fill: parent
-                margins: Appearance.sizes.hyprlandGapsOut
-                leftMargin: Appearance.sizes.elevationMargin
+                top: parent.top
+                topMargin: Appearance.sizes.hyprlandGapsOut * 3
+                horizontalCenter: parent.horizontalCenter
             }
 
             focus: GlobalStates.wppselectorOpen
@@ -64,13 +65,13 @@ Scope {
                 if (event.key === Qt.Key_Escape) {
                     wppselectorRoot.hide();
                 }
-            } 
+            }
 
             sourceComponent: Item {
                 StyledRectangularShadow {
                     target: wppselectorBackground
                 }
-                
+
                 Rectangle {
                     id: wppselectorBackground
                     anchors.fill: parent
@@ -78,6 +79,10 @@ Scope {
                     border.width: 1
                     border.color: Appearance.colors.colLayer0Border
                     radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+
+                    MouseArea {
+                        anchors.fill: parent
+                    }
 
                     Item {
                         id: topBar

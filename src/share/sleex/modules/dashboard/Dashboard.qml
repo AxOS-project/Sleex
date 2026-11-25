@@ -5,6 +5,7 @@ import SleexUiKit.Widgets
 import SleexUiKit.Functions
 import SleexUiKit.Appearance
 import Sleex.Utils
+import Sleex.Fhtc
 import qs.modules.dashboard.quickToggles
 import QtQuick
 import QtQuick.Controls
@@ -30,8 +31,7 @@ Scope {
         PanelWindow {
             id: dashboardRoot
             required property var modelData
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === screen.name)
             screen: modelData
             visible: GlobalStates.dashboardOpen && monitorIsFocused
 
@@ -40,41 +40,17 @@ Scope {
             implicitHeight: Screen.height
             WlrLayershell.namespace: "quickshell:dashboard"
             WlrLayershell.layer: GlobalStates.tutorialMode ? WlrLayer.Top : WlrLayer.Overlay
-      
+            WlrLayershell.keyboardFocus: GlobalStates.dashboardOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
             color: "transparent"
             mask: GlobalStates.dashboardOpen ? null : emptyRegion
 
             Region { id: emptyRegion }
 
-            HyprlandFocusGrab {
-                id: grab
-                windows: [ dashboardRoot ]
-                property bool canBeActive: dashboardRoot.monitorIsFocused
-                active: false
-                onCleared: () => { if (!active && !GlobalStates.tutorialMode) ipc.close() }
-            }
-
-            Connections {
-                target: GlobalStates
-                function onDashboardOpenChanged() {
-                    if (!GlobalStates.dashboardOpen) {
-                        delayedGrabTimer.stop()
-                        grab.active = false
-                    } else if (dashboardRoot.monitorIsFocused) {
-                        delayedGrabTimer.start()
-                    }
-                }
-            }
-
-            Timer {
-                id: delayedGrabTimer
-                interval: Config.options.hacks.arbitraryRaceConditionDelay
-                repeat: false
-                onTriggered: {
-                    if (!grab.canBeActive) return
-                    if (GlobalStates.tutorialMode) return
-                    grab.active = GlobalStates.dashboardOpen
-                }
+            MouseArea {
+                anchors.fill: parent
+                visible: GlobalStates.dashboardOpen && !GlobalStates.tutorialMode
+                onPressed: ipc.close()
             }
 
             Item {
@@ -141,11 +117,8 @@ Scope {
                         if (dashboardRoot.monitorIsFocused) {
                             if (GlobalStates.dashboardOpen) {
                                 scaleWrapper.openFocusedDashboard()
-                                delayedGrabTimer.start()
                             }
                         } else {
-                            delayedGrabTimer.stop()
-                            grab.active = false
                             if (!scaleWrapper.isAnimating) {
                                 scaleWrapper.resetSlideState(true)
                             }
@@ -246,6 +219,10 @@ Scope {
                             color: Appearance.colors.colLayer0
                             radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
 
+                            MouseArea {
+                                anchors.fill: parent
+                            }
+
                             ColumnLayout {
                                 spacing: dashboardPadding
                                 anchors.fill: parent
@@ -297,10 +274,10 @@ Scope {
                                             toggled: false
                                             buttonIcon: "restart_alt"
                                             onClicked: {
-                                                Quickshell.execDetached(["hyprctl", "reload"])
+                                                FhtcIpc.dispatch("reload-config")
                                                 Quickshell.reload(true)
                                             }
-                                            StyledToolTip { text: qsTr("Reload Hyprland & Quickshell") }
+                                            StyledToolTip { text: qsTr("Reload Compositor & Quickshell") }
                                         }
                                         QuickToggleButton {
                                             toggled: false
@@ -314,7 +291,7 @@ Scope {
                                         QuickToggleButton {
                                             toggled: false
                                             buttonIcon: "power_settings_new"
-                                            onClicked: Hyprland.dispatch("hl.dsp.global('quickshell:sessionOpen')")
+                                            onClicked: Quickshell.execDetached(["qs", "-p", "/usr/share/sleex/", "ipc", "call", "session", "open"])
                                             StyledToolTip { text: qsTr("Session") }
                                         }
                                     }

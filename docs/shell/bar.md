@@ -43,7 +43,7 @@ The bar is divided into three distinct visual regions:
     - Hovering over any resource icon reveals a tooltip with the exact percentage and absolute values (e.g., "CPU: 45%").
 
 ### Workspaces Switcher
-- **Workspace Dots & Numbers**: Displays available Hyprland workspaces (configurable from 1 to 30).
+- **Workspace Dots & Numbers**: Displays per-monitor `fht-compositor` workspaces (1 to 9 per display).
 - **Dynamic Icon Modes**:
   - **Material Icons Mode**: Displays minimalistic geometric dots and Material symbols for active workspaces.
   - **App Icons Mode**: Pulls the running application's desktop icon into the workspace badge so users immediately know which apps live where.

@@ -1,0 +1,15 @@
+imports = [
+	"/etc/sleex/compositor/general.toml",
+	"/etc/sleex/compositor/keybinds.toml",
+	"/etc/sleex/compositor/rules.toml",
+	"/etc/sleex/compositor/execs.toml",
+	"/etc/sleex/compositor/envs.toml",
+
+	"~/.config/fht/monitors.toml",
+	"~/.config/fht/apps.toml",
+	"~/.config/fht/custom/general.toml",
+	"~/.config/fht/custom/keybinds.toml",
+	"~/.config/fht/custom/rules.toml",
+	"~/.config/fht/custom/execs.toml",
+	"~/.config/fht/custom/env.toml",
+]

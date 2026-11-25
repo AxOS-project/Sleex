@@ -3,14 +3,14 @@ import SleexUiKit.Widgets
 import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Wayland
-import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Item {
     id: root
     required property var bar
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
+    readonly property var monitor: FhtcMonitors.monitors[bar.screen.name] ?? null
+    readonly property var activeWindow: FhtcWorkspaces.focusedWindow
+    readonly property bool hasActiveWindow: activeWindow !== null && activeWindow !== undefined && Object.keys(activeWindow).length > 0
 
     // Track whether the mouse is hovering over this area or a menu is open
     property bool hovered: (hoverHandler.hovered || menuBar.openMenuIndex !== -1) && menuBar.menus.length > 0
@@ -46,7 +46,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.appId : qsTr("Desktop")
+            text: root.hasActiveWindow ? (root.activeWindow["app-id"] || qsTr("Desktop")) : qsTr("Desktop")
         }
 
         StyledText {
@@ -54,7 +54,7 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            text: root.activeWindow?.activated ? root.activeWindow?.title : `${qsTr("Workspace")} ${monitor.activeWorkspace?.id}`
+            text: root.hasActiveWindow ? (root.activeWindow.title || "") : `${qsTr("Workspace")} ${(root.monitor?.["active-workspace-idx"] ?? 0) + 1}`
         }
 
     }

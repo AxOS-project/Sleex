@@ -140,7 +140,7 @@ Singleton {
             property bool background: false
             property bool borderless: false // true for no grouping of items
             property bool verbose: true
-            property list<string> screenList: [] // List of names, like "eDP-1", find out with 'hyprctl monitors' command
+            property list<string> screenList: [] // List of names, like "eDP-1", find out with 'fht-compositor ipc outputs' command
             property JsonObject workspaces: JsonObject {
                 property int shown: 10
                 property bool showAppIcons: false

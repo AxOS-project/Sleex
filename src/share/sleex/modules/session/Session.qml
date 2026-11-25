@@ -12,10 +12,11 @@ import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Sleex.Fhtc
 
 Scope {
     id: root
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property var focusedScreen: Quickshell.screens.find(s => s.name === FhtcMonitors.activeMonitorName) ?? null
     property bool hasSystemd: false
 
     Process {
@@ -125,7 +126,7 @@ Scope {
                             id: sessionLogout
                             buttonIcon: "logout"
                             buttonText: qsTr("Logout")
-                            onClicked: { Quickshell.execDetached(["pkill", "Hyprland"]); sessionRoot.hide() }
+                            onClicked: { FhtcIpc.dispatch("quit"); sessionRoot.hide() }
                             onFocusChanged: { if (focus) sessionRoot.subtitle = buttonText }
                             KeyNavigation.left: sessionSleep
                             KeyNavigation.right: sessionTaskManager

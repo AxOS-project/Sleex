@@ -40,23 +40,16 @@ Scope { // Scope
             implicitWidth: cheatsheetBackground.width + Appearance.sizes.elevationMargin * 2
             implicitHeight: cheatsheetBackground.height + Appearance.sizes.elevationMargin * 2
             WlrLayershell.namespace: "quickshell:cheatsheet"
-            // Hyprland 0.49: Focus is always exclusive and setting this breaks mouse focus grab
-            // WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             color: "transparent"
 
-            mask: Region {
-                item: cheatsheetBackground
-            }
-
-            HyprlandFocusGrab { // Click outside to close
-                id: grab
-                windows: [ cheatsheetRoot ]
-                active: cheatsheetRoot.visible && !GlobalStates.tutorialMode
-                onCleared: () => {
-                    if (!active && !GlobalStates.tutorialMode) cheatsheetRoot.hide()
+            MouseArea {
+                anchors.fill: parent
+                onPressed: {
+                    if (!GlobalStates.tutorialMode) cheatsheetRoot.hide()
                 }
             }
-
 
             // Background
             StyledRectangularShadow {
@@ -70,11 +63,16 @@ Scope { // Scope
                 property real padding: 30
                 implicitWidth: cheatsheetColumnLayout.implicitWidth + padding * 2
                 implicitHeight: cheatsheetColumnLayout.implicitHeight + padding * 2
+                focus: cheatsheetRoot.visible
 
                 Keys.onPressed: (event) => { // Esc to close
                     if (event.key === Qt.Key_Escape) {
                         cheatsheetRoot.hide()
                     }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
                 }
 
                 RippleButton { // Close button

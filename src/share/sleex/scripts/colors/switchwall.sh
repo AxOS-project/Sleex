@@ -29,8 +29,8 @@ pre_process() {
 
 check_and_prompt_upscale() {
     local img="$1"
-    min_width_desired="$(hyprctl monitors -j | jq '([.[].width] | max)' | xargs)"
-    min_height_desired="$(hyprctl monitors -j | jq '([.[].height] | max)' | xargs)"
+    min_width_desired="$(fht-compositor ipc -j outputs | jq '([.[].size[0]] | max)' | xargs)"
+    min_height_desired="$(fht-compositor ipc -j outputs | jq '([.[].size[1]] | max)' | xargs)"
 
     if command -v identify &>/dev/null && [ -f "$img" ]; then
         local img_width img_height

@@ -12,6 +12,7 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
+import Sleex.Fhtc
 
 DockButton {
     id: root
@@ -21,7 +22,7 @@ DockButton {
     property real iconSize: 35
     property real countDotWidth: 10
     property real countDotHeight: 4
-    property bool appIsActive: appToplevel.toplevels.find(t => (t.activated == true)) !== undefined
+    property bool appIsActive: appToplevel.toplevels.find(t => (t.focused == true || t.activated == true)) !== undefined
 
     property bool isSeparator: appToplevel.appId === "SEPARATOR"
     property var desktopEntry: DesktopEntries.byId(appToplevel.appId)
@@ -72,7 +73,10 @@ DockButton {
             return;
         }
         lastFocused = (lastFocused + 1) % appToplevel.toplevels.length
-        appToplevel.toplevels[lastFocused].activate()
+        const targetWin = appToplevel.toplevels[lastFocused]
+        if (targetWin && targetWin.id !== undefined) {
+            FhtcIpc.dispatch("focus-window", { "window-id": targetWin.id })
+        }
     }
 
     middleClickAction: () => {

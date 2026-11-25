@@ -2,13 +2,12 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
+import Sleex.Fhtc
 import qs
 import qs.modules.common
 
 /**
- * Focuses a window as soon as it opens. With follow_mouse the focus would otherwise
- * stay on whatever is under the cursor until the mouse moves.
+ * Focuses a window as soon as it opens on the currently active workspace.
  */
 Singleton {
     id: root
@@ -18,19 +17,18 @@ Singleton {
     function init() {} // Referencing the singleton is enough to load it
 
     Connections {
-        target: Hyprland
+        target: FhtcWorkspaces
 
-        function onRawEvent(event) {
-            if (!root.enabled || event.name !== "openwindow" || GlobalStates.screenLocked)
+        function onWindowOpened(win) {
+            if (!root.enabled || GlobalStates.screenLocked)
                 return;
 
-            // openwindow data: address,workspaceName,class,title
-            const [address, workspace, windowClass] = event.data.split(",");
-            // Skip windows without a class (menus, tooltips) and windows opened on a workspace that is not in front
-            if (!windowClass || workspace !== Hyprland.focusedWorkspace?.name)
+            const appId = win["app-id"] ?? "";
+            const workspaceId = win["workspace-id"];
+            if (!appId || workspaceId !== FhtcWorkspaces.activeWorkspaceId)
                 return;
 
-            Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${address}" })`);
+            FhtcIpc.dispatch("focus-window", { "window-id": win.id });
         }
     }
 }

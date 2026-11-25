@@ -7,7 +7,6 @@ import SleexUiKit.Appearance
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -31,7 +30,7 @@ Scope {
 
                 color: "transparent"
                 WlrLayershell.namespace: "quickshell:polkit"
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
                 WlrLayershell.layer: WlrLayer.Overlay
                 exclusionMode: ExclusionMode.Ignore
 

@@ -1,0 +1,128 @@
+# Lines ending with `# [hidden]` won't be shown on cheatsheet
+# Lines starting with #! are section headings
+
+[keybinds]
+
+#!
+##! Basic
+Super-Shift-s = { action = "run-command", arg = 'grim -g "$(slurp -o)" - | wl-copy --type image/png' } # Screenshot a selected area and copy to clipboard
+Super-Shift-Alt-s = { action = "run-command", arg = 'grim -g "$(slurp)" - | swappy -f -' } # Screen snip and edit
+Print = { action = "run-command", arg = "grim - | wl-copy", allow-while-locked = true } # Screenshot full screen to clipboard
+Ctrl-Print = { action = "run-command", arg = "/usr/share/sleex/scripts/grimshot.sh", allow-while-locked = true } # Screenshot with Grimshot menu
+Super-Shift-t = { action = "run-command", arg = 'grim -g "$(slurp)" "/tmp/sleex_ocr.png" && tesseract "/tmp/sleex_ocr.png" - | wl-copy && rm -f "/tmp/sleex_ocr.png"' } # Screen snip to text (OCR)
+Super-Shift-x = { action = "run-command", arg = "hyprpicker -a" } # Pick color (Hex) to clipboard
+Ctrl-Super-t = { action = "run-command", arg = "/usr/share/sleex/scripts/colors/switchwall.sh" } # Change wallpaper
+Super-Alt-r = { action = "run-command", arg = "/usr/share/sleex/scripts/record-script.sh" } # Record region (no sound)
+Ctrl-Alt-r = { action = "run-command", arg = "/usr/share/sleex/scripts/record-script.sh --fullscreen" } # Record screen (no sound)
+Super-Shift-Alt-r = { action = "run-command", arg = "/usr/share/sleex/scripts/record-script.sh --fullscreen-sound" } # Record screen (with sound)
+
+#!
+##! Multimedia
+XF86AudioRaiseVolume = { action = "run-command", arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+", allow-while-locked = true, repeat = true } # Increase volume by 5%
+XF86AudioLowerVolume = { action = "run-command", arg = "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-", allow-while-locked = true, repeat = true } # Decrease volume by 5%
+XF86AudioMute = { action = "run-command", arg = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle", allow-while-locked = true } # Toggle mute
+Super-XF86AudioMute = { action = "run-command", arg = "wpctl set-mute @DEFAULT_SOURCE@ toggle", allow-while-locked = true } # Toggle microphone mute
+XF86AudioNext = { action = "run-command", arg = "playerctl next", allow-while-locked = true } # Next media track
+XF86AudioPrev = { action = "run-command", arg = "playerctl previous", allow-while-locked = true } # Previous media track
+XF86AudioPlay = { action = "run-command", arg = "playerctl play-pause", allow-while-locked = true } # Play or pause media
+XF86AudioPause = { action = "run-command", arg = "playerctl play-pause", allow-while-locked = true } # Pause media
+XF86MonBrightnessUp = { action = "run-command", arg = "qs -p /usr/share/sleex/ ipc call brightness increment", allow-while-locked = true, repeat = true } # Increase display brightness
+XF86MonBrightnessDown = { action = "run-command", arg = "qs -p /usr/share/sleex/ ipc call brightness decrement", allow-while-locked = true, repeat = true } # Decrease display brightness
+
+#!
+##! Focus and window management
+Super-Right = "focus-next-window" # Focus the next window in the current workspace
+Super-Left = "focus-previous-window" # Focus the previous window in the current workspace
+
+Super-m = "maximize-focused-window" # Toggle maximize the focused window
+Super-f = "fullscreen-focused-window" # Toggle fullscreen the focused window
+Super-q = "close-focused-window" # Close the focused window
+Super-Ctrl-Space = "float-focused-window" # Toggle floating the focused window
+Super-Alt-Space = "float-focused-window" # [hidden]
+Super-Shift-Right = "swap-with-next-window" # Swap the focused window with the next window in the current workspace
+Super-Shift-Left = "swap-with-previous-window" # Swap the focused window with the previous window in the current workspace
+
+# Transient layout changes.
+Super-Space = "select-next-layout" # Cycle to the next layout in the current workspace
+Super-Ctrl-Left = { action = "change-mwfact", arg = -0.1 } # Decrease the master area size by 10%
+Super-Ctrl-Right = { action = "change-mwfact", arg = 0.1 } # Increase the master area size by 10%
+Super-Shift-h = { action = "change-nmaster", arg = 1 } # Increase the number of windows in the master area by 1
+Super-Shift-l = { action = "change-nmaster", arg = -1 } # Decrease the number of windows in the master area by 1
+Super-i = { action = "change-window-proportion", arg = 0.5 } # Increase the size of the focused window
+Super-o = { action = "change-window-proportion", arg = -0.5 } # Decrease the size of the focused window
+
+# Workspaces
+#/# Super-[1-9] = { action = "focus-workspace", arg = N } # Focus workspace 1
+Super-ampersand = { action = "focus-workspace", arg = 0 } # [hidden]
+Super-eacute = { action = "focus-workspace", arg = 1 } # [hidden]
+Super-quotedbl = { action = "focus-workspace", arg = 2 } # [hidden]
+Super-apostrophe = { action = "focus-workspace", arg = 3 } # [hidden]
+Super-parenleft = { action = "focus-workspace", arg = 4 } # [hidden]
+Super-minus = { action = "focus-workspace", arg = 5 } # [hidden]
+Super-egrave = { action = "focus-workspace", arg = 6 } # [hidden]
+Super-underscore = { action = "focus-workspace", arg = 7 } # [hidden]
+Super-agrave = { action = "focus-workspace", arg = 8 } # [hidden]
+# For QWERTY users
+Super-1 = { action = "focus-workspace", arg = 0 } # [hidden]
+Super-2 = { action = "focus-workspace", arg = 1 } # [hidden]
+Super-3 = { action = "focus-workspace", arg = 2 } # [hidden]
+Super-4 = { action = "focus-workspace", arg = 3 } # [hidden]
+Super-5 = { action = "focus-workspace", arg = 4 } # [hidden]
+Super-6 = { action = "focus-workspace", arg = 5 } # [hidden]
+Super-7 = { action = "focus-workspace", arg = 6 } # [hidden]
+Super-8 = { action = "focus-workspace", arg = 7 } # [hidden]
+Super-9 = { action = "focus-workspace", arg = 8 } # [hidden]
+
+Super-Page_Down = "focus-next-workspace" # Focus the next workspace
+Super-Page_Up = "focus-previous-workspace" # Focus the previous workspace
+
+# Sending windows to workspaces
+#/#! Super-Ctrl-[1-9] = { action = "send-to-workspace", arg = N } # Send the focused window to workspace 1
+Super-Ctrl-ampersand = { action = "send-to-workspace", arg = 0 } # [hidden]
+Super-Ctrl-eacute = { action = "send-to-workspace", arg = 1 } # [hidden]
+Super-Ctrl-quotedbl = { action = "send-to-workspace", arg = 2 } # [hidden]
+Super-Ctrl-apostrophe = { action = "send-to-workspace", arg = 3 } # [hidden]
+Super-Ctrl-parenleft = { action = "send-to-workspace", arg = 4 } # [hidden]
+Super-Ctrl-minus = { action = "send-to-workspace", arg = 5 } # [hidden]
+Super-Ctrl-egrave = { action = "send-to-workspace", arg = 6 } # [hidden]
+Super-Ctrl-underscore = { action = "send-to-workspace", arg = 7 } # [hidden]
+Super-Ctrl-agrave = { action = "send-to-workspace", arg = 8 } # [hidden]
+# For QWERTY users
+Super-Ctrl-1 = { action = "send-to-workspace", arg = 0 } # [hidden]
+Super-Ctrl-2 = { action = "send-to-workspace", arg = 1 } # [hidden]
+Super-Ctrl-3 = { action = "send-to-workspace", arg = 2 } # [hidden]
+Super-Ctrl-4 = { action = "send-to-workspace", arg = 3 } # [hidden]
+Super-Ctrl-5 = { action = "send-to-workspace", arg = 4 } # [hidden]
+Super-Ctrl-6 = { action = "send-to-workspace", arg = 5 } # [hidden]
+Super-Ctrl-7 = { action = "send-to-workspace", arg = 6 } # [hidden]
+Super-Ctrl-8 = { action = "send-to-workspace", arg = 7 } # [hidden]
+Super-Ctrl-9 = { action = "send-to-workspace", arg = 8 } # [hidden]
+
+#!
+##! Shell
+Super-d = { action = "global-shortcut", arg = "quickshell:dashboardToggle" } # Toggle the dashboard
+Super-Super_L = { action = "global-shortcut", arg = "quickshell:overviewToggleReleaseInterrupt" } # Toggle the overview
+Super-v = { action = "global-shortcut", arg = "quickshell:overviewClipboardToggle" } # Toggle the clipboard overview
+Super-semicolon = { action = "global-shortcut", arg = "quickshell:overviewEmojiToggle" } # Toggle the emoji overview
+Super-F1 = { action = "global-shortcut", arg = "quickshell:cheatsheetToggle" } # Toggle the cheatsheet
+Ctrl-Alt-Delete = { action = "global-shortcut", arg = "quickshell:sessionToggle" } # Toggle the session menu
+Super-t = { action = "global-shortcut", arg = "quickshell:wppselectorToggle" } # Toggle the wallpaper selector
+Super-l = { action = "global-shortcut", arg = "quickshell:lockScreen" } # Lock the screen
+Super-End = { action = "run-command", arg = "pkill qs && qs -p /usr/share/sleex/shell.qml" } # Restart Sleex shell
+Super-Ctrl-End = { action = "run-command", arg = "qs -p /usr/share/sleex/shell.qml" } # Start Sleex shell
+XF86PowerOff = { action = "global-shortcut", arg = "quickshell:powerButtonPressed", allow-while-locked = true } # Confirm before powering off
+
+# ---------------------------------------------------------
+
+## [hidden]
+[mousebinds]
+Super-Left = "swap-tile"
+Super-Right = "resize-tile"
+Super-scrollup = "focus-next-workspace"
+Super-scrolldown = "focus-previous-workspace"
+
+[gesturebinds]
+focus-next-workspace = { fingers = 4, direction = "left" }
+focus-previous-workspace = { fingers = 4, direction = "right" }
+fullscreen-focused-window = { fingers = 4, direction = "up" }
+float-focused-window = { fingers = 4, direction = "down" }

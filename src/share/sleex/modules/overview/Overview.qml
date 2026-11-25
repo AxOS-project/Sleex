@@ -3,6 +3,7 @@ import qs.services
 import qs.modules.common
 import SleexUiKit.Widgets
 import SleexUiKit.Appearance
+import Sleex.Fhtc
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -22,39 +23,20 @@ Scope {
             required property var modelData
             property string searchingText: ""
             property string pendingSearchingText: ""
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor.id)
+            property bool monitorIsFocused: (FhtcMonitors.activeMonitorName === root.screen.name)
             screen: modelData
             visible: GlobalStates.overviewOpen && monitorIsFocused
 
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
-            // WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
             color: "transparent"
-
-            mask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
-            }
-            HyprlandWindow.visibleMask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
-            }
-
 
             anchors {
                 top: true
                 left: true
                 right: true
                 bottom: true
-            }
-
-            HyprlandFocusGrab {
-                id: grab
-                windows: [ root ]
-                property bool canBeActive: root.monitorIsFocused
-                active: false
-                onCleared: () => {
-                    if (!active) GlobalStates.overviewOpen = false
-                }
             }
 
             Connections {
@@ -71,18 +53,7 @@ Scope {
                         if (!overviewScope.dontAutoCancelSearch && searchWidgetLoader.item) {
                             searchWidgetLoader.item.cancelSearch()
                         }
-                        delayedGrabTimer.start()
                     }
-                }
-            }
-
-            Timer {
-                id: delayedGrabTimer
-                interval: Config.options.hacks.arbitraryRaceConditionDelay
-                repeat: false
-                onTriggered: {
-                    if (!grab.canBeActive) return
-                    grab.active = GlobalStates.overviewOpen
                 }
             }
 
@@ -99,6 +70,12 @@ Scope {
                 }
             }
 
+            MouseArea {
+                anchors.fill: parent
+                visible: GlobalStates.overviewOpen
+                onPressed: GlobalStates.overviewOpen = false
+            }
+
             ColumnLayout {
                 id: columnLayout
                 visible: GlobalStates.overviewOpen
@@ -112,9 +89,9 @@ Scope {
                     if (event.key === Qt.Key_Escape) {
                         GlobalStates.overviewOpen = false;
                     } else if (event.key === Qt.Key_Left) {
-                        if (!root.searchingText) Hyprland.dispatch("hl.dsp.focus({ workspace = 'e-1' })");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-previous-workspace");
                     } else if (event.key === Qt.Key_Right) {
-                        if (!root.searchingText) Hyprland.dispatch("hl.dsp.focus({ workspace = 'e+1' })");
+                        if (!root.searchingText) FhtcIpc.dispatch("focus-next-workspace");
                     }
                 }
 
@@ -169,7 +146,7 @@ Scope {
     }
 
     IpcHandler {
-		target: "overview"
+        target: "overview"
 
         function toggle() {
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen
@@ -183,14 +160,14 @@ Scope {
         function toggleReleaseInterrupt() {
             GlobalStates.superReleaseMightTrigger = false
         }
-	}
+    }
 
     GlobalShortcut {
         name: "overviewToggle"
         description: qsTr("Toggles overview on press")
 
         onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen   
+            GlobalStates.overviewOpen = !GlobalStates.overviewOpen
         }
     }
     GlobalShortcut {
@@ -214,7 +191,7 @@ Scope {
                 GlobalStates.superReleaseMightTrigger = true
                 return
             }
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen   
+            GlobalStates.overviewOpen = !GlobalStates.overviewOpen
         }
     }
     GlobalShortcut {
@@ -238,7 +215,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name === FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.clipboard
@@ -261,7 +238,7 @@ Scope {
             }
             for (let i = 0; i < overviewVariants.instances.length; i++) {
                 let panelWindow = overviewVariants.instances[i];
-                if (panelWindow.modelData.name == Hyprland.focusedMonitor.name) {
+                if (panelWindow.modelData.name === FhtcMonitors.activeMonitorName) {
                     overviewScope.dontAutoCancelSearch = true;
                     panelWindow.setSearchingText(
                         Config.options.search.prefix.emojis

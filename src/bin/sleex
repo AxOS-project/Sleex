@@ -1,6 +1,5 @@
 #!/bin/sh
 export XDG_CURRENT_DESKTOP="Sleex"
-export HYPRLAND_INSTANCE_SIGNATURE=""
 
 # systemctl --user only exists on systemd; use dbus directly otherwise
 if [ -d /run/systemd/system ]; then
@@ -11,40 +10,76 @@ else
 fi
 
 # Check if config dirs/files exist, if not copy them from /etc/skel
-for dir in fish hypr anyrun fuzzel Kvantum matugen vdirsyncer mpv wlogout qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
-    if [ ! -d ~/.config/$dir ]; then
+for dir in fish fht fuzzel Kvantum matugen vdirsyncer mpv qt5ct xdg-desktop-portal fontconfig khal qt6ct zshrc.d foot; do
+    if [ ! -d ~/.config/$dir ] && [ -d /etc/skel/.config/$dir ]; then
         cp -r /etc/skel/.config/$dir ~/.config/$dir
-        chown -R $USER:$USER ~/.config/$dir
+        chown -R "$USER":"$USER" ~/.config/$dir
+    fi
+done
+
+mkdir -p ~/.config/fht/custom
+for custom_file in env.toml execs.toml general.toml keybinds.toml rules.toml; do
+    if [ ! -f ~/.config/fht/custom/$custom_file ]; then
+        if [ -f /etc/skel/.config/fht/custom/$custom_file ]; then
+            cp /etc/skel/.config/fht/custom/$custom_file ~/.config/fht/custom/$custom_file
+        else
+            touch ~/.config/fht/custom/$custom_file
+        fi
+        chown "$USER":"$USER" ~/.config/fht/custom/$custom_file
     fi
 done
 
 if [ ! -d ~/.local/share/khal/calendars/default ]; then
     mkdir -p ~/.local/share/khal/calendars/default
-    chown -R $USER:$USER ~/.local/share/khal
+    chown -R "$USER":"$USER" ~/.local/share/khal
 fi
 
 for file in thorium-flags.conf chrome-flags.conf code-flags.conf kdeglobals kitty starship.toml; do
-    if [ ! -f ~/.config/$file ]; then
+    if [ ! -f ~/.config/$file ] && [ -e /etc/skel/.config/$file ]; then
         cp -r /etc/skel/.config/$file ~/.config/$file
-        chown $USER:$USER ~/.config/$file
+        chown -R "$USER":"$USER" ~/.config/$file
     fi
 done
 
-if [ ! -f ~/.config/sleex/apps.lua ] || [ ! -s ~/.config/sleex/apps.lua ]; then
-    cp -r /etc/skel/.config/sleex/apps.lua ~/.config/sleex/apps.lua
-    chown $USER:$USER ~/.config/sleex/apps.lua
+if [ ! -f ~/.config/fht/apps.toml ] || [ ! -s ~/.config/fht/apps.toml ]; then
+    cp /etc/skel/.config/fht/apps.toml ~/.config/fht/apps.toml
+    chown "$USER":"$USER" ~/.config/fht/apps.toml
 fi
 
-if [ ! -f ~/.config/sleex/monitors.lua ] || [ ! -s ~/.config/sleex/monitors.lua ]; then
-    cp -r /etc/skel/.config/sleex/monitors.lua ~/.config/sleex/monitors.lua
-    chown $USER:$USER ~/.config/sleex/monitors.lua
+if [ ! -f ~/.config/fht/monitors.toml ]; then
+    if [ -f /etc/skel/.config/fht/monitors.toml ]; then
+        cp /etc/skel/.config/fht/monitors.toml ~/.config/fht/monitors.toml
+    else
+        touch ~/.config/fht/monitors.toml
+    fi
+    chown "$USER":"$USER" ~/.config/fht/monitors.toml
+fi
+
+# Auto-detect system X11 keyboard layout on first run if custom/general.toml has no keyboard layout
+if ! grep -q "layout" ~/.config/fht/custom/general.toml 2>/dev/null; then
+    kb_layout=""
+    if command -v localectl >/dev/null 2>&1; then
+        kb_layout=$(localectl status 2>/dev/null | awk -F: '/X11 Layout/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+    fi
+    if [ -z "$kb_layout" ] && [ -f /etc/vconsole.conf ]; then
+        kb_layout=$(awk -F= '/^KEYMAP=/ {gsub(/"/, "", $2); print substr($2, 1, 2)}' /etc/vconsole.conf)
+    fi
+    if [ -n "$kb_layout" ]; then
+        printf "\n[input.keyboard]\nlayout = \"%s\"\n" "$kb_layout" >> ~/.config/fht/custom/general.toml
+    fi
+fi
+
+# Auto-configure NVIDIA environment variables in valid TOML if an NVIDIA GPU is present
+if command -v lspci >/dev/null 2>&1 && lspci | grep -i "VGA" | grep -qi "NVIDIA"; then
+    if ! grep -q "LIBVA_DRIVER_NAME" ~/.config/fht/custom/env.toml 2>/dev/null; then
+        printf "\n[env]\nLIBVA_DRIVER_NAME = \"nvidia\"\n__GLX_VENDOR_LIBRARY_NAME = \"nvidia\"\n" >> ~/.config/fht/custom/env.toml
+    fi
 fi
 
 # Check if XDG_USER_DIRS is set up
 if [ ! -f ~/.config/user-dirs.dirs ]; then
-    xdg-user-dirs-update --force # Force create user dirs
+    xdg-user-dirs-update --force
 fi
 
-
-# Start Hyprland with the Sleex config
-start-hyprland -- --config /etc/sleex/hyprland.lua > /dev/null 2>&1
+# Start fht-compositor with the Sleex config
+fht-compositor -c /etc/sleex/compositor.toml > /dev/null 2>&1

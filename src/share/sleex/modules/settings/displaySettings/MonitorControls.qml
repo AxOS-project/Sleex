@@ -156,8 +156,9 @@ ContentSection {
         }
     }
 
-    // 3. Mirroring
+    // TODO: Mirroring (unsupported by fht-compositor)
     RowLayout {
+        visible: false
         Layout.fillWidth: true
         spacing: 10
 

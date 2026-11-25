@@ -52,7 +52,7 @@ The Session Menu provides a full-screen, high-contrast overlay for system power 
 | **Hibernate** | `mode_heat` | Saves RAM state to disk and powers down via `systemctl hibernate`. |
 | **Restart** | `restart_alt` | Reboots the system via `systemctl reboot`. |
 | **Power Off** | `power_settings_new`| Shuts down the machine cleanly via `systemctl poweroff`. |
-| **Log Out** | `logout` | Terminates the active Hyprland session and returns to the display manager. |
+| **Log Out** | `logout` | Terminates the active `fht-compositor` session (`quit` IPC action) and returns to the display manager. |
 
 ### Confirmation Guards
 To prevent accidental reboots or data loss during active work:

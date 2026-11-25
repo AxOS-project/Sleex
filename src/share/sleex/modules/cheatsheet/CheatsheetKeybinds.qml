@@ -31,7 +31,7 @@ Item {
             spacing: root.spacing
 
             Repeater {
-                model: [...HyprlandKeybinds.keybindCategories, ""]
+                model: [...FhtcKeybinds.keybindCategories, ""]
                 delegate: CheatsheetKeybindsCategory {
                     required property var modelData
                     categoryName: modelData

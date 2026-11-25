@@ -1,0 +1,9 @@
+# Autostart programs.
+autostart = [
+    "qs -p /usr/share/sleex/",
+    "dbus-update-activation-environment --all",
+    "sleep 1 && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
+    "wl-paste --type text --watch cliphist store",
+    "wl-paste --type image --watch cliphist store",
+    "/usr/lib/polkit-kde-authentication-agent-1"
+]

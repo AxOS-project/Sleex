@@ -1,0 +1,11 @@
+[keybinds]
+#!
+##! Applications
+Super-Return = { action = "run-command", arg = "foot" } # Launch foot (terminal)
+Super-c = { action = "run-command", arg = "code --password-store=\"gnome-keyring\" --enable-features=UseOzonePlatform --ozone-platform=wayland" } # Launch Visual Studio Code
+Super-e = { action = "run-command", arg = "voxel" } # Launch Voxel (file manager)
+Super-w = { action = "run-command", arg = "firefox" } # Launch Firefox
+Super-x = { action = "run-command", arg = "kwrite" } # Launch kwrite
+Super-i = { action = "run-command", arg = "qs -p /usr/share/sleex/settings.qml" } # Launch Sleex Settings
+Super-Ctrl-v = { action = "run-command", arg = "pavucontrol" } # Launch PulseAudio Volume Control
+Ctrl-Shift-Escape = { action = "run-command", arg = "missioncenter" } # Launch Mission Center

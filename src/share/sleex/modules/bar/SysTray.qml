@@ -4,7 +4,6 @@ import SleexUiKit.Appearance
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
 
 Item {
@@ -27,39 +26,22 @@ Item {
     }
 
     function grabFocus() {
-        focusGrab.active = true;
     }
 
     function setExtraWindowAndGrabFocus(window) {
         root.activeMenu = window;
-        root.grabFocus();
     }
 
     function releaseFocus() {
-        focusGrab.active = false;
+        root.trayOverflowOpen = false;
+        if (root.activeMenu) {
+            root.activeMenu.close();
+            root.activeMenu = null;
+        }
     }
 
     function closeOverflowMenu() {
-        focusGrab.active = false;
-    }
-
-    onTrayOverflowOpenChanged: {
-        if (root.trayOverflowOpen) {
-            root.grabFocus();
-        }
-    }
-
-    HyprlandFocusGrab {
-        id: focusGrab
-        active: false
-        windows: [trayOverflowLayout.QsWindow?.window, root.activeMenu]
-        onCleared: {
-            root.trayOverflowOpen = false;
-            if (root.activeMenu) {
-                root.activeMenu.close();
-                root.activeMenu = null;
-            }
-        }
+        root.releaseFocus();
     }
 
     GridLayout {

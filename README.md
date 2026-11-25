@@ -2,7 +2,7 @@
   <a href="https://axos-project.github.io"><img src="https://github.com/user-attachments/assets/a64a60d1-c4ec-4fdf-a1df-ce4bde3890ce" width="512" alt="AxOS"></a>
 </p>
 
-Sleex is the third desktop environment of AxOS. It is based on Hyprland with Quickshell.
+Sleex is the third desktop environment of AxOS. It is based on `fht-compositor` with Quickshell.
 
 ## Features
 - Smooth animations
@@ -19,7 +19,7 @@ Sleex is the third desktop environment of AxOS. It is based on Hyprland with Qui
 ## Installation
 
 > [!IMPORTANT]
-> If you already have an hyprland config, this will erase it.
+> If you already have an `fht-compositor` config in `~/.config/fht`, Sleex manages `~/.config/fht/monitors.toml`, `~/.config/fht/apps.toml`, and `~/.config/fht/custom/*.toml`.
 
 If you are using AxOS, you can simply use epsilon:
 ```
