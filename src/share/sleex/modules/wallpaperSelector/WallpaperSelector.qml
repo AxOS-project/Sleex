@@ -32,7 +32,7 @@ Scope {
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:wppselector"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: GlobalStates.wppselectorOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: GlobalStates.wppselectorOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         color: "transparent"
 
         anchors {

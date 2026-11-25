@@ -40,7 +40,7 @@ Scope {
             implicitHeight: Screen.height
             WlrLayershell.namespace: "quickshell:dashboard"
             WlrLayershell.layer: GlobalStates.tutorialMode ? WlrLayer.Top : WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: GlobalStates.dashboardOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.dashboardOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             color: "transparent"
             mask: GlobalStates.dashboardOpen ? null : emptyRegion

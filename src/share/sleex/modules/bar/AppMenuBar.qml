@@ -173,7 +173,7 @@ Item {
 
             WlrLayershell.namespace: "quickshell:appmenu"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
             FocusScope {
                 anchors.fill: parent

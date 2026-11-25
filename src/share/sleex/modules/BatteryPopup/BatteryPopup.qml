@@ -142,7 +142,7 @@ Scope {
 
             WlrLayershell.layer:         WlrLayer.Overlay
             WlrLayershell.namespace:     "quickshell:batterywarning"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
             Item {
                 anchors.fill: parent
