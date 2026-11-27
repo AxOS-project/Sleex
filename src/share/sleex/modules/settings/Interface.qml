@@ -465,11 +465,22 @@ ContentPage {
 
             }
 
-            ConfigSwitch {
-                text: "Show desktop icons"
-                checked: Config.options.background.showDesktopIcons
-                onClicked: checked = !checked;
-                onCheckedChanged: Config.options.background.showDesktopIcons = checked;
+            ConfigRow {
+                uniform: true
+
+                ConfigSwitch {
+                    text: "Show desktop icons"
+                    checked: Config.options.background.showDesktopIcons
+                    onClicked: checked = !checked;
+                    onCheckedChanged: Config.options.background.showDesktopIcons = checked;
+                }
+
+                ConfigSwitch {
+                    text: "Show media player"
+                    checked: Config.options.background.enableMediaWidget
+                    onClicked: checked = !checked;
+                    onCheckedChanged: Config.options.background.enableMediaWidget = checked;
+                }
             }
 
             ContentSubsection {

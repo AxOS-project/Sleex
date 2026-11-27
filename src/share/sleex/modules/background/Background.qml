@@ -224,6 +224,15 @@ Scope {
                 }
 
                 Loader {
+                    active: Config.options.background.enableMediaWidget
+                    z: 1
+                    sourceComponent: MediaPlayerWidget {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                    }
+                }
+
+                Loader {
                     anchors.fill: parent
                     active: Config.options.background.showWatermark
                     sourceComponent: Watermark { visibleWatermark: true }

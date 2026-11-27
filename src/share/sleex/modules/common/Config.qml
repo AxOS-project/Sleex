@@ -183,6 +183,9 @@ Singleton {
             property bool enableWeatherWidget: true
             property real weatherX: 0
             property real weatherY: 0
+            property bool enableMediaWidget: true
+            property real mediaX: 0
+            property real mediaY: 0
             property bool widgetsLocked: false
             property bool showGrid: true
         }
