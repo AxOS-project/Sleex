@@ -53,7 +53,7 @@ AbstractWidget {
         id: card
         width: mainLayout.implicitWidth
         height: mainLayout.implicitHeight
-        radius: Appearance.rounding.large
+        radius: Appearance.rounding.normal
         color: Appearance.m3colors.m3background
 
         StyledRectangularShadow {
@@ -67,8 +67,8 @@ AbstractWidget {
             spacing: 0
 
             Rectangle {
-                Layout.preferredWidth: Math.max(120, leftColumn.implicitWidth + 32)
-                Layout.minimumHeight: 120
+                Layout.preferredWidth: Math.max(160, leftColumn.implicitWidth + 32)
+                Layout.minimumHeight: 160
                 Layout.fillHeight: true
                 color: Appearance.colors.colPrimary
                 clip: true
@@ -81,14 +81,14 @@ AbstractWidget {
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
                         text: root.materialSymbolForCode(Weather.weatherCode)
-                        iconSize: 42
+                        iconSize: 56
                         color: Appearance.colors.colOnPrimary
                     }
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
                         text: Weather.temperature || "--°"
-                        font.pixelSize: 24
+                        font.pixelSize: 32
                         font.weight: Font.Bold
                         color: Appearance.colors.colOnPrimary
                     }
