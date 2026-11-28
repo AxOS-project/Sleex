@@ -21,6 +21,7 @@ import qs.modules.dashboard
 import qs.modules.wallpaperSelector
 import qs.modules.background
 import qs.modules.lockscreen
+import qs.modules.screensaver
 import qs.modules.BatteryPopup
 import qs.modules.cornerPopup
 
@@ -104,4 +105,5 @@ ShellRoot {
     LazyLoader { active: enableBackground; component: Background {} }
     LazyLoader { active: enableCornerPopup; component: CornerPopup {} }
     LazyLoader { active: GlobalStates.screenLocked; component: Lock {}}
+    LazyLoader { active: GlobalStates.screensaverActive; component: Screensaver {} }
 }

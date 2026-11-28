@@ -17,6 +17,7 @@ Singleton {
     property bool superReleaseMightTrigger: true
     property bool wppselectorOpen: false
     property bool screenLocked: false
+    property bool screensaverActive: false
     property bool desktopWidgetKeyboardFocus: false
     property bool tutorialMode: false
 
@@ -78,6 +79,22 @@ Singleton {
 
         function lock() {
             root.screenLocked = true;
+        }
+    }
+
+    IpcHandler {
+        target: "screensaver"
+
+        function start(): void {
+            root.screensaverActive = true;
+        }
+
+        function stop(): void {
+            root.screensaverActive = false;
+        }
+
+        function toggle(): void {
+            root.screensaverActive = !root.screensaverActive;
         }
     }
     GlobalShortcut {

@@ -13,6 +13,7 @@ ContentPage {
 
     property string _selectedFaceImage: ""
     readonly property var dashboardAnimationKeys: ["left", "right", "up", "down"]
+    readonly property var screensaverModeKeys: ["black", "aura", "shapes", "particles", "diaporama"]
 
     FileDialog {
         id: sddmFaceDialog
@@ -64,6 +65,15 @@ ContentPage {
         onAccepted: {
             Config.options.dashboard.avatarPath = selectedFile.toString().replace("file://", "")
             avatarPathField.text = Config.options.dashboard.avatarPath
+        }
+    }
+
+    FolderDialog {
+        id: diaporamaFolderDialog
+        title: qsTr("Select diaporama folder")
+        onAccepted: {
+            Config.options.screensaver.diaporamaPath = selectedFolder.toString().replace("file://", "")
+            diaporamaPathField.text = Config.options.screensaver.diaporamaPath
         }
     }
 
@@ -591,6 +601,122 @@ ContentPage {
             onClicked: checked = !checked;
             onCheckedChanged: Config.options.lockscreen.resizableLockScreenWidget = checked
             StyledToolTip { text: "Allow resizing & repositioning of the media player widget." }
+        }
+    }
+
+    ContentSection {
+        title: qsTr("Screensaver")
+        icon: "bedtime"
+
+        StyledText {
+            text: qsTr("Background effect")
+            color: Appearance.colors.colSubtext
+        }
+
+        StyledComboBox {
+            id: screensaverModeComboBox
+            model: [
+                qsTr("Pitch Black"),
+                qsTr("Ambient Aura"),
+                qsTr("M3 Expressive Shapes"),
+                qsTr("Floating Particles"),
+                qsTr("Wallpaper Diaporama")
+            ]
+            currentIndex: Math.max(0, screensaverModeKeys.indexOf(Config.options.screensaver.backgroundMode))
+
+            onActivated: (index) => {
+                const selectedValue = screensaverModeKeys[index]
+                if (Config.options.screensaver.backgroundMode !== selectedValue) {
+                    Config.options.screensaver.backgroundMode = selectedValue
+                }
+            }
+        }
+
+        ConfigRow {
+            uniform: true
+
+            ConfigSwitch {
+                text: qsTr("Show weather")
+                visible: Config.options.dashboard.enableWeather
+                checked: Config.options.screensaver.enableWeather
+                onClicked: checked = !checked
+                onCheckedChanged: Config.options.screensaver.enableWeather = checked
+            }
+
+            ConfigSwitch {
+                text: qsTr("Show media player")
+                checked: Config.options.screensaver.enableMedia
+                onClicked: checked = !checked
+                onCheckedChanged: Config.options.screensaver.enableMedia = checked
+            }
+        }
+
+        ConfigSwitch {
+            text: qsTr("Audio wave visualizer")
+            checked: Config.options.screensaver.enableVisualizer
+            onClicked: checked = !checked
+            onCheckedChanged: Config.options.screensaver.enableVisualizer = checked
+            StyledToolTip { text: qsTr("Show live Cava audio waves on the media card.") }
+        }
+
+        ConfigSpinBox {
+            text: qsTr("Move interval (seconds)")
+            value: Config.options.screensaver.moveInterval
+            from: 15
+            to: 600
+            stepSize: 5
+            onValueChanged: {
+                Config.options.screensaver.moveInterval = value
+            }
+        }
+
+        ContentSubsection {
+            title: qsTr("Wallpaper diaporama")
+            visible: Config.options.screensaver.backgroundMode === "diaporama"
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                MaterialTextField {
+                    id: diaporamaPathField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Diaporama folder path")
+                    text: Config.options.screensaver.diaporamaPath
+                    onEditingFinished: {
+                        Config.options.screensaver.diaporamaPath = text
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    materialIcon: "folder_open"
+                    materialIconFill: false
+                    mainText: qsTr("Browse")
+                    onClicked: diaporamaFolderDialog.open()
+                }
+            }
+
+            ConfigSpinBox {
+                text: qsTr("Slide interval (seconds)")
+                value: Config.options.screensaver.diaporamaInterval
+                from: 5
+                to: 600
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.screensaver.diaporamaInterval = value
+                }
+            }
+
+            ConfigSpinBox {
+                text: qsTr("Scrim opacity (%)")
+                value: Config.options.screensaver.diaporamaScrimOpacity
+                from: 0
+                to: 100
+                stepSize: 5
+                onValueChanged: {
+                    Config.options.screensaver.diaporamaScrimOpacity = value
+                }
+            }
         }
     }
 

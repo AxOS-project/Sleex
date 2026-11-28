@@ -260,6 +260,17 @@ Singleton {
             }
         }
 
+        property JsonObject screensaver: JsonObject {
+            property string backgroundMode: "aura" // "black", "aura", "shapes", "particles", "diaporama"
+            property bool enableVisualizer: true
+            property bool enableWeather: true
+            property bool enableMedia: true
+            property int moveInterval: 60 // seconds
+            property string diaporamaPath: "/usr/share/backgrounds/sleex/"
+            property int diaporamaInterval: 30 // seconds
+            property int diaporamaScrimOpacity: 70 // 0 to 100 (%)
+        }
+
         property JsonObject notifications: JsonObject {
             property string position: "top-right" // top-left, top-center, top-right, bottom not supported
         }
